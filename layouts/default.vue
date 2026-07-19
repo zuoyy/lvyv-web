@@ -18,7 +18,7 @@
         <div class="nav-actions">
           <!-- Language Selector -->
           <div class="lang-selector">
-            <i class="fa-solid fa-globe lang-icon"></i>
+            <font-awesome-icon :icon="['fas', 'globe']" class="lang-icon" aria-hidden="true" />
             <span class="lang-text">EN</span>
           </div>
           <NuxtLink to="/login" class="nav-login">Login</NuxtLink>

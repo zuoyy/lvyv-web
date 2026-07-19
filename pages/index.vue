@@ -63,7 +63,7 @@
             <div class="card-img-wrapper" style="background-image: url('/images/home/meet-people.png');">
               <span class="video-badge">Meet</span>
               <div class="play-btn-circle">
-                <i class="fa-solid fa-play"></i>
+                <font-awesome-icon :icon="['fas', 'play']" aria-hidden="true" />
               </div>
               <div class="card-info">
                 <h3>Meet People</h3>
@@ -83,7 +83,7 @@
             <div class="card-img-wrapper" style="background-image: url('/images/home/meet-stories.png');">
               <span class="video-badge">Meet</span>
               <div class="play-btn-circle">
-                <i class="fa-solid fa-play"></i>
+                <font-awesome-icon :icon="['fas', 'play']" aria-hidden="true" />
               </div>
               <div class="card-info">
                 <h3>Meet Stories</h3>
@@ -103,7 +103,7 @@
             <div class="card-img-wrapper" style="background-image: url('/images/home/meet-yourself.png');">
               <span class="video-badge">Meet</span>
               <div class="play-btn-circle">
-                <i class="fa-solid fa-play"></i>
+                <font-awesome-icon :icon="['fas', 'play']" aria-hidden="true" />
               </div>
               <div class="card-info">
                 <h3>Meet Yourself</h3>
@@ -189,8 +189,8 @@
             <p class="subtitle-text">Choose a city, start a new story.</p>
           </div>
           <div class="carousel-controls">
-            <button class="carousel-btn btn-prev" aria-label="Previous Slide" @click="prevSlide"><i class="fa-solid fa-chevron-left"></i></button>
-            <button class="carousel-btn btn-next" aria-label="Next Slide" @click="nextSlide"><i class="fa-solid fa-chevron-right"></i></button>
+            <button class="carousel-btn btn-prev" aria-label="Previous Slide" @click="prevSlide"><font-awesome-icon :icon="['fas', 'chevron-left']" aria-hidden="true" /></button>
+            <button class="carousel-btn btn-next" aria-label="Next Slide" @click="nextSlide"><font-awesome-icon :icon="['fas', 'chevron-right']" aria-hidden="true" /></button>
           </div>
         </div>
 
@@ -357,10 +357,10 @@
         <div class="slogan-visual">
           <img src="/images/common/footer-slogan.svg" alt="Go, meet someone." class="slogan-text">
           <div class="social-links">
-            <a href="#" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
-            <a href="#" aria-label="Pinterest"><i class="fa-brands fa-pinterest"></i></a>
-            <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
-            <a href="#" aria-label="Twitter"><i class="fa-brands fa-twitter"></i></a>
+            <a href="#" aria-label="Facebook"><font-awesome-icon :icon="['fab', 'facebook']" aria-hidden="true" /></a>
+            <a href="#" aria-label="Pinterest"><font-awesome-icon :icon="['fab', 'pinterest']" aria-hidden="true" /></a>
+            <a href="#" aria-label="Instagram"><font-awesome-icon :icon="['fab', 'instagram']" aria-hidden="true" /></a>
+            <a href="#" aria-label="Twitter"><font-awesome-icon :icon="['fab', 'twitter']" aria-hidden="true" /></a>
           </div>
         </div>
       </div>

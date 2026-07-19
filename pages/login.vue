@@ -16,7 +16,7 @@
         </div>
 
         <button type="submit" class="btn btn-lime btn-login">
-          Log In <i class="fa-solid fa-arrow-right-to-bracket"></i>
+          Log In <font-awesome-icon :icon="['fas', 'arrow-right-to-bracket']" aria-hidden="true" />
         </button>
       </form>
       

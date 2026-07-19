@@ -1,0 +1,28 @@
+/* Self-hosted Latin font files bundled by Fontsource. Chinese text uses the
+ * system fallbacks declared in style.css to avoid shipping the full CJK font. */
+@import '@fontsource/inter/latin-300.css';
+@import '@fontsource/inter/latin-400.css';
+@import '@fontsource/inter/latin-500.css';
+@import '@fontsource/inter/latin-600.css';
+@import '@fontsource/inter/latin-700.css';
+@import '@fontsource/inter/latin-800.css';
+
+@import '@fontsource/inter-tight/latin-300.css';
+@import '@fontsource/inter-tight/latin-400.css';
+@import '@fontsource/inter-tight/latin-500.css';
+@import '@fontsource/inter-tight/latin-600.css';
+@import '@fontsource/inter-tight/latin-700.css';
+@import '@fontsource/inter-tight/latin-800.css';
+@import '@fontsource/inter-tight/latin-400-italic.css';
+
+@import '@fontsource/khula/latin-700.css';
+@import '@fontsource/khula/latin-800.css';
+
+@import '@fontsource/playfair-display/latin-400.css';
+@import '@fontsource/playfair-display/latin-700.css';
+@import '@fontsource/playfair-display/latin-800.css';
+
+@import '@fontsource/caveat/latin-400.css';
+@import '@fontsource/caveat/latin-600.css';
+
+@import '@fontsource/rubik/latin-400.css';
