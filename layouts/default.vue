@@ -37,6 +37,9 @@
           <img src="/images/common/logo-footer.svg" alt="Lvyv Logo" class="footer-logo">
           <p class="brand-subtext">The First Friends in China.</p>
           <p class="copyright">© 2026&nbsp; Lvyv International Travel &amp; Culture Co., Ltd.</p>
+          <p class="copyright">
+            <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: none; transition: opacity 0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">京ICP备2026042546号-1</a>
+          </p>
         </div>
 
         <div class="footer-links-column">
