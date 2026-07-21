@@ -2,8 +2,8 @@
   <main class="auth-page">
     <section class="auth-shell auth-shell-register">
       <p class="auth-kicker">Join Lvyv</p>
-      <h1>Create your account</h1>
-      <p class="auth-intro">Use an email you can access. You must verify it before signing in.</p>
+      <h1>{{ pageTitle }}</h1>
+      <p class="auth-intro">{{ pageIntro }}</p>
 
       <p v-if="message" class="auth-message" :class="{ error }" role="alert">{{ message }}</p>
 
@@ -38,6 +38,20 @@
         <button class="auth-submit" :disabled="loading">{{ loading ? 'Creating account...' : 'Create account' }}</button>
       </form>
 
+      <form v-else-if="stage === 'request-code'" class="auth-form" @submit.prevent="requestCode">
+        <div class="auth-field">
+          <label for="verification-email">Email</label>
+          <input id="verification-email" v-model.trim="form.email" type="email" autocomplete="email" required placeholder="you@example.com">
+          <small>We will send a new 6-digit code if this account is waiting for verification.</small>
+        </div>
+        <button class="auth-submit" :disabled="loading">
+          {{ loading ? 'Sending code...' : 'Send verification code' }}
+        </button>
+        <button class="auth-text-button" type="button" :disabled="loading" @click="showRegistration">
+          Back to registration
+        </button>
+      </form>
+
       <form v-else-if="stage === 'verify'" class="auth-form" @submit.prevent="verifyCode">
         <div class="auth-field">
           <label for="verification-code">Verification code</label>
@@ -67,16 +81,23 @@
       <div v-else class="auth-complete-actions">
         <NuxtLink class="auth-submit" :to="`/login?email=${encodeURIComponent(form.email)}`">Go to login</NuxtLink>
       </div>
-      <p v-if="stage === 'register'" class="auth-switch">Already have an account? <NuxtLink to="/login">Log in</NuxtLink></p>
+      <template v-if="stage === 'register'">
+        <p class="auth-switch">Already have an account? <NuxtLink to="/login">Log in</NuxtLink></p>
+        <button class="auth-text-button auth-recovery-link" type="button" @click="showVerificationRecovery">
+          Registered but not verified?
+        </button>
+      </template>
     </section>
   </main>
 </template>
 
 <script setup lang="ts">
-const form = reactive({ email: '', password: '', nickname: '', mobile: '', passportCountryCode: '' })
+const route = useRoute()
+const verificationEmail = typeof route.query.verify === 'string' ? route.query.verify : ''
+const form = reactive({ email: verificationEmail, password: '', nickname: '', mobile: '', passportCountryCode: '' })
 const confirm = ref('')
 const loading = ref(false)
-const stage = ref<'register' | 'verify' | 'complete'>('register')
+const stage = ref<'register' | 'request-code' | 'verify' | 'complete'>(verificationEmail ? 'request-code' : 'register')
 const verificationCode = ref('')
 const resendCooldown = ref(0)
 const message = ref('')
@@ -84,6 +105,14 @@ const error = ref(false)
 const countryInvalid = ref(false)
 const auth = useMemberAuth()
 let cooldownTimer: ReturnType<typeof setInterval> | undefined
+
+const pageTitle = computed(() => stage.value === 'register' ? 'Create your account' : 'Verify your email')
+const pageIntro = computed(() => {
+  if (stage.value === 'register') return 'Use an email you can access. You must verify it before signing in.'
+  if (stage.value === 'request-code') return 'Enter your email to receive a new verification code.'
+  if (stage.value === 'verify') return 'Enter the 6-digit code from your email to finish verification.'
+  return 'Your email address has been confirmed.'
+})
 
 const startResendCooldown = () => {
   resendCooldown.value = 60
@@ -100,6 +129,18 @@ const startResendCooldown = () => {
 onBeforeUnmount(() => { if (cooldownTimer) clearInterval(cooldownTimer) })
 
 watch(() => form.passportCountryCode, (value) => { if (value) countryInvalid.value = false })
+
+const showVerificationRecovery = () => {
+  error.value = false
+  message.value = ''
+  stage.value = 'request-code'
+}
+
+const showRegistration = () => {
+  error.value = false
+  message.value = ''
+  stage.value = 'register'
+}
 
 const submit = async () => {
   if (!form.passportCountryCode) {
@@ -128,6 +169,24 @@ const submit = async () => {
   } catch (caught) {
     error.value = true
     message.value = caught instanceof Error ? caught.message : 'Unable to create account'
+  } finally {
+    loading.value = false
+  }
+}
+
+const requestCode = async () => {
+  loading.value = true
+  error.value = false
+  message.value = ''
+  try {
+    await auth.resendVerificationCode(form.email)
+    verificationCode.value = ''
+    stage.value = 'verify'
+    message.value = 'A 6-digit verification code has been sent. It expires in 10 minutes.'
+    startResendCooldown()
+  } catch (caught) {
+    error.value = true
+    message.value = caught instanceof Error ? caught.message : 'Unable to send a verification code.'
   } finally {
     loading.value = false
   }

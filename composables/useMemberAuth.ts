@@ -1,5 +1,13 @@
 interface ApiResult<T> { code: number; msg?: string; data: T }
 interface LoginResult { accessToken: string; tokenType: string }
+
+export class ApiRequestError extends Error {
+  constructor(public readonly code: number, message: string) {
+    super(message)
+    this.name = 'ApiRequestError'
+  }
+}
+
 export interface MemberProfile {
   id: number
   email: string
@@ -25,11 +33,13 @@ export const useMemberAuth = () => {
         body: method === 'GET' ? undefined : body,
         headers: token.value ? { Authorization: `Bearer ${token.value}` } : undefined,
       })
-      if (response.code !== 200) throw new Error(response.msg || 'Request failed')
+      if (response.code !== 200) throw new ApiRequestError(response.code, response.msg || 'Request failed')
       return response.data
     } catch (error: any) {
+      if (error instanceof ApiRequestError) throw error
       const message = error?.data?.msg || error?.response?._data?.msg || error?.message
-      throw new Error(message || 'Request failed')
+      const code = Number(error?.data?.code || error?.response?._data?.code || 500)
+      throw new ApiRequestError(code, message || 'Request failed')
     }
   }
 

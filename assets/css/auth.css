@@ -26,6 +26,9 @@
 .auth-complete-actions { display: grid; gap: 18px; justify-items: center; }
 .auth-text-button { justify-self: center; padding: 4px; border: 0; background: transparent; color: #155c4d; font: inherit; font-size: 14px; text-decoration: underline; cursor: pointer; }
 .auth-text-button:disabled { color: #8b948f; cursor: not-allowed; text-decoration: none; }
+.auth-recovery-action { margin: -6px 0 18px; font-size: 14px; }
+.auth-recovery-action a { color: #155c4d; font-weight: 600; }
+.auth-recovery-link { display: block; margin: 10px auto 0; }
 .verification-code-input { font-variant-numeric: tabular-nums; font-size: 24px !important; font-weight: 700 !important; text-align: center; letter-spacing: 0; }
 .auth-message { margin: 0 0 18px; padding: 12px 14px; border-left: 3px solid #1f6b58; background: #e9f3ee; color: #154b3f; line-height: 1.5; }
 .auth-message.error { border-color: #b83a3a; background: #f9eaea; color: #8f2626; }
