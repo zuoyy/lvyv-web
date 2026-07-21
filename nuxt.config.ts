@@ -6,7 +6,18 @@ export default defineNuxtConfig({
   // 运行时配置，可以通过环境变量（如 NUXT_PUBLIC_API_BASE）覆盖
   runtimeConfig: {
     public: {
-      apiBase: '/api' // 默认本地代理和 Nginx 代理的前缀
+      apiBase: '/web-api' // Nginx 将此前缀代理到后端会员接口
+    }
+  },
+
+  // 本地开发时直连 lvyv-server；生产静态站点仍由 Nginx 代理 /web-api。
+  nitro: {
+    devProxy: {
+      '/web-api': {
+        // Nitro 会移除匹配到的代理前缀，因此目标地址需要显式补回 /web-api。
+        target: 'http://127.0.0.1:8088/web-api',
+        changeOrigin: true
+      }
     }
   },
 
@@ -14,7 +25,8 @@ export default defineNuxtConfig({
   css: [
     '~/assets/css/fonts.css',
     '~/assets/css/style.css',
-    '~/assets/css/design-overrides.css'
+    '~/assets/css/design-overrides.css',
+    '~/assets/css/auth.css'
   ],
 
   app: {

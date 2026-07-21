@@ -10,6 +10,7 @@ import {
   faGlobe,
   faMagnifyingGlass,
   faPlay,
+  faUser,
   faXmark
 } from '@fortawesome/free-solid-svg-icons'
 import {
@@ -33,6 +34,7 @@ library.add(
   faPinterest,
   faPlay,
   faTwitter,
+  faUser,
   faXmark
 )
 

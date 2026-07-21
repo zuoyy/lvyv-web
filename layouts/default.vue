@@ -34,8 +34,19 @@
             <font-awesome-icon :icon="['fas', 'globe']" class="lang-icon" aria-hidden="true" />
             <span class="lang-text">EN</span>
           </div>
-          <NuxtLink to="/login" class="nav-login">Login</NuxtLink>
-          <NuxtLink to="/#wish-pool" class="btn-planning">Start Planning</NuxtLink>
+          <div v-if="memberToken" ref="accountMenu" class="member-account">
+            <button class="member-trigger" type="button" :aria-expanded="accountOpen" aria-haspopup="menu" @click="accountOpen = !accountOpen">
+              <img v-if="member?.avatar && !avatarFailed" :src="member.avatar" alt="" class="member-avatar" @error="avatarFailed = true">
+              <span v-else class="member-avatar member-avatar-default"><font-awesome-icon :icon="['fas', 'user']" aria-hidden="true" /></span>
+              <span class="member-name">{{ memberDisplayName }}</span>
+              <span class="member-chevron" aria-hidden="true" />
+            </button>
+            <div v-if="accountOpen" class="member-menu" role="menu">
+              <NuxtLink to="/profile" role="menuitem" @click="accountOpen = false">My Profile</NuxtLink>
+              <button type="button" role="menuitem" @click="logout">Log out</button>
+            </div>
+          </div>
+          <NuxtLink v-else to="/login" class="nav-login">Login</NuxtLink>
         </div>
       </div>
     </header>
@@ -102,6 +113,20 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 
 const activeSection = ref('hero')
 const isScrolled = ref(false)
+const { token: memberToken, member, loadMember, clearSession, logout: logoutMember } = useMemberAuth()
+const accountOpen = ref(false)
+const accountMenu = ref(null)
+const avatarFailed = ref(false)
+const memberDisplayName = computed(() => member.value?.nickname?.trim() || member.value?.email?.split('@')[0] || 'Member')
+const logout = async () => { accountOpen.value = false; await logoutMember(); await navigateTo('/') }
+
+watch(() => member.value?.avatar, () => { avatarFailed.value = false })
+watch(memberToken, async (value) => {
+  if (!value) { accountOpen.value = false; return }
+  if (!member.value) {
+    try { await loadMember() } catch { clearSession() }
+  }
+})
 
 const handleScroll = () => {
   if (window.scrollY > 20) {
@@ -111,11 +136,18 @@ const handleScroll = () => {
   }
 }
 
+const handleDocumentClick = (event) => {
+  if (accountMenu.value && !accountMenu.value.contains(event.target)) accountOpen.value = false
+}
+
 onMounted(() => {
   window.addEventListener('scroll', handleScroll)
+  document.addEventListener('click', handleDocumentClick)
+  if (memberToken.value && !member.value) loadMember().catch(clearSession)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', handleScroll)
+  document.removeEventListener('click', handleDocumentClick)
 })
 </script>
