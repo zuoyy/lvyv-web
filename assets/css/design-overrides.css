@@ -98,23 +98,46 @@ a {
   .nav-links {
     position: relative;
     left: auto;
-    margin-left: 135px;
+    margin-left: 75px;
     margin-right: auto;
     display: flex;
     gap: 36px;
   }
 
   .nav-links a {
-    padding: 0;
-    color: #203d33;
+    padding: 0 0 6px 0;
+    color: rgba(32, 61, 51, 0.65);
     font-family: Inter, sans-serif;
     font-size: 15px;
-    font-weight: 400;
+    font-weight: 500;
     line-height: 21px;
+    position: relative;
+    transition: color 0.25s ease;
+  }
+
+  .nav-links a:hover,
+  .nav-links a.active {
+    color: #105446;
   }
 
   .nav-links a::after {
-    display: none;
+    display: block !important;
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%) scaleX(0);
+    width: 16px;
+    height: 3.5px;
+    background-color: var(--color-lime);
+    border-radius: 2px;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    transform-origin: center;
+  }
+
+  .nav-links a:hover::after,
+  .nav-links a.active::after {
+    transform: translateX(-50%) scaleX(1);
   }
 
   .nav-actions {
@@ -1418,3 +1441,150 @@ a {
 .hero-carousel-dots .dot.active {
   background-color: var(--color-lime); /* Active state brand lime green */
 }
+
+/* Cities Dropdown Navigation */
+.nav-item-dropdown {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Invisible bridge hover area to keep dropdown open */
+.nav-item-dropdown::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  height: 25px;
+  display: block;
+  z-index: 99;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(12px) scale(0.96);
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(21, 75, 63, 0.08);
+  border-radius: 14px;
+  box-shadow: 0 16px 36px rgba(21, 75, 63, 0.07), 0 2px 8px rgba(0, 0, 0, 0.01);
+  padding: 6px;
+  min-width: 170px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              visibility 0.25s;
+  z-index: 100;
+  margin-top: 15px;
+}
+
+/* Dropdown small top arrow */
+.dropdown-menu::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 10px;
+  height: 10px;
+  background: #ffffff;
+  border-left: 1px solid rgba(21, 75, 63, 0.08);
+  border-top: 1px solid rgba(21, 75, 63, 0.08);
+  z-index: -1;
+}
+
+.nav-item-dropdown:hover .dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0) scale(1);
+}
+
+.nav-links .dropdown-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 10px 16px 10px 28px;
+  color: #203d33 !important;
+  font-family: Inter, sans-serif;
+  text-decoration: none;
+  text-align: left;
+  border-radius: 10px;
+  position: relative;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+/* Dropdown active city dot indicator */
+.nav-links .dropdown-item::before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%) scale(0.5);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--color-lime);
+  opacity: 0;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 10;
+}
+
+.nav-links .dropdown-item::after {
+  display: none !important;
+  content: none !important;
+}
+
+.nav-links .dropdown-item .city-en {
+  font-size: 15px;
+  font-weight: 500;
+  color: #203d33;
+  transition: color 0.2s ease;
+}
+
+.nav-links .dropdown-item .city-zh {
+  font-size: 12px;
+  font-weight: 400;
+  color: #8fa08a;
+  transition: color 0.2s ease;
+}
+
+.nav-links .dropdown-item:hover {
+  background-color: #f3f7f4;
+  transform: translateX(3px);
+}
+
+.nav-links .dropdown-item:hover .city-en {
+  color: #105446;
+}
+
+.nav-links .dropdown-item:hover .city-zh {
+  color: #607567;
+}
+
+/* Active state for dropdown sub item - no background, just the indicator dot and highlighted text */
+.nav-links .dropdown-item.active {
+  background-color: transparent;
+}
+
+.nav-links .dropdown-item.active::before {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
+}
+
+.nav-links .dropdown-item.active .city-en {
+  color: #105446;
+  font-weight: 600;
+}
+
+.nav-links .dropdown-item.active .city-zh {
+  color: #556a5c;
+  font-weight: 500;
+}
+
+

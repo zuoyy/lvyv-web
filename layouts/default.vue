@@ -8,11 +8,24 @@
         </NuxtLink>
 
         <nav class="nav-links">
-          <NuxtLink to="/#hero" :class="{ active: activeSection === 'hero' }">Explore</NuxtLink>
-          <NuxtLink to="/#why-lvyv" :class="{ active: activeSection === 'why-lvyv' }">Experiences</NuxtLink>
-          <NuxtLink to="/#how-it-works" :class="{ active: activeSection === 'how-it-works' }">Meet</NuxtLink>
-          <NuxtLink to="/#wish-pool" :class="{ active: activeSection === 'wish-pool' }">Community</NuxtLink>
-          <NuxtLink to="/#about-us" :class="{ active: activeSection === 'about-us' }">About</NuxtLink>
+          <NuxtLink to="/#hero" :class="{ active: $route && $route.path === '/' && activeSection === 'hero' }">Home</NuxtLink>
+          <NuxtLink to="/wish" :class="{ active: $route && $route.path === '/wish' }">Wish</NuxtLink>
+          <div class="nav-item-dropdown">
+            <a href="javascript:void(0)" @click.prevent :class="{ active: $route && $route.path.startsWith('/cities') }">Cities</a>
+            <div class="dropdown-menu">
+              <NuxtLink to="/cities/xian" class="dropdown-item" :class="{ active: $route && $route.path === '/cities/xian' }">
+                <span class="city-en">Xi'an</span>
+                <span class="city-zh">西安</span>
+              </NuxtLink>
+              <NuxtLink to="/cities/chengdu" class="dropdown-item" :class="{ active: $route && $route.path === '/cities/chengdu' }">
+                <span class="city-en">Chengdu</span>
+                <span class="city-zh">成都</span>
+              </NuxtLink>
+            </div>
+          </div>
+          <NuxtLink to="/stories" :class="{ active: $route && $route.path === '/stories' }">Stories</NuxtLink>
+          <NuxtLink to="/about" :class="{ active: $route && $route.path === '/about' }">About</NuxtLink>
+          <NuxtLink to="/faq" :class="{ active: $route && $route.path === '/faq' }">FAQ</NuxtLink>
         </nav>
 
         <div class="nav-actions">
@@ -72,7 +85,7 @@
         <div class="footer-links-column">
           <h4>Support</h4>
           <ul>
-            <li><NuxtLink to="#">Help Center</NuxtLink></li>
+            <li><NuxtLink to="/faq">FAQ</NuxtLink></li>
             <li><NuxtLink to="#">Safety</NuxtLink></li>
             <li><NuxtLink to="#">Privacy Policy</NuxtLink></li>
           </ul>
