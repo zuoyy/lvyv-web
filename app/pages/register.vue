@@ -79,7 +79,7 @@
       </form>
 
       <div v-else class="auth-complete-actions">
-        <NuxtLink class="auth-submit" :to="`/login?email=${encodeURIComponent(form.email)}`">Go to login</NuxtLink>
+        <NuxtLink class="auth-submit" :to="`/login?account=${encodeURIComponent(form.email)}`">Go to login</NuxtLink>
       </div>
       <template v-if="stage === 'register'">
         <p class="auth-switch">Already have an account? <NuxtLink to="/login">Log in</NuxtLink></p>

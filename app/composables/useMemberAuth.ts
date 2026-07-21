@@ -57,8 +57,8 @@ export const useMemberAuth = () => {
     member.value = null
   }
 
-  const login = async (email: string, password: string) => {
-    const result = await request<LoginResult>('/auth/login', { email, password })
+  const login = async (account: string, password: string) => {
+    const result = await request<LoginResult>('/auth/login', { account, password })
     token.value = result.accessToken
     try {
       await loadMember()

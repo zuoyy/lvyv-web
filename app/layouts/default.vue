@@ -117,7 +117,24 @@ const { token: memberToken, member, loadMember, clearSession, logout: logoutMemb
 const accountOpen = ref(false)
 const accountMenu = ref(null)
 const avatarFailed = ref(false)
-const memberDisplayName = computed(() => member.value?.nickname?.trim() || member.value?.email?.split('@')[0] || 'Member')
+const tokenDisplayName = computed(() => {
+  if (!memberToken.value) return ''
+  try {
+    const encodedPayload = memberToken.value.split('.')[1]
+    if (!encodedPayload) return ''
+    const base64 = encodedPayload.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(encodedPayload.length / 4) * 4, '=')
+    const bytes = Uint8Array.from(atob(base64), character => character.charCodeAt(0))
+    const payload = JSON.parse(new TextDecoder().decode(bytes))
+    const nickname = typeof payload.nickname === 'string' ? payload.nickname.trim() : ''
+    if (nickname) return nickname
+    return typeof payload.sub === 'string' ? payload.sub.split('@')[0] : ''
+  } catch {
+    return ''
+  }
+})
+const memberDisplayName = computed(() => member.value?.nickname?.trim()
+  || member.value?.email?.split('@')[0]
+  || tokenDisplayName.value)
 const logout = async () => { accountOpen.value = false; await logoutMember(); await navigateTo('/') }
 
 watch(() => member.value?.avatar, () => { avatarFailed.value = false })
