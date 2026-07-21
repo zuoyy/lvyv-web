@@ -3,8 +3,7 @@
     <!-- Hero Section -->
     <section class="hero-section" id="hero">
       <div class="hero-overlay"></div>
-      <div class="hero-bg" :class="{ 'active': activeBg === 0 }" style="background-image: url('/images/home/hero-bg.png');"></div>
-      <div class="hero-bg" :class="{ 'active': activeBg === 1 }" style="background-image: url('/images/home/hero-bg-2.png');"></div>
+      <div v-for="(bg, index) in heroBgs" :key="index" class="hero-bg" :class="{ 'active': activeBg === index }" :style="{ backgroundImage: `url('${bg}')` }"></div>
       <div class="hero-content">
         <h1 class="sr-only">Meet China, Not Just Visit It.</h1>
         <div class="hero-title-art" aria-hidden="true">
@@ -23,8 +22,7 @@
 
       <!-- Carousel Indicators / Dots -->
       <div class="hero-carousel-dots">
-        <span class="dot" :class="{ 'active': activeBg === 0 }" @click="setBg(0)"></span>
-        <span class="dot" :class="{ 'active': activeBg === 1 }" @click="setBg(1)"></span>
+        <span v-for="(bg, index) in heroBgs" :key="index" class="dot" :class="{ 'active': activeBg === index }" @click="setBg(index)"></span>
       </div>
     </section>
 
@@ -483,13 +481,18 @@ const handleSubscribe = () => {
 // ==========================================
 // 5. Hero Background Carousel Action
 // ==========================================
+const heroBgs = [
+  '/images/home/hero-bg.png',
+  '/images/home/hero-bg-2.png',
+  '/images/home/hero-banner-4.png'
+]
 const activeBg = ref(0)
 let bgTimer = null
 
 const startBgTimer = () => {
   if (bgTimer) clearInterval(bgTimer)
   bgTimer = setInterval(() => {
-    activeBg.value = activeBg.value === 0 ? 1 : 0
+    activeBg.value = (activeBg.value + 1) % heroBgs.length
   }, 6000)
 }
 
