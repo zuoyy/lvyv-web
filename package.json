@@ -2,16 +2,22 @@
   "name": "lvyv-web",
   "private": true,
   "type": "module",
+  "packageManager": "npm@11.12.1",
+  "engines": {
+    "node": ">=24.11 <25"
+  },
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
+    "typecheck": "nuxt typecheck",
     "postinstall": "nuxt prepare"
   },
   "devDependencies": {
-    "nuxt": "^3.12.4",
-    "typescript": "^5.5.3"
+    "nuxt": "^4.5.0",
+    "typescript": "^5.9.3",
+    "vue-tsc": "^3.3.7"
   },
   "dependencies": {
     "@fontsource/caveat": "5.3.0",

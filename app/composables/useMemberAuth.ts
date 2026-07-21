@@ -25,7 +25,7 @@ export const useMemberAuth = () => {
   const token = useCookie<string | null>('token', { sameSite: 'lax', secure: import.meta.env.PROD })
   const member = useState<MemberProfile | null>('member-profile', () => null)
 
-  const request = async <T>(path: string, body?: unknown, method: 'GET' | 'POST' | 'PUT' = 'POST') => {
+  const request = async <T>(path: string, body?: Record<string, unknown>, method: 'GET' | 'POST' | 'PUT' = 'POST') => {
     try {
       const response = await $fetch<ApiResult<T>>(path, {
         baseURL: config.public.apiBase as string,
