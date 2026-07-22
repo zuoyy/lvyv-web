@@ -47,6 +47,7 @@
             </div>
           </div>
           <NuxtLink v-else to="/login" class="nav-login">Login</NuxtLink>
+          <NuxtLink to="/wish" class="nav-start-planning">Start Planning</NuxtLink>
         </div>
       </div>
     </header>

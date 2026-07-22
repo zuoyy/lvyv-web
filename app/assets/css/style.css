@@ -227,9 +227,11 @@ h2 {
 }
 
 .nav-links a {
-  font-weight: 600;
-  font-size: 1rem;
-  color: var(--color-dark);
+  font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 15px;
+  line-height: 21px;
+  letter-spacing: 0;
+  color: #203d33;
   position: relative;
   padding: 5px 0;
   transition: var(--transition-smooth);
@@ -268,14 +270,16 @@ h2 {
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  color: var(--color-dark);
-  font-weight: 600;
-  font-size: 0.95rem;
+  color: #203d33;
+  font-family: 'Roboto', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 12px;
+  line-height: 24px;
+  letter-spacing: 0;
   transition: var(--transition-smooth);
 }
 
 .lang-selector:hover {
-  color: var(--color-forest);
+  color: #105446;
 }
 
 .lang-icon {
@@ -283,13 +287,37 @@ h2 {
 }
 
 .nav-login {
-  font-weight: 700;
-  color: var(--color-dark);
+  font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 14px;
+  line-height: 16px;
+  letter-spacing: 0;
+  color: #203d33;
   transition: var(--transition-smooth);
 }
 
 .nav-login:hover {
-  color: var(--color-forest);
+  color: #105446;
+}
+
+.nav-start-planning {
+  display: inline-flex;
+  align-items: flex-start;
+  border-radius: 64px;
+  box-shadow: inset 1px 1px 1px 0px rgba(255, 255, 255, 0.25);
+  background: #105446;
+  padding: 10px 24px;
+  color: #ffffff;
+  font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: 0;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.nav-start-planning:hover {
+  background: #0d4238;
 }
 
 /* Hero Section */
