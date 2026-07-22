@@ -405,6 +405,7 @@
   font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
   font-size: 12px;
   text-decoration: none;
+  font-weight: bold;
 }
 
 .auth-signup-link:hover {
@@ -1012,6 +1013,13 @@
 
 .auth-layout .country-input-wrap input::placeholder {
   color: #808080;
+}
+
+.auth-layout .country-input-wrap input:-webkit-autofill,
+.auth-layout .country-input-wrap input:-webkit-autofill:hover,
+.auth-layout .country-input-wrap input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 48px #f2f2f2 inset;
+  -webkit-text-fill-color: #1a1a1a;
 }
 
 .auth-layout .country-chevron {

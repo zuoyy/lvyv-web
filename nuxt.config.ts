@@ -15,7 +15,7 @@ export default defineNuxtConfig({
     devProxy: {
       '/web-api': {
         // Nitro 会移除匹配到的代理前缀，因此目标地址需要显式补回 /web-api。
-        target: 'http://127.0.0.1:8088/web-api',
+        target: 'http://47.109.99.83:8088/web-api',
         changeOrigin: true
       }
     }
@@ -25,6 +25,7 @@ export default defineNuxtConfig({
   css: [
     '~/assets/css/fonts.css',
     '~/assets/css/style.css',
+    '~/assets/css/element-variables.css',
     '~/assets/css/design-overrides.css',
     '~/assets/css/auth.css'
   ],

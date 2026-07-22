@@ -1,80 +1,77 @@
 <template>
-  <main class="auth-page">
-    <section class="auth-shell auth-shell-register">
-      <p class="auth-kicker">Member profile</p>
-      <h1>My Profile</h1>
-      <p class="auth-intro">Keep your details current for future travel planning.</p>
-      <p v-if="message" class="auth-message" :class="{ error }" role="alert">{{ message }}</p>
-
-      <form v-if="ready" class="auth-form" @submit.prevent="save">
-        <div class="auth-field">
-          <label for="profile-email">Email</label>
-          <input id="profile-email" v-model="form.email" type="email" autocomplete="email" readonly>
-          <small>Your verified login email cannot be changed here.</small>
+  <div class="profile-container">
+    <button class="mobile-menu-btn" @click="showSidebar = true">
+      <font-awesome-icon :icon="['fas', 'bars']" />
+    </button>
+    
+    <div class="sidebar-overlay" v-if="showSidebar" @click="showSidebar = false"></div>
+    
+    <ProfileSidebar 
+      v-model:activeTab="activeTab" 
+      :show="showSidebar"
+      @close="showSidebar = false"
+    />
+    
+    <main class="profile-content">
+      <div class="content-wrapper">
+        <PersonalInfo
+          v-if="activeTab === 'personal-info'"
+          :email="form.email"
+          :nickname="form.nickname"
+          :mobile="form.mobile"
+          :passportCountryCode="form.passportCountryCode"
+          :bio="form.bio || ''"
+          :preferences="preferences"
+          :avatar="avatar"
+          :timezone="form.timezone"
+          :timezoneMode="form.timezoneMode"
+          @update:nickname="form.nickname = $event"
+          @update:mobile="form.mobile = $event"
+          @update:passportCountryCode="form.passportCountryCode = $event"
+          @update:bio="form.bio = $event"
+          @update:preferences="preferences = $event"
+          @update:avatar="avatar = $event"
+          @update:timezone="form.timezone = $event"
+          @update:timezoneMode="form.timezoneMode = $event"
+          @save="save"
+        />
+        
+        <AccountSecurity v-else-if="activeTab === 'account-security'" />
+        
+        <Settings v-else-if="activeTab === 'settings'" />
+        
+        <div v-else class="empty-state">
+          <p class="empty-title">Welcome to Your Profile</p>
+          <p class="empty-desc">Select a section from the sidebar to get started.</p>
         </div>
-        <div class="auth-field">
-          <label for="profile-name">Name</label>
-          <input id="profile-name" v-model.trim="form.nickname" autocomplete="name" maxlength="50">
-        </div>
-        <div class="auth-field">
-          <label for="profile-passport-country">Country of Passport</label>
-          <AuthCountrySelect v-model="form.passportCountryCode" :invalid="countryInvalid" />
-        </div>
-        <div class="auth-field">
-          <label for="profile-mobile">Mobile <span>(optional)</span></label>
-          <input id="profile-mobile" v-model.trim="form.mobile" type="tel" inputmode="tel" autocomplete="tel" pattern="\+?[1-9][0-9]{6,14}">
-        </div>
-        <div class="auth-field">
-          <label>Time zone</label>
-          <label class="auth-timezone-toggle">
-            <input v-model="followDeviceTimeZone" type="checkbox">
-            <span>Follow my device time zone</span>
-          </label>
-          <input v-if="!followDeviceTimeZone" v-model="form.timezone" list="profile-timezones" autocomplete="off" placeholder="Search IANA time zones">
-          <datalist id="profile-timezones">
-            <option v-for="option in timeZoneOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-          </datalist>
-        </div>
-        <button class="auth-submit" :disabled="saving">{{ saving ? 'Saving...' : 'Save profile' }}</button>
-      </form>
-    </section>
-  </main>
+      </div>
+    </main>
+  </div>
 </template>
 
 <script setup lang="ts">
+import { ref, reactive, onMounted } from 'vue'
+import ProfileSidebar from '~/components/profile/ProfileSidebar.vue'
+import PersonalInfo from '~/components/profile/PersonalInfo.vue'
+import AccountSecurity from '~/components/profile/AccountSecurity.vue'
+import Settings from '~/components/profile/Settings.vue'
+
 const auth = useMemberAuth()
-const ready = ref(false)
-const saving = ref(false)
-const message = ref('')
-const error = ref(false)
-const countryInvalid = ref(false)
+const activeTab = ref('personal-info')
+const avatar = ref('')
+const preferences = ref<string[]>([])
+const showSidebar = ref(false)
+
 const form = reactive({
   email: '',
   nickname: '',
   mobile: '',
   passportCountryCode: '',
+  bio: '',
   locale: 'en-US',
-  timezone: 'UTC',
+  timezone: '',
   timezoneMode: 0,
 })
-const timeZoneOptions = getMemberTimeZoneOptions()
-const followDeviceTimeZone = computed({
-  get: () => form.timezoneMode === 0,
-  set: (value: boolean) => {
-    form.timezoneMode = value ? 0 : 1
-    if (value) form.timezone = detectMemberTimeZone()
-  },
-})
-
-const fillForm = (member: NonNullable<typeof auth.member.value>) => {
-  form.email = member.email
-  form.nickname = member.nickname || ''
-  form.mobile = member.mobile || ''
-  form.passportCountryCode = member.passportCountryCode || ''
-  form.locale = member.locale || 'en-US'
-  form.timezone = member.timezone || 'UTC'
-  form.timezoneMode = member.timezoneMode ?? 0
-}
 
 onMounted(async () => {
   if (!auth.token.value) {
@@ -84,35 +81,123 @@ onMounted(async () => {
   try {
     const member = auth.member.value || await auth.loadMember()
     if (!member) throw new Error('Unable to load your profile')
-    fillForm(member)
-    ready.value = true
+    form.email = member.email
+    form.nickname = member.nickname || ''
+    form.mobile = member.mobile || ''
+    form.passportCountryCode = member.passportCountryCode || ''
+    form.bio = member.bio || ''
+    form.locale = member.locale
+    form.timezone = member.timezone
+    form.timezoneMode = member.timezoneMode
+    avatar.value = member.avatar || ''
   } catch {
     auth.clearSession()
     await navigateTo('/login?redirect=/profile')
   }
 })
 
-watch(() => form.passportCountryCode, (value) => { if (value) countryInvalid.value = false })
-
 const save = async () => {
-  if (!form.passportCountryCode) {
-    countryInvalid.value = true
-    error.value = true
-    message.value = 'Choose the country that issued your passport.'
-    return
-  }
-  saving.value = true
-  error.value = false
-  message.value = ''
-  try {
-    if (form.timezoneMode === 0) form.timezone = detectMemberTimeZone()
-    await auth.updateProfile({ ...form, mobile: form.mobile || undefined, nickname: form.nickname || undefined })
-    message.value = 'Your profile has been updated.'
-  } catch (caught) {
-    error.value = true
-    message.value = caught instanceof Error ? caught.message : 'Unable to update your profile.'
-  } finally {
-    saving.value = false
-  }
+  await auth.updateProfile({
+    ...form,
+    mobile: form.mobile || undefined,
+    nickname: form.nickname || undefined,
+    bio: form.bio || undefined,
+  })
 }
 </script>
+
+<style scoped>
+.profile-container {
+  min-height: 100vh;
+  background: #F8F8F8;
+  display: block;
+}
+
+.mobile-menu-btn {
+  display: none;
+  position: fixed;
+  top: calc(80px + 16px);
+  left: 16px;
+  z-index: 1000;
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  color: #105446;
+  font-size: 20px;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 950;
+}
+
+.profile-content {
+  margin-left: 200px;
+  padding: 80px 48px;
+  background: #ffffff;
+  min-height: 100vh;
+}
+
+.content-wrapper {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 0;
+  color: #808080;
+}
+
+.empty-title {
+  font-family: 'Poppins', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 8px;
+}
+
+.empty-desc {
+  font-family: 'Roboto', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 15px;
+  color: #666666;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .mobile-menu-btn {
+    display: flex;
+  }
+  
+  .sidebar-overlay {
+    display: block;
+  }
+  
+  .profile-content {
+    margin-left: 0;
+    padding: 24px;
+    padding-top: 80px;
+  }
+}
+
+@media (min-width: 769px) {
+  .profile-container .profile-sidebar {
+    display: flex;
+  }
+}
+</style>

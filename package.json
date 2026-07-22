@@ -16,6 +16,7 @@
   },
   "devDependencies": {
     "nuxt": "^4.5.0",
+    "sass-embedded": "^1.100.0",
     "typescript": "^5.9.3",
     "vue-tsc": "^3.3.7"
   },
@@ -31,6 +32,7 @@
     "@fortawesome/fontawesome-svg-core": "6.4.0",
     "@fortawesome/free-brands-svg-icons": "6.4.0",
     "@fortawesome/free-solid-svg-icons": "6.4.0",
-    "@fortawesome/vue-fontawesome": "3.0.5"
+    "@fortawesome/vue-fontawesome": "3.0.5",
+    "element-plus": "^2.14.3"
   }
 }

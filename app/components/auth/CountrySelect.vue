@@ -7,14 +7,17 @@
         v-model="query"
         type="text"
         role="combobox"
-        autocomplete="country-name"
+        autocomplete="off"
+        autocapitalize="off"
+        autocorrect="off"
+        spellcheck="false"
         aria-required="true"
         :aria-expanded="open"
         :aria-controls="`${inputId}-listbox`"
         :aria-activedescendant="activeOption ? `${inputId}-${activeOption.code}` : undefined"
         :aria-invalid="invalid || undefined"
         :placeholder="selectedCountry?.name || 'Search countries'"
-        @focus="openList"
+        @click="toggleList"
         @input="handleInput"
         @keydown="handleKeydown"
       >
@@ -33,7 +36,7 @@
           type="button"
           role="option"
           :aria-selected="country.code === modelValue"
-          @mousedown.prevent="selectCountry(country)"
+          @click="selectCountry(country)"
           @mouseenter="activeIndex = index"
         >
           <span>{{ country.name }}</span><span>{{ country.code }}</span>
@@ -50,7 +53,7 @@
         type="button"
         role="option"
         :aria-selected="country.code === modelValue"
-        @mousedown.prevent="selectCountry(country)"
+        @click="selectCountry(country)"
         @mouseenter="activeIndex = index + frequentOptions.length"
       >
         <span>{{ country.name }}</span><span>{{ country.code }}</span>
@@ -93,8 +96,12 @@ const matchingOptions = computed(() => {
   return passportCountryOptions.filter((country) => country.name.toLocaleLowerCase('en').includes(normalizedQuery.value)
     || country.code.toLocaleLowerCase('en').includes(normalizedQuery.value))
 })
-const frequentOptions = computed(() => normalizedQuery.value ? [] : frequentPassportCountryOptions)
-const otherOptions = computed(() => matchingOptions.value.filter((country) => normalizedQuery.value || !frequentCodes.has(country.code)))
+const frequentOptions = computed(() => {
+  if (!normalizedQuery.value) return frequentPassportCountryOptions
+  return frequentPassportCountryOptions.filter((country) => country.name.toLocaleLowerCase('en').includes(normalizedQuery.value)
+    || country.code.toLocaleLowerCase('en').includes(normalizedQuery.value))
+})
+const otherOptions = computed(() => matchingOptions.value.filter((country) => !frequentCodes.has(country.code)))
 const flatOptions = computed(() => [...frequentOptions.value, ...otherOptions.value])
 const activeOption = computed(() => flatOptions.value[activeIndex.value])
 
@@ -104,14 +111,20 @@ watch(() => props.modelValue, (value) => {
 watch(flatOptions, () => { activeIndex.value = flatOptions.value.length ? 0 : -1 })
 
 const openList = () => {
-  query.value = ''
   open.value = true
   activeIndex.value = flatOptions.value.findIndex((country) => country.code === props.modelValue)
   if (activeIndex.value < 0) activeIndex.value = flatOptions.value.length ? 0 : -1
 }
 
+const toggleList = () => {
+  if (open.value) {
+    closeList()
+  } else {
+    openList()
+  }
+}
+
 const handleInput = () => {
-  if (props.modelValue) emit('update:modelValue', '')
   open.value = true
 }
 
@@ -142,10 +155,15 @@ const handleKeydown = (event: KeyboardEvent) => {
   }
 }
 
-const handleDocumentPointer = (event: PointerEvent) => {
+const handleDocumentClick = (event: MouseEvent) => {
   if (root.value && !root.value.contains(event.target as Node)) closeList()
 }
 
-onMounted(() => document.addEventListener('pointerdown', handleDocumentPointer))
-onBeforeUnmount(() => document.removeEventListener('pointerdown', handleDocumentPointer))
+onMounted(() => {
+  document.addEventListener('click', handleDocumentClick)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleDocumentClick)
+})
 </script>

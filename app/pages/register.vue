@@ -20,9 +20,9 @@
 
             <!-- Password -->
             <div class="auth-input-group">
-              <p class="auth-input-label">Password <span class="auth-label-required">*</span> <span class="auth-label-hint">(min. 8 char)</span></p>
+              <p class="auth-input-label">Password <span class="auth-label-required">*</span> <span class="auth-label-hint">(8-32 chars, uppercase + lowercase + number)</span></p>
               <div class="auth-input-wrap auth-input-wrap-password" :class="{ 'auth-input-wrap-error': passwordError }">
-                <input id="reg-password" v-model="form.password" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" required minlength="6" maxlength="100" placeholder="Enter password">
+                <input id="reg-password" v-model="form.password" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" required minlength="8" maxlength="32" placeholder="Enter password">
                 <button type="button" class="password-toggle" @click="showPassword = !showPassword" :aria-label="showPassword ? 'Hide password' : 'Show password'">
                   <font-awesome-icon :icon="['fas', showPassword ? 'eye-slash' : 'eye']" />
                 </button>
@@ -32,7 +32,7 @@
 
             <!-- Confirm Password -->
             <div class="auth-input-group">
-              <p class="auth-input-label">Confirm password</p>
+              <p class="auth-input-label">Confirm password <span class="auth-label-required">*</span></p>
               <div class="auth-input-wrap auth-input-wrap-password" :class="{ 'auth-input-wrap-error': confirmError }">
                 <input id="reg-confirm" v-model="confirm" :type="showConfirm ? 'text' : 'password'" autocomplete="new-password" required minlength="6" maxlength="100" placeholder="Enter password again">
                 <button type="button" class="password-toggle" @click="showConfirm = !showConfirm" :aria-label="showConfirm ? 'Hide password' : 'Show password'">
@@ -44,7 +44,7 @@
 
             <!-- Country of Passport -->
             <div class="auth-input-group">
-              <p class="auth-input-label">Country of Passport</p>
+              <p class="auth-input-label">Country of Passport <span class="auth-label-required">*</span></p>
               <AuthCountrySelect v-model="form.passportCountryCode" :invalid="countryInvalid" />
               <p v-if="countryError" class="auth-input-error">{{ countryError }}</p>
             </div>
@@ -221,6 +221,26 @@ const submit = async () => {
 
   if (!form.password) {
     passwordError.value = 'Please fill out this field.'
+    return
+  }
+
+  if (form.password.length < 8 || form.password.length > 32) {
+    passwordError.value = 'Password must be 8-32 characters long.'
+    return
+  }
+
+  if (!/[a-z]/.test(form.password)) {
+    passwordError.value = 'Password must contain at least one lowercase letter.'
+    return
+  }
+
+  if (!/[A-Z]/.test(form.password)) {
+    passwordError.value = 'Password must contain at least one uppercase letter.'
+    return
+  }
+
+  if (!/[0-9]/.test(form.password)) {
+    passwordError.value = 'Password must contain at least one number.'
     return
   }
 

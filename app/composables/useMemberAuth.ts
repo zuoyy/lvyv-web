@@ -19,6 +19,7 @@ export interface MemberProfile {
   passportCountryCode?: string
   nickname?: string
   avatar?: string
+  bio?: string
 }
 
 export const useMemberAuth = () => {
@@ -81,10 +82,15 @@ export const useMemberAuth = () => {
     return result
   }
 
+  const googleLogin = () => {
+    window.location.href = `${config.public.apiBase}/auth/google`
+  }
+
   return {
     token,
     member,
     login,
+    googleLogin,
     loadMember,
     clearSession,
     register: (data: { email: string; password: string; passportCountryCode: string; nickname?: string; mobile?: string; timezone?: string }) => request<number>('/auth/register', data),
@@ -92,7 +98,7 @@ export const useMemberAuth = () => {
     resendVerificationCode: (email: string) => request<void>('/auth/resend-verification-code', { email }),
     forgotPassword: (email: string) => request<void>('/auth/forgot-password', { email }),
     resetPassword: (value: string, password: string) => request<void>('/auth/reset-password', { token: value, password }),
-    updateProfile: async (data: { email: string; mobile?: string; nickname?: string; locale: string; timezone: string; timezoneMode: number; passportCountryCode: string }) => {
+    updateProfile: async (data: { email: string; mobile?: string; nickname?: string; locale: string; timezone: string; timezoneMode: number; passportCountryCode: string; bio?: string }) => {
       await request<void>('/auth/profile', data, 'PUT')
       return loadMember()
     },
