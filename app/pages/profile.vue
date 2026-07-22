@@ -24,6 +24,17 @@
           <label for="profile-mobile">Mobile <span>(optional)</span></label>
           <input id="profile-mobile" v-model.trim="form.mobile" type="tel" inputmode="tel" autocomplete="tel" pattern="\+?[1-9][0-9]{6,14}">
         </div>
+        <div class="auth-field">
+          <label>Time zone</label>
+          <label class="auth-timezone-toggle">
+            <input v-model="followDeviceTimeZone" type="checkbox">
+            <span>Follow my device time zone</span>
+          </label>
+          <input v-if="!followDeviceTimeZone" v-model="form.timezone" list="profile-timezones" autocomplete="off" placeholder="Search IANA time zones">
+          <datalist id="profile-timezones">
+            <option v-for="option in timeZoneOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+          </datalist>
+        </div>
         <button class="auth-submit" :disabled="saving">{{ saving ? 'Saving...' : 'Save profile' }}</button>
       </form>
     </section>
@@ -44,6 +55,15 @@ const form = reactive({
   passportCountryCode: '',
   locale: 'en-US',
   timezone: 'UTC',
+  timezoneMode: 0,
+})
+const timeZoneOptions = getMemberTimeZoneOptions()
+const followDeviceTimeZone = computed({
+  get: () => form.timezoneMode === 0,
+  set: (value: boolean) => {
+    form.timezoneMode = value ? 0 : 1
+    if (value) form.timezone = detectMemberTimeZone()
+  },
 })
 
 const fillForm = (member: NonNullable<typeof auth.member.value>) => {
@@ -53,6 +73,7 @@ const fillForm = (member: NonNullable<typeof auth.member.value>) => {
   form.passportCountryCode = member.passportCountryCode || ''
   form.locale = member.locale || 'en-US'
   form.timezone = member.timezone || 'UTC'
+  form.timezoneMode = member.timezoneMode ?? 0
 }
 
 onMounted(async () => {
@@ -84,6 +105,7 @@ const save = async () => {
   error.value = false
   message.value = ''
   try {
+    if (form.timezoneMode === 0) form.timezone = detectMemberTimeZone()
     await auth.updateProfile({ ...form, mobile: form.mobile || undefined, nickname: form.nickname || undefined })
     message.value = 'Your profile has been updated.'
   } catch (caught) {

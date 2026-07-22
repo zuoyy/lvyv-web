@@ -15,6 +15,7 @@ export interface MemberProfile {
   mobile?: string
   locale: string
   timezone: string
+  timezoneMode: number
   passportCountryCode?: string
   nickname?: string
   avatar?: string
@@ -31,7 +32,10 @@ export const useMemberAuth = () => {
         baseURL: config.public.apiBase as string,
         method,
         body: method === 'GET' ? undefined : body,
-        headers: token.value ? { Authorization: `Bearer ${token.value}` } : undefined,
+        headers: {
+          'X-Time-Zone': detectMemberTimeZone(),
+          ...(token.value ? { Authorization: `Bearer ${token.value}` } : {}),
+        },
       })
       if (response.code !== 200) throw new ApiRequestError(response.code, response.msg || 'Request failed')
       return response.data
@@ -48,7 +52,15 @@ export const useMemberAuth = () => {
       member.value = null
       return null
     }
-    member.value = await request<MemberProfile>('/auth/info')
+    const loaded = await request<MemberProfile>('/auth/info')
+    if (import.meta.client && loaded.timezoneMode === 0) {
+      const detected = detectMemberTimeZone()
+      if (detected !== loaded.timezone) {
+        await request<void>('/auth/timezone', { timezone: detected, timezoneMode: 0 }, 'PUT')
+        loaded.timezone = detected
+      }
+    }
+    member.value = loaded
     return member.value
   }
 
@@ -75,15 +87,16 @@ export const useMemberAuth = () => {
     login,
     loadMember,
     clearSession,
-    register: (data: { email: string; password: string; passportCountryCode: string; nickname?: string; mobile?: string }) => request<number>('/auth/register', data),
+    register: (data: { email: string; password: string; passportCountryCode: string; nickname?: string; mobile?: string; timezone?: string }) => request<number>('/auth/register', data),
     verifyEmailCode: (email: string, code: string) => request<void>('/auth/verify-email-code', { email, code }),
     resendVerificationCode: (email: string) => request<void>('/auth/resend-verification-code', { email }),
     forgotPassword: (email: string) => request<void>('/auth/forgot-password', { email }),
     resetPassword: (value: string, password: string) => request<void>('/auth/reset-password', { token: value, password }),
-    updateProfile: async (data: { email: string; mobile?: string; nickname?: string; locale: string; timezone: string; passportCountryCode: string }) => {
+    updateProfile: async (data: { email: string; mobile?: string; nickname?: string; locale: string; timezone: string; timezoneMode: number; passportCountryCode: string }) => {
       await request<void>('/auth/profile', data, 'PUT')
       return loadMember()
     },
+    updateTimezone: (timezone: string, timezoneMode = 0) => request<void>('/auth/timezone', { timezone, timezoneMode }, 'PUT'),
     getPreferences: () => request<{ emailMasked: string; emailVerified: number; subscriptions: { key: string; subscribed: boolean }[] }>('/mail/preferences', undefined, 'GET'),
     updatePreferences: (values: Record<string, boolean>) => request<void>('/mail/preferences', values, 'PUT'),
     getPublicPreferences: (value: string) => request<{ emailMasked: string; emailVerified: number; subscriptions: { key: string; subscribed: boolean }[] }>(`/mail/preferences/${value}`, undefined, 'GET'),

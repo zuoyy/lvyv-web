@@ -94,7 +94,7 @@
 <script setup lang="ts">
 const route = useRoute()
 const verificationEmail = typeof route.query.verify === 'string' ? route.query.verify : ''
-const form = reactive({ email: verificationEmail, password: '', nickname: '', mobile: '', passportCountryCode: '' })
+const form = reactive({ email: verificationEmail, password: '', nickname: '', mobile: '', passportCountryCode: '', timezone: detectMemberTimeZone() })
 const confirm = ref('')
 const loading = ref(false)
 const stage = ref<'register' | 'request-code' | 'verify' | 'complete'>(verificationEmail ? 'request-code' : 'register')
@@ -158,6 +158,7 @@ const submit = async () => {
   error.value = false
   message.value = ''
   try {
+    form.timezone = detectMemberTimeZone()
     await auth.register({
       ...form,
       mobile: form.mobile || undefined,
