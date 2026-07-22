@@ -1,44 +1,105 @@
 <template>
-  <main class="auth-page">
-    <section class="auth-shell auth-shell-register">
+  <!-- Register stage: Figma layout (left form + right hero) -->
+  <main v-if="stage === 'register'" class="auth-page">
+    <div class="auth-layout">
+      <section class="auth-shell">
+        <div class="auth-form-wrap">
+          <h1 class="auth-title">Join Lvyv</h1>
+
+          <p v-if="message" class="auth-message" :class="{ error }" role="alert">{{ message }}</p>
+
+          <form class="auth-fields" @submit.prevent="submit" novalidate>
+            <!-- Email -->
+            <div class="auth-input-group">
+              <p class="auth-input-label">Enter email <span class="auth-label-required">*</span></p>
+              <div class="auth-input-wrap" :class="{ 'auth-input-wrap-error': emailError }">
+                <input id="reg-email" v-model.trim="form.email" type="email" autocomplete="email" required placeholder="Enter you Email">
+              </div>
+              <p v-if="emailError" class="auth-input-error">{{ emailError }}</p>
+            </div>
+
+            <!-- Password -->
+            <div class="auth-input-group">
+              <p class="auth-input-label">Password <span class="auth-label-required">*</span> <span class="auth-label-hint">(min. 8 char)</span></p>
+              <div class="auth-input-wrap auth-input-wrap-password" :class="{ 'auth-input-wrap-error': passwordError }">
+                <input id="reg-password" v-model="form.password" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" required minlength="6" maxlength="100" placeholder="Enter password">
+                <button type="button" class="password-toggle" @click="showPassword = !showPassword" :aria-label="showPassword ? 'Hide password' : 'Show password'">
+                  <font-awesome-icon :icon="['fas', showPassword ? 'eye-slash' : 'eye']" />
+                </button>
+              </div>
+              <p v-if="passwordError" class="auth-input-error">{{ passwordError }}</p>
+            </div>
+
+            <!-- Confirm Password -->
+            <div class="auth-input-group">
+              <p class="auth-input-label">Confirm password</p>
+              <div class="auth-input-wrap auth-input-wrap-password" :class="{ 'auth-input-wrap-error': confirmError }">
+                <input id="reg-confirm" v-model="confirm" :type="showConfirm ? 'text' : 'password'" autocomplete="new-password" required minlength="6" maxlength="100" placeholder="Enter password again">
+                <button type="button" class="password-toggle" @click="showConfirm = !showConfirm" :aria-label="showConfirm ? 'Hide password' : 'Show password'">
+                  <font-awesome-icon :icon="['fas', showConfirm ? 'eye-slash' : 'eye']" />
+                </button>
+              </div>
+              <p v-if="confirmError" class="auth-input-error">{{ confirmError }}</p>
+            </div>
+
+            <!-- Country of Passport -->
+            <div class="auth-input-group">
+              <p class="auth-input-label">Country of Passport</p>
+              <AuthCountrySelect v-model="form.passportCountryCode" :invalid="countryInvalid" />
+              <p v-if="countryError" class="auth-input-error">{{ countryError }}</p>
+            </div>
+
+            <!-- Nickname -->
+            <div class="auth-input-group">
+              <p class="auth-input-label">Nickname</p>
+              <div class="auth-input-wrap">
+                <input id="reg-nickname" v-model.trim="form.nickname" autocomplete="name" maxlength="50" placeholder="Enter your username">
+              </div>
+            </div>
+
+            <!-- Mobile (optional) -->
+            <div class="auth-input-group">
+              <p class="auth-input-label">Mobile <span class="auth-label-hint">(optional)</span></p>
+              <div class="auth-input-wrap">
+                <input id="reg-mobile" v-model.trim="form.mobile" type="tel" inputmode="tel" autocomplete="tel" pattern="\+?[1-9][0-9]{6,14}" placeholder="+1 202 555 0123">
+              </div>
+            </div>
+
+            <!-- Join button -->
+            <button class="auth-submit auth-submit-register" :disabled="loading">
+              {{ loading ? 'Joining...' : 'Join' }}
+            </button>
+          </form>
+        </div>
+
+        <!-- Already have an account? -->
+        <div class="auth-signup-offer">
+          <p class="auth-signup-text">Already have an account?</p>
+          <NuxtLink to="/login" class="auth-signup-link">Login</NuxtLink>
+        </div>
+
+        <button class="auth-recovery-btn" type="button" @click="showVerificationRecovery">
+          Registered but not verified?
+        </button>
+      </section>
+
+      <!-- Hero image -->
+      <section class="auth-hero auth-hero-stretch">
+        <img src="/images/auth/hero-register.png" alt="Beautiful landscape" class="auth-hero-image">
+      </section>
+    </div>
+  </main>
+
+  <!-- Other stages: centered layout -->
+  <main v-else class="auth-page">
+    <section class="auth-shell auth-shell-centered">
       <p class="auth-kicker">Join Lvyv</p>
       <h1>{{ pageTitle }}</h1>
       <p class="auth-intro">{{ pageIntro }}</p>
 
       <p v-if="message" class="auth-message" :class="{ error }" role="alert">{{ message }}</p>
 
-      <form v-if="stage === 'register'" class="auth-form" @submit.prevent="submit">
-        <div class="auth-field">
-          <label for="email">Email</label>
-          <input id="email" v-model.trim="form.email" type="email" autocomplete="email" required placeholder="you@example.com">
-        </div>
-        <div class="auth-field">
-          <label for="nickname">Name <span>(optional)</span></label>
-          <input id="nickname" v-model.trim="form.nickname" autocomplete="name" maxlength="50" placeholder="How should we address you?">
-        </div>
-        <div class="auth-field">
-          <label for="passport-country">Country of Passport</label>
-          <AuthCountrySelect v-model="form.passportCountryCode" :invalid="countryInvalid" />
-          <small>Used to determine visa requirements. Stored as an ISO country code.</small>
-        </div>
-        <div class="auth-field">
-          <label for="mobile">Mobile <span>(optional)</span></label>
-          <input id="mobile" v-model.trim="form.mobile" type="tel" inputmode="tel" autocomplete="tel" pattern="\+?[1-9][0-9]{6,14}" placeholder="+1 202 555 0123">
-        </div>
-        <div class="auth-form-grid">
-          <div class="auth-field">
-            <label for="password">Password</label>
-            <input id="password" v-model="form.password" type="password" autocomplete="new-password" required minlength="6" maxlength="100">
-          </div>
-          <div class="auth-field">
-            <label for="confirm">Confirm password</label>
-            <input id="confirm" v-model="confirm" type="password" autocomplete="new-password" required minlength="6" maxlength="100">
-          </div>
-        </div>
-        <button class="auth-submit" :disabled="loading">{{ loading ? 'Creating account...' : 'Create account' }}</button>
-      </form>
-
-      <form v-else-if="stage === 'request-code'" class="auth-form" @submit.prevent="requestCode">
+      <form v-if="stage === 'request-code'" class="auth-form" @submit.prevent="requestCode">
         <div class="auth-field">
           <label for="verification-email">Email</label>
           <input id="verification-email" v-model.trim="form.email" type="email" autocomplete="email" required placeholder="you@example.com">
@@ -81,12 +142,6 @@
       <div v-else class="auth-complete-actions">
         <NuxtLink class="auth-submit" :to="`/login?account=${encodeURIComponent(form.email)}`">Go to login</NuxtLink>
       </div>
-      <template v-if="stage === 'register'">
-        <p class="auth-switch">Already have an account? <NuxtLink to="/login">Log in</NuxtLink></p>
-        <button class="auth-text-button auth-recovery-link" type="button" @click="showVerificationRecovery">
-          Registered but not verified?
-        </button>
-      </template>
     </section>
   </main>
 </template>
@@ -103,6 +158,12 @@ const resendCooldown = ref(0)
 const message = ref('')
 const error = ref(false)
 const countryInvalid = ref(false)
+const showPassword = ref(false)
+const showConfirm = ref(false)
+const emailError = ref('')
+const passwordError = ref('')
+const confirmError = ref('')
+const countryError = ref('')
 const auth = useMemberAuth()
 let cooldownTimer: ReturnType<typeof setInterval> | undefined
 
@@ -131,9 +192,7 @@ onBeforeUnmount(() => { if (cooldownTimer) clearInterval(cooldownTimer) })
 watch(() => form.passportCountryCode, (value) => { if (value) countryInvalid.value = false })
 
 const showVerificationRecovery = () => {
-  error.value = false
-  message.value = ''
-  stage.value = 'request-code'
+  navigateTo('/auth/forgot-password')
 }
 
 const showRegistration = () => {
@@ -143,20 +202,43 @@ const showRegistration = () => {
 }
 
 const submit = async () => {
-  if (!form.passportCountryCode) {
-    error.value = true
-    countryInvalid.value = true
-    message.value = 'Choose the country that issued your passport.'
+  emailError.value = ''
+  passwordError.value = ''
+  confirmError.value = ''
+  countryError.value = ''
+  countryInvalid.value = false
+
+  if (!form.email) {
+    emailError.value = 'Please fill out this field.'
+    return
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(form.email)) {
+    emailError.value = 'Please enter a valid email address.'
+    return
+  }
+
+  if (!form.password) {
+    passwordError.value = 'Please fill out this field.'
+    return
+  }
+
+  if (!confirm.value) {
+    confirmError.value = 'Please fill out this field.'
     return
   }
   if (form.password !== confirm.value) {
-    error.value = true
-    message.value = 'Passwords do not match.'
+    confirmError.value = 'Passwords do not match.'
     return
   }
+  if (!form.passportCountryCode) {
+    countryInvalid.value = true
+    countryError.value = 'Choose the country that issued your passport.'
+    return
+  }
+  
   loading.value = true
-  error.value = false
-  message.value = ''
   try {
     form.timezone = detectMemberTimeZone()
     await auth.register({

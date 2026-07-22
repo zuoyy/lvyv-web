@@ -1,2 +1,82 @@
-<template><main class="auth-page"><section class="auth-shell"><p class="auth-kicker">Account recovery</p><h1>Reset your password</h1><p class="auth-intro">Enter your verified email. For privacy, the response is the same whether or not an account exists.</p><p v-if="message" class="auth-message" :class="{error}">{{message}}</p><form class="auth-form" @submit.prevent="submit"><div class="auth-field"><label for="email">Email</label><input id="email" v-model.trim="email" type="email" autocomplete="email" required></div><button class="auth-submit" :disabled="loading">{{loading?'Sending...':'Send reset link'}}</button></form><div class="auth-links"><NuxtLink to="/login">Back to login</NuxtLink></div></section></main></template>
-<script setup lang="ts">const email=ref('');const loading=ref(false);const message=ref('');const error=ref(false);const auth=useMemberAuth();const submit=async()=>{loading.value=true;error.value=false;try{await auth.forgotPassword(email.value);message.value='If a verified account exists, a password reset link has been sent.'}catch(e){error.value=true;message.value=e instanceof Error?e.message:'Unable to submit request'}finally{loading.value=false}};</script>
+<template>
+  <main class="auth-page">
+    <div class="auth-layout">
+      <section class="auth-shell auth-shell-forgot">
+        <div class="auth-form-wrap">
+          <h1 class="auth-title">Forgot your password?</h1>
+
+          <p class="auth-forgot-desc">
+            Enter the email address associated with your account and we'll send
+            you a link to reset your password.
+          </p>
+
+          <p v-if="message" class="auth-message" :class="{ error }" role="alert">{{ message }}</p>
+
+          <form class="auth-fields" @submit.prevent="submit" novalidate>
+            <!-- Email -->
+            <div class="auth-input-group">
+              <div class="auth-input-wrap">
+                <input id="forgot-email" v-model.trim="email" type="email" autocomplete="email" required placeholder="Enter your Email">
+              </div>
+            </div>
+
+            <!-- Submit button -->
+            <button class="auth-submit auth-submit-forgot" :disabled="loading">
+              {{ loading ? 'Sending...' : 'Send password reset instructions' }}
+            </button>
+          </form>
+
+          <!-- Divider -->
+          <div class="auth-divider"></div>
+        </div>
+
+        <div class="auth-signup-offer">
+          <NuxtLink to="/login" class="auth-signup-link" style="color: #8f8f8f;">Back to login</NuxtLink>
+        </div>
+      </section>
+
+      <!-- Hero image -->
+      <section class="auth-hero">
+        <img src="/images/auth/hero-forgot-password.png" alt="Beautiful landscape" class="auth-hero-image">
+      </section>
+    </div>
+  </main>
+</template>
+
+<script setup lang="ts">
+const email = ref('')
+const loading = ref(false)
+const message = ref('')
+const error = ref(false)
+const auth = useMemberAuth()
+
+const submit = async () => {
+  loading.value = true
+  error.value = false
+
+  if (!email.value) {
+    error.value = true
+    message.value = 'Please fill out this field.'
+    loading.value = false
+    return
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(email.value)) {
+    error.value = true
+    message.value = 'Please enter a valid email address.'
+    loading.value = false
+    return
+  }
+
+  try {
+    await auth.forgotPassword(email.value)
+    message.value = 'If a verified account exists, a password reset link has been sent.'
+  } catch (e) {
+    error.value = true
+    message.value = e instanceof Error ? e.message : 'Unable to submit request'
+  } finally {
+    loading.value = false
+  }
+}
+</script>

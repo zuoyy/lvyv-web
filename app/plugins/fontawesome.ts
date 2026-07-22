@@ -7,6 +7,8 @@ import {
   faBookOpen,
   faChevronLeft,
   faChevronRight,
+  faEye,
+  faEyeSlash,
   faGlobe,
   faMagnifyingGlass,
   faPlay,
@@ -15,6 +17,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import {
   faFacebook,
+  faGoogle,
   faInstagram,
   faPinterest,
   faTwitter
@@ -27,8 +30,11 @@ library.add(
   faBookOpen,
   faChevronLeft,
   faChevronRight,
+  faEye,
+  faEyeSlash,
   faFacebook,
   faGlobe,
+  faGoogle,
   faInstagram,
   faMagnifyingGlass,
   faPinterest,
