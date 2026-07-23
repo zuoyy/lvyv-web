@@ -17,6 +17,12 @@
   padding-top: 80px;
 }
 
+/* 登录、注册页由表单决定整组高度，确保两个页面和右侧图片尺寸一致。 */
+.auth-layout-authentication {
+  min-height: 0;
+  align-items: stretch;
+}
+
 /* ---- Left form panel ---- */
 .auth-shell {
   display: flex;
@@ -38,6 +44,7 @@
 
 /* ---- Login: content at top (per Figma), navbar offset handled by .auth-layout ---- */
 .auth-shell-login {
+  min-height: 668px;
   justify-content: flex-start;
 }
 
@@ -303,7 +310,7 @@
 }
 
 .auth-shell-register-inline {
-  min-height: 655px;
+  min-height: 668px;
   justify-content: space-between;
 }
 

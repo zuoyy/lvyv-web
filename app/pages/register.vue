@@ -1,6 +1,6 @@
 <template>
   <main class="auth-page">
-    <div class="auth-layout">
+    <div class="auth-layout auth-layout-authentication">
       <section class="auth-shell auth-shell-register-inline">
         <div class="auth-form-wrap">
           <h1 class="auth-title">Join Lvyv</h1>

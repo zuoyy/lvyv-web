@@ -1,6 +1,6 @@
 <template>
   <main class="auth-page">
-    <div class="auth-layout">
+    <div class="auth-layout auth-layout-authentication">
       <section class="auth-shell auth-shell-login">
         <div class="auth-form-wrap">
           <h1 class="auth-title">Great to meet you!</h1>
@@ -78,7 +78,7 @@
       </section>
 
       <!-- Hero image -->
-      <section class="auth-hero">
+      <section class="auth-hero auth-hero-stretch">
         <img :src="heroImageSrc" alt="Beautiful landscape" class="auth-hero-image" @error="onHeroError">
       </section>
     </div>
