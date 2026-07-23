@@ -104,12 +104,18 @@ interface CarouselImage {
 }
 
 const heroImages: CarouselImage[] = [
-  { url: '/images/auth/hero-register.png', alt: 'Beautiful landscape' }
+  {
+    url: '/images/auth/hero-register.jpg',
+    mobile: '/images/auth/hero-register-mobile.jpg',
+    desktop: '/images/auth/hero-register.jpg',
+    alt: 'Beautiful landscape'
+  }
 ]
 
 useHead({
   link: [
-    { rel: 'preload', as: 'image', href: heroImages[0].url }
+    { rel: 'preload', as: 'image', href: '/images/auth/hero-register-mobile.jpg', media: '(max-width: 900px)' },
+    { rel: 'preload', as: 'image', href: '/images/auth/hero-register.jpg', media: '(min-width: 901px)' }
   ]
 })
 

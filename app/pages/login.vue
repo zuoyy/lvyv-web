@@ -92,14 +92,20 @@ interface CarouselImage {
 }
 
 const defaultHeroImages: CarouselImage[] = [
-  { url: '/images/auth/hero-signin.png', alt: 'Beautiful landscape' }
+  {
+    url: '/images/auth/hero-signin.jpg',
+    mobile: '/images/auth/hero-signin-mobile.jpg',
+    desktop: '/images/auth/hero-signin.jpg',
+    alt: 'Beautiful landscape'
+  }
 ]
 
 const heroImages = ref<CarouselImage[]>(defaultHeroImages)
 
 useHead({
   link: [
-    { rel: 'preload', as: 'image', href: defaultHeroImages[0].url }
+    { rel: 'preload', as: 'image', href: '/images/auth/hero-signin-mobile.jpg', media: '(max-width: 900px)' },
+    { rel: 'preload', as: 'image', href: '/images/auth/hero-signin.jpg', media: '(min-width: 901px)' }
   ]
 })
 

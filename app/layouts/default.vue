@@ -9,7 +9,11 @@
 
         <nav v-if="!isAuthenticationPage" class="nav-links">
           <NuxtLink to="/#hero" :class="{ active: $route && $route.path === '/' && activeSection === 'hero' }">Home</NuxtLink>
-          <NuxtLink to="/wish" :class="{ active: $route && $route.path === '/wish' }">Wish</NuxtLink>
+          <a
+            href="/wish"
+            :class="{ active: $route && $route.path === '/wish' }"
+            @click.prevent="handleWishClick"
+          >Wish</a>
           <div class="nav-item-dropdown">
             <a href="javascript:void(0)" @click.prevent :class="{ active: $route && $route.path.startsWith('/cities') }">Cities</a>
             <div class="dropdown-menu">
@@ -47,7 +51,11 @@
             </div>
           </div>
           <NuxtLink v-else to="/login" class="nav-login">Login</NuxtLink>
-          <NuxtLink to="/wish" class="nav-start-planning">Start Planning</NuxtLink>
+          <a
+            href="/wish"
+            class="nav-start-planning"
+            @click.prevent="handleWishClick"
+          >Start Planning</a>
         </div>
       </div>
     </header>
@@ -169,6 +177,14 @@ const memberDisplayName = computed(() => member.value?.nickname?.trim()
   || member.value?.email?.split('@')[0]
   || tokenDisplayName.value)
 const logout = async () => { accountOpen.value = false; await logoutMember(); await navigateTo('/') }
+
+const handleWishClick = async () => {
+  if (memberToken.value) {
+    await navigateTo('/wish')
+  } else {
+    await navigateTo('/wish?showLogin=1')
+  }
+}
 
 watch(() => member.value?.avatar, () => { avatarFailed.value = false })
 watch(memberToken, async (value) => {

@@ -3,20 +3,25 @@
     <div class="carousel-container">
       <div class="carousel-track" :style="{ transform: `translateX(-${currentIndex * 100}%)` }">
         <div v-for="(image, index) in images" :key="index" class="carousel-slide">
-          <img
-            :src="image.url"
-            :alt="image.alt || 'Beautiful landscape'"
-            class="auth-hero-image"
-            loading="eager"
-            decoding="sync"
-            @error="onImageError(index)"
-          >
+          <div class="carousel-image-wrapper">
+            <img
+              :src="image.url"
+              :srcset="buildSrcset(image)"
+              sizes="(max-width: 900px) 100vw, 766px"
+              :alt="image.alt || 'Beautiful landscape'"
+              class="auth-hero-image"
+              :loading="index === 0 ? 'eager' : 'lazy'"
+              :decoding="index === 0 ? 'sync' : 'async'"
+              :fetchpriority="index === 0 ? 'high' : 'low'"
+              @error="onImageError(index)"
+            >
+          </div>
         </div>
       </div>
 
       <!-- Logo overlay -->
       <div class="carousel-logo-overlay">
-        <img src="/images/auth/carousel-logo.svg" alt="Lvyv" class="carousel-logo">
+        <img src="/images/auth/carousel-logo.svg" alt="Lvyv" class="carousel-logo" loading="eager" decoding="async">
       </div>
 
       <!-- Skip button -->
@@ -26,7 +31,7 @@
         @click="nextSlide"
         aria-label="Skip to next slide"
       >
-        <img src="/images/auth/carousel-skip.svg" alt="Skip" class="carousel-skip-icon">
+        <img src="/images/auth/carousel-skip.svg" alt="Skip" class="carousel-skip-icon" loading="lazy" decoding="async">
       </button>
     </div>
   </section>
@@ -38,6 +43,8 @@ import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 interface CarouselImage {
   url: string
   alt?: string
+  mobile?: string
+  desktop?: string
 }
 
 interface Props {
@@ -48,11 +55,25 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   images: () => [
-    { url: '/images/auth/hero-signin.png', alt: 'Beautiful landscape' }
+    { url: '/images/auth/hero-signin.jpg', alt: 'Beautiful landscape' }
   ],
   autoplay: true,
   interval: 5000
 })
+
+const buildSrcset = (image: CarouselImage): string => {
+  const parts: string[] = []
+  if (image.mobile) {
+    parts.push(`${image.mobile} 750w`)
+  }
+  if (image.desktop) {
+    parts.push(`${image.desktop} 1532w`)
+  }
+  if (image.url && parts.length === 0) {
+    return ''
+  }
+  return parts.join(', ')
+}
 
 const currentIndex = ref(0)
 const isPlaying = ref(props.autoplay)
@@ -101,6 +122,11 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.auth-hero {
+  content-visibility: auto;
+  contain-intrinsic-size: 766px 750px;
+}
+
 .carousel-container {
   position: relative;
   width: 100%;
@@ -122,10 +148,21 @@ onBeforeUnmount(() => {
   position: relative;
 }
 
-.carousel-slide img {
+.carousel-image-wrapper {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: linear-gradient(135deg, #1a3a32 0%, #0d4238 50%, #1a3a32 100%);
+  overflow: hidden;
+}
+
+.auth-hero-image {
   width: 100%;
   height: 100%;
   object-fit: fill;
+  position: relative;
+  z-index: 1;
+  transition: opacity 0.3s ease-in-out;
 }
 
 /* Logo overlay: 298×102px centered */
@@ -169,6 +206,10 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 900px) {
+  .auth-hero {
+    contain-intrinsic-size: 100vw 280px;
+  }
+
   .carousel-logo {
     width: 200px;
     height: 68px;
@@ -185,6 +226,10 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 600px) {
+  .auth-hero {
+    contain-intrinsic-size: 100vw 280px;
+  }
+
   .carousel-logo {
     width: 160px;
     height: 55px;

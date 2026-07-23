@@ -18,7 +18,7 @@
           </button>
         </li>
         <li class="nav-item">
-          <NuxtLink to="/wish" class="nav-link" @click="$emit('close')">
+          <NuxtLink to="/my-wishes" class="nav-link" @click="$emit('close')">
             <font-awesome-icon :icon="['fas', 'heart']" class="nav-icon" />
             <span>My Wishes</span>
           </NuxtLink>
