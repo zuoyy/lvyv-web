@@ -6,7 +6,8 @@
   min-height: 100vh;
   margin: 0;
   padding: 0;
-  background: #f5f7f3;
+  background: #ffffff;
+  width: 100%;
 }
 
 .auth-layout {
@@ -20,7 +21,8 @@
 /* 登录、注册页由表单决定整组高度，确保两个页面和右侧图片尺寸一致。 */
 .auth-layout-authentication {
   min-height: 0;
-  align-items: stretch;
+  align-items: flex-start;
+  justify-content: center;
 }
 
 /* ---- Left form panel ---- */
@@ -28,11 +30,11 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+  justify-content: flex-start;
+  flex: 0 0 529px;
   background: #ffffff;
-  padding: 48px 48px 11px;
-  width: 456px;
+  padding: 80px 0 24px;
+  width: 529px;
   box-sizing: border-box;
 }
 
@@ -44,8 +46,7 @@
 
 /* ---- Login: content at top (per Figma), navbar offset handled by .auth-layout ---- */
 .auth-shell-login {
-  min-height: 668px;
-  justify-content: flex-start;
+  padding-bottom: 32px;
 }
 
 .auth-form-wrap {
@@ -54,18 +55,30 @@
   align-items: center;
   align-self: stretch;
   border-radius: 8px;
+  animation: authFadeIn 0.4s ease-out;
+}
+
+@keyframes authFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .auth-title {
   flex-shrink: 0;
   align-self: stretch;
   margin: 0;
-  line-height: 28px;
+  line-height: 48px;
   letter-spacing: 0;
-  color: #1a1a1a;
+  color: #000000;
   font-family: 'Poppins', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 32px;
+  font-weight: 500;
 }
 
 /* ---- Forgot password description ---- */
@@ -81,13 +94,40 @@
   font-size: 15px;
 }
 
-/* ---- Form fields container ---- */
+/* ---- Google + OR section ---- */
+.auth-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  align-self: stretch;
+  margin-top: 40px;
+}
+
+.auth-section .auth-google-btn {
+  margin-top: 0;
+}
+
+/* Google section at bottom (register page) */
+.auth-section-bottom {
+  margin-top: 10px;
+}
+
+/* ---- Login form ---- */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  align-self: stretch;
+  row-gap: 29px;
+  margin-top: 40px;
+}
+/* ---- Form fields container (legacy) ---- */
 .auth-fields {
   display: flex;
   flex-direction: column;
   align-self: stretch;
-  row-gap: 16px;
-  margin-top: 24px;
+  row-gap: 29px;
+  margin-top: 40px;
 }
 
 /* ---- Input group (label + input) ---- */
@@ -96,19 +136,20 @@
   flex-direction: column;
   align-items: flex-start;
   align-self: stretch;
-  row-gap: 8px;
+  row-gap: 14px;
 }
 
 .auth-input-label {
   flex-shrink: 0;
   align-self: stretch;
   margin: 0;
-  padding: 0 16px;
-  line-height: 12px;
-  letter-spacing: 0.3px;
-  color: #333333;
+  padding: 0;
+  line-height: 20px;
+  letter-spacing: -0.15px;
+  color: #67728a;
   font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 11px;
+  font-size: 16px;
+  font-weight: 500;
 }
 
 /* ---- Input wrapper ---- */
@@ -117,14 +158,26 @@
   flex-shrink: 0;
   align-items: center;
   align-self: stretch;
-  border: 1px solid #e5e5e5;
-  border-radius: 6px;
-  background: #f2f2f2;
+  width: 100%;
+  border: 1px solid #cbd5e0;
+  border-radius: 12px;
+  background: #ffffff;
   padding-left: 16px;
-  min-width: 360px;
-  height: 48px;
+  height: 55px;
   box-sizing: border-box;
   overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.auth-input-wrap:focus-within {
+  border-color: #C0F177;
+  box-shadow: 0 0 0 3px rgba(192, 241, 119, 0.2);
+}
+
+/* Email input: Figma uses #f7fafc background */
+.auth-input-wrap-email {
+  background: #f7fafc;
+  box-shadow: inset 0 2px 0 0 rgba(231, 235, 238, 0.2);
 }
 
 .auth-input-wrap input {
@@ -135,16 +188,16 @@
   padding: 0;
   padding-right: 16px;
   line-height: 20px;
-  letter-spacing: 0;
-  color: #1a1a1a;
-  font-family: 'Roboto', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 15px;
+  letter-spacing: -0.15px;
+  color: #203d33;
+  font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 16px;
   outline: none;
   box-sizing: border-box;
 }
 
 .auth-input-wrap input::placeholder {
-  color: #808080;
+  color: rgba(32, 61, 51, 0.4);
 }
 
 .auth-select-wrap {
@@ -182,14 +235,14 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 16px;
-  height: 16px;
+  width: 24px;
+  height: 24px;
   border: none;
   background: none;
-  color: #808080;
+  color: #67728a;
   cursor: pointer;
   padding: 0;
-  font-size: 16px;
+  font-size: 20px;
 }
 
 .password-toggle:hover {
@@ -199,76 +252,66 @@
 /* ---- Remember me row ---- */
 .auth-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   align-self: stretch;
-  column-gap: 16px;
-  margin-top: 20px;
+  justify-content: space-between;
+  margin-top: 24px;
 }
 
 .auth-remember {
   display: flex;
-  flex-grow: 1;
+  flex-grow: 0;
   align-items: center;
-  column-gap: 8px;
+  column-gap: 10px;
   cursor: pointer;
   user-select: none;
 }
 
-/* ---- Toggle switch ---- */
-.toggle-switch {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  border: 1px solid #e5e5e5;
-  border-radius: 37px;
-  background: #f2f2f2;
-  padding: 2px 22px 2px 2px;
-  width: 40px;
-  height: 20px;
-  box-sizing: border-box;
-  transition: background 0.2s, border-color 0.2s, padding 0.2s;
+.auth-checkbox {
+  width: 19px;
+  height: 18px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: #105446;
+  border: 1px solid #cfd9e0;
+  border-radius: 4px;
+  transition: box-shadow 0.2s;
 }
 
-.toggle-switch.active {
-  background: #105446;
-  border-color: #105446;
-  padding: 2px 2px 2px 22px;
+.auth-checkbox:hover {
+  box-shadow: 0 0 0 2px rgba(16, 84, 70, 0.1);
 }
 
-.toggle-knob {
-  flex-shrink: 0;
-  border-radius: 12px;
-  box-shadow: 1px 1px 2px -1px rgba(51, 51, 51, 0.3);
-  background: #ffffff;
-  width: 16px;
-  height: 16px;
-  transition: transform 0.2s;
+.auth-checkbox:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(192, 241, 119, 0.5);
 }
 
 .auth-remember-text {
-  flex-grow: 1;
+  flex-grow: 0;
   margin: 0;
   line-height: 20px;
-  letter-spacing: 0.3px;
-  color: #1a1a1a;
+  letter-spacing: 0;
+  color: #718096;
   font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 12px;
+  font-size: 16px;
 }
 
 .auth-forgot-link {
-  flex-grow: 1;
+  flex-grow: 0;
   text-align: right;
-  line-height: 20px;
-  letter-spacing: 0.3px;
-  color: #8f8f8f;
+  line-height: 24px;
+  letter-spacing: 0;
+  color: #1c4532;
   font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 12px;
-  text-decoration: none;
+  font-size: 16px;
+  font-weight: 500;
+  text-decoration: underline;
   white-space: nowrap;
 }
 
 .auth-forgot-link:hover {
-  text-decoration: underline;
+  color: #105446;
 }
 
 /* ---- Sign in button ---- */
@@ -277,26 +320,31 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin-top: 164px;
+  margin-top: 32px;
   border: none;
-  border-radius: 6px;
+  border-radius: 20px;
   background: #105446;
-  padding: 10px 24px;
+  padding: 14px 24px;
   width: 100%;
-  min-width: 360px;
+  height: 60px;
   box-sizing: border-box;
-  color: #ffffff;
-  font-family: 'Roboto', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 20px;
-  letter-spacing: 0.3px;
+  color: #f7fafc;
+  font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 28px;
+  letter-spacing: 0;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
 }
 
 .auth-submit:hover:not(:disabled) {
   background: #0d4238;
+  box-shadow: 0 4px 12px rgba(16, 84, 70, 0.3);
+}
+
+.auth-submit:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .auth-submit:disabled {
@@ -310,25 +358,93 @@
 }
 
 .auth-shell-register-inline {
-  min-height: 668px;
   justify-content: space-between;
 }
 
-.auth-input-wrap-code {
-  padding-right: 8px;
+/* ---- Code row: input + green button side by side ---- */
+.auth-code-row {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  column-gap: 24px;
 }
 
-.auth-input-wrap-code input {
+.auth-code-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.auth-code-input input {
   min-width: 0;
   padding-right: 8px;
   font-variant-numeric: tabular-nums;
 }
 
-.auth-input-wrap-code input:disabled {
+.auth-code-input input:disabled {
   opacity: 1;
   cursor: text;
 }
 
+/* Green "Get code" button (Figma sign-1 design) */
+.code-send-button-green {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 106px;
+  height: 55px;
+  border: 1px solid #cff380;
+  border-radius: 12px;
+  background: #cff380;
+  color: #203d33;
+  font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: -0.15px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.code-send-button-green:hover:not(:disabled) {
+  background: #b8e65c;
+  border-color: #b8e65c;
+}
+
+.code-send-button-green:disabled {
+  background: #e5e7eb;
+  border-color: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.code-send-button-green.code-countdown {
+  background: rgba(207, 243, 128, 0.5);
+  border-color: rgba(207, 243, 128, 0.5);
+  color: rgba(32, 61, 51, 0.5);
+  cursor: default;
+}
+
+/* Email input: white background when code is sent */
+.auth-input-sent {
+  background: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.auth-input-sent input:disabled {
+  color: #203d33;
+  opacity: 1;
+  -webkit-text-fill-color: #203d33;
+}
+
+/* Code input: #f7fafc background when active (code sent) */
+.auth-code-input-active {
+  background: #f7fafc;
+  box-shadow: inset 0 2px 0 0 rgba(231, 235, 238, 0.2);
+}
+
+/* Legacy text-only code button (deprecated) */
 .code-send-button {
   flex: 0 0 auto;
   min-width: 116px;
@@ -414,8 +530,33 @@
   margin-top: 32px;
   background: #e5e5e5;
   width: 100%;
-  min-width: 360px;
   height: 1px;
+}
+
+/* ---- Divider with OR ---- */
+.auth-divider-or {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 35px;
+  width: 100%;
+}
+
+.auth-divider-line {
+  flex: 1;
+  height: 1px;
+  background: #a0aec0;
+}
+
+.auth-divider-text {
+  flex-shrink: 0;
+  padding: 0 16px;
+  color: #718096;
+  font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: -0.15px;
 }
 
 /* ---- Google sign in button ---- */
@@ -424,25 +565,28 @@
   align-items: center;
   justify-content: center;
   column-gap: 8px;
-  margin-top: 32px;
-  border: none;
-  border-radius: 6px;
-  background: #333333;
-  padding: 10px 16px;
+  margin-top: 40px;
+  border: 1px solid #cbd5e0;
+  border-radius: 30px;
+  background: #ffffff;
+  padding: 12px 16px;
   width: 100%;
-  min-width: 360px;
+  height: 60px;
   box-sizing: border-box;
-  color: #ffffff;
+  color: #67728a;
   font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 12px;
-  line-height: 20px;
-  letter-spacing: 0.3px;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 28px;
+  letter-spacing: 0;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
 }
 
 .auth-google-btn:hover:not(:disabled) {
-  background: #4a4a4a;
+  background: #f9fafb;
+  border-color: #a0aec0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .auth-google-btn:disabled {
@@ -452,19 +596,20 @@
 
 .google-icon {
   flex-shrink: 0;
-  width: 20px;
-  height: 20px;
-  font-size: 20px;
+  width: 26px;
+  height: 25px;
+  margin-right: 2px;
 }
 
 /* ---- Sign up offer ---- */
 .auth-signup-offer {
   display: inline-flex;
-  align-items: flex-start;
+  align-items: center;
   align-self: stretch;
   justify-content: center;
   column-gap: 8px;
-  margin: 24px 72px 0;
+  margin-top: auto;
+  padding-top: 16px;
 }
 
 .auth-signup-text {
@@ -472,9 +617,9 @@
   margin: 0;
   line-height: 20px;
   letter-spacing: 0.3px;
-  color: #1a1a1a;
+  color: #6b7280;
   font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .auth-signup-link {
@@ -483,22 +628,25 @@
   letter-spacing: 0.3px;
   color: #105446;
   font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 600;
   text-decoration: none;
-  font-weight: bold;
+  transition: color 0.2s;
 }
 
 .auth-signup-link:hover {
+  color: #0d4238;
   text-decoration: underline;
 }
 
 /* ---- Right hero image ---- */
 .auth-hero {
   position: relative;
-  flex-shrink: 0;
-  width: 592px;
-  min-height: 655px;
+  flex: 0 0 766px;
+  width: 766px;
+  height: 820px;
   overflow: hidden;
+  margin-left: 50px;
 }
 
 .auth-hero-stretch {
@@ -512,7 +660,6 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transform: rotate(180deg);
 }
 
 /* ---- Message / alert ---- */
@@ -548,10 +695,6 @@
   flex-shrink: initial;
   align-items: initial;
   justify-content: initial;
-}
-
-.auth-shell-register {
-  width: min(100%, 560px) !important;
 }
 
 .auth-shell.wide {
@@ -1225,14 +1368,21 @@
     padding-top: 80px;
   }
 
+  .auth-layout-authentication {
+    padding-left: 0;
+  }
+
   .auth-shell {
     width: 100%;
+    flex: 0 0 auto;
     padding: 32px 24px;
   }
 
   .auth-hero {
     width: 100%;
-    min-height: 280px;
+    flex: 0 0 auto;
+    height: 280px;
+    margin-left: 0;
   }
 
   .auth-hero-image {
@@ -1246,7 +1396,8 @@
 
   .auth-submit,
   .auth-google-btn,
-  .auth-divider {
+  .auth-divider,
+  .auth-divider-or {
     min-width: 0;
   }
 

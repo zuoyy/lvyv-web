@@ -3,92 +3,118 @@
     <div class="auth-layout auth-layout-authentication">
       <section class="auth-shell auth-shell-login">
         <div class="auth-form-wrap">
-          <h1 class="auth-title">Great to meet you!</h1>
+          <h1 class="auth-title">Welcome back!</h1>
 
-          <p v-if="message" class="auth-message" :class="{ error }">{{ message }}</p>
+          <p v-if="message" class="auth-message" :class="{ error }" role="alert">{{ message }}</p>
 
-          <form @submit.prevent="submit" novalidate>
-            <div class="auth-fields">
-              <!-- Email -->
-              <div class="auth-input-group">
-                <p class="auth-input-label">Login</p>
-                <div class="auth-input-wrap">
-                  <input
-                    id="email"
-                    v-model.trim="email"
-                    type="email"
-                    autocomplete="email"
-                    required
-                    placeholder="Enter you Email"
-                  >
-                </div>
+          <!-- Google sign in + OR divider -->
+          <div class="auth-section">
+            <button class="auth-google-btn" type="button" :disabled="loading" @click="handleGoogleLogin">
+              <img src="/images/auth/google-icon.svg" alt="Google" class="google-icon">
+              <span>{{ loading ? 'Redirecting...' : 'Log in with Google' }}</span>
+            </button>
+
+            <div class="auth-divider-or">
+              <span class="auth-divider-line"></span>
+              <span class="auth-divider-text">OR</span>
+              <span class="auth-divider-line"></span>
+            </div>
+          </div>
+
+          <!-- Login form -->
+          <form class="auth-form" @submit.prevent="submit" novalidate>
+            <!-- Email -->
+            <div class="auth-input-group">
+              <p class="auth-input-label">E-mail</p>
+              <div class="auth-input-wrap auth-input-wrap-email">
+                <input
+                  id="email"
+                  v-model.trim="email"
+                  type="email"
+                  autocomplete="email"
+                  required
+                  placeholder="example@gmail.com"
+                >
               </div>
+            </div>
 
-              <!-- Password -->
-              <div class="auth-input-group">
-                <p class="auth-input-label">Password</p>
-                <div class="auth-input-wrap auth-input-wrap-password">
-                  <input
-                    id="password"
-                    v-model="password"
-                    :type="showPassword ? 'text' : 'password'"
-                    autocomplete="current-password"
-                    required
-                    placeholder="Enter password"
-                  >
-                  <button type="button" class="password-toggle" @click="showPassword = !showPassword" aria-label="Toggle password visibility">
-                    <font-awesome-icon :icon="['fas', showPassword ? 'eye-slash' : 'eye']" />
-                  </button>
-                </div>
+            <!-- Password -->
+            <div class="auth-input-group">
+              <p class="auth-input-label">Password</p>
+              <div class="auth-input-wrap auth-input-wrap-password">
+                <input
+                  id="password"
+                  v-model="password"
+                  :type="showPassword ? 'text' : 'password'"
+                  autocomplete="current-password"
+                  required
+                  placeholder="Enter your Password"
+                >
+                <button type="button" class="password-toggle" @click="showPassword = !showPassword" aria-label="Toggle password visibility">
+                  <font-awesome-icon :icon="['fas', showPassword ? 'eye-slash' : 'eye']" />
+                </button>
               </div>
             </div>
 
             <!-- Remember me + Forgot password -->
             <div class="auth-row">
-              <div class="auth-remember" @click="rememberMe = !rememberMe">
-                <div class="toggle-switch" :class="{ active: rememberMe }">
-                  <div class="toggle-knob"></div>
-                </div>
-                <p class="auth-remember-text">Remember me</p>
-              </div>
-              <NuxtLink to="/auth/forgot-password" class="auth-forgot-link">Forgot password?</NuxtLink>
+              <label class="auth-remember">
+                <input type="checkbox" v-model="rememberMe" class="auth-checkbox">
+                <span class="auth-remember-text">Remember me</span>
+              </label>
+              <NuxtLink to="/auth/forgot-password" class="auth-forgot-link">Forgot Password?</NuxtLink>
             </div>
 
-            <!-- Sign in button -->
+            <!-- Log in button -->
             <button class="auth-submit" :disabled="loading">
-              {{ loading ? 'Logging in...' : 'Sign in' }}
+              {{ loading ? 'Logging in...' : 'Log in' }}
             </button>
           </form>
-
-          <!-- Divider -->
-          <div class="auth-divider"></div>
-
-          <!-- Google sign in -->
-          <button class="auth-google-btn" type="button" :disabled="loading" @click="handleGoogleLogin">
-            <img src="/images/auth/google-icon.svg" alt="Google" class="google-icon">
-            <span>{{ loading ? 'Redirecting...' : 'Or sign in with Google' }}</span>
-          </button>
         </div>
 
         <!-- Sign up offer -->
         <div class="auth-signup-offer">
-          <p class="auth-signup-text">Dont have an account?</p>
-          <NuxtLink to="/register" class="auth-signup-link">Sign up now</NuxtLink>
+          <p class="auth-signup-text">Don't have an account?</p>
+          <NuxtLink to="/register" class="auth-signup-link">Sign up</NuxtLink>
         </div>
       </section>
 
-      <!-- Hero image -->
-      <section class="auth-hero auth-hero-stretch">
-        <img :src="heroImageSrc" alt="Beautiful landscape" class="auth-hero-image" @error="onHeroError">
-      </section>
+      <!-- Hero carousel -->
+      <AuthHeroCarousel :images="heroImages" />
     </div>
   </main>
 </template>
 
 <script setup lang="ts">
-const heroImageSrc = '/images/auth/hero-signin.png'
-const onHeroError = () => {
-  console.error('Hero image failed to load:', heroImageSrc)
+interface CarouselImage {
+  url: string
+  alt?: string
+}
+
+const defaultHeroImages: CarouselImage[] = [
+  { url: '/images/auth/hero-signin.png', alt: 'Beautiful landscape' }
+]
+
+const heroImages = ref<CarouselImage[]>(defaultHeroImages)
+
+useHead({
+  link: [
+    { rel: 'preload', as: 'image', href: defaultHeroImages[0].url }
+  ]
+})
+
+const fetchHeroImages = async () => {
+  // TODO: Replace with actual API call when backend is ready
+  // try {
+  //   const api = useApi()
+  //   const response = await api.get('/auth/hero-images')
+  //   heroImages.value = response.data.map((item: any) => ({
+  //     url: item.imageUrl,
+  //     alt: item.altText
+  //   }))
+  // } catch (e) {
+  //   console.warn('Failed to fetch hero images, using default:', e)
+  // }
 }
 
 const route = useRoute()
@@ -153,6 +179,7 @@ watch(rememberMe, () => {
 
 onMounted(() => {
   loadRememberedInfo()
+  fetchHeroImages()
 })
 
 const submit = async () => {

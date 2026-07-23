@@ -3,36 +3,51 @@
     <div class="auth-layout auth-layout-authentication">
       <section class="auth-shell auth-shell-register-inline">
         <div class="auth-form-wrap">
-          <h1 class="auth-title">Join Lvyv</h1>
+          <h1 class="auth-title">Get Started Now</h1>
 
           <p v-if="message" class="auth-message" :class="{ error }" role="alert">{{ message }}</p>
 
+          <!-- Register form -->
           <form class="auth-fields" @submit.prevent="submit" novalidate>
             <div class="auth-input-group">
-              <p class="auth-input-label">Enter email</p>
-              <div class="auth-input-wrap" :class="{ 'auth-input-wrap-error': emailError }">
-                <input id="reg-email" v-model.trim="form.email" type="email" autocomplete="email" required placeholder="Enter you Email" @input="resetCodeState">
+              <p class="auth-input-label">E-mail</p>
+              <div class="auth-input-wrap auth-input-wrap-email" :class="{ 'auth-input-wrap-error': emailError, 'auth-input-sent': codeSent }">
+                <input id="reg-email" v-model.trim="form.email" type="email" autocomplete="email" required placeholder="example@gmail.com" :disabled="codeSent" @input="resetCodeState">
               </div>
               <p v-if="emailError" class="auth-input-error">{{ emailError }}</p>
             </div>
 
             <div class="auth-input-group">
-              <p class="auth-input-label">Verification code</p>
-              <div class="auth-input-wrap auth-input-wrap-code" :class="{ 'auth-input-wrap-error': codeError }">
-                <input
-                  id="reg-verification-code"
-                  v-model="verificationCode"
-                  type="text"
-                  inputmode="numeric"
-                  autocomplete="one-time-code"
-                  maxlength="6"
-                  pattern="[0-9]{6}"
-                  placeholder="Enter the verification code"
-                  :disabled="!codeSent"
-                  @input="verificationCode = verificationCode.replace(/\D/g, '').slice(0, 6)"
+              <p class="auth-input-label">Code</p>
+              <div class="auth-code-row">
+                <div class="auth-input-wrap auth-code-input" :class="{ 'auth-input-wrap-error': codeError, 'auth-code-input-active': codeSent }">
+                  <input
+                    id="reg-verification-code"
+                    v-model="verificationCode"
+                    type="text"
+                    inputmode="numeric"
+                    autocomplete="one-time-code"
+                    maxlength="6"
+                    pattern="[0-9]{6}"
+                    placeholder="Enter your Email-code"
+                    @input="verificationCode = verificationCode.replace(/\D/g, '').slice(0, 6)"
+                  >
+                </div>
+                <button
+                  v-if="resendCooldown > 0"
+                  class="code-send-button-green code-countdown"
+                  type="button"
                 >
-                <button class="code-send-button" type="button" :disabled="loading || resendCooldown > 0" @click="requestCode">
-                  {{ resendCooldown > 0 ? `Resend in ${resendCooldown}s` : codeSent ? 'Resend code' : 'Get verification code' }}
+                  {{ formatCountdown(resendCooldown) }}
+                </button>
+                <button
+                  v-else
+                  class="code-send-button-green"
+                  type="button"
+                  :disabled="loading"
+                  @click="requestCode"
+                >
+                  Get code
                 </button>
               </div>
               <p v-if="codeSent && !codeError" class="auth-field-hint">The code expires in 10 minutes.</p>
@@ -40,9 +55,9 @@
             </div>
 
             <div class="auth-input-group">
-              <p class="auth-input-label">Password <span class="auth-label-hint">(min. 8 char)</span></p>
+              <p class="auth-input-label">Password</p>
               <div class="auth-input-wrap auth-input-wrap-password" :class="{ 'auth-input-wrap-error': passwordError }">
-                <input id="reg-password" v-model="form.password" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" required minlength="8" maxlength="32" placeholder="Enter password" @input="handlePasswordInput" @blur="validatePassword">
+                <input id="reg-password" v-model="form.password" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" required minlength="8" maxlength="32" placeholder="Enter your Password" @input="handlePasswordInput" @blur="validatePassword">
                 <button type="button" class="password-toggle" @click="showPassword = !showPassword" :aria-label="showPassword ? 'Hide password' : 'Show password'">
                   <font-awesome-icon :icon="['fas', showPassword ? 'eye-slash' : 'eye']" />
                 </button>
@@ -50,27 +65,24 @@
               <p v-if="passwordError" class="auth-input-error">{{ passwordError }}</p>
             </div>
 
-            <div class="auth-input-group">
-              <p class="auth-input-label">Confirm password</p>
-              <div class="auth-input-wrap auth-input-wrap-password" :class="{ 'auth-input-wrap-error': confirmError }">
-                <input id="reg-confirm-password" v-model="form.confirmPassword" :type="showConfirmPassword ? 'text' : 'password'" autocomplete="new-password" required minlength="8" maxlength="32" placeholder="Enter password again" @input="confirmError = ''" @blur="validateConfirmPassword">
-                <button type="button" class="password-toggle" @click="showConfirmPassword = !showConfirmPassword" :aria-label="showConfirmPassword ? 'Hide password' : 'Show password'">
-                  <font-awesome-icon :icon="['fas', showConfirmPassword ? 'eye-slash' : 'eye']" />
-                </button>
-              </div>
-              <p v-if="confirmError" class="auth-input-error">{{ confirmError }}</p>
-            </div>
-
             <button class="auth-submit auth-submit-register" :disabled="loading || !codeSent || verificationCode.length !== 6">
-              {{ loading ? 'Joining...' : 'Join' }}
+              {{ loading ? 'Creating account...' : 'Sign in' }}
             </button>
           </form>
 
-          <div class="auth-divider"></div>
-          <button class="auth-google-btn" type="button" :disabled="loading" @click="handleGoogleLogin">
-            <img src="/images/auth/google-icon.svg" alt="Google" class="google-icon">
-            <span>{{ loading ? 'Redirecting...' : 'Sign up with Google' }}</span>
-          </button>
+          <!-- Google sign up + OR divider -->
+          <div class="auth-section auth-section-bottom">
+            <div class="auth-divider-or" style="height:50px;margin-top:0">
+              <span class="auth-divider-line"></span>
+              <span class="auth-divider-text">OR</span>
+              <span class="auth-divider-line"></span>
+            </div>
+
+            <button class="auth-google-btn" type="button" :disabled="loading" @click="handleGoogleLogin">
+              <img src="/images/auth/google-icon.svg" alt="Google" class="google-icon">
+              <span>{{ loading ? 'Redirecting...' : 'Continue with Google' }}</span>
+            </button>
+          </div>
         </div>
 
         <div class="auth-signup-offer">
@@ -79,14 +91,28 @@
         </div>
       </section>
 
-      <section class="auth-hero auth-hero-stretch">
-        <img src="/images/auth/hero-register.png" alt="Beautiful landscape" class="auth-hero-image">
-      </section>
+      <!-- Hero carousel -->
+      <AuthHeroCarousel :images="heroImages" />
     </div>
   </main>
 </template>
 
 <script setup lang="ts">
+interface CarouselImage {
+  url: string
+  alt?: string
+}
+
+const heroImages: CarouselImage[] = [
+  { url: '/images/auth/hero-register.png', alt: 'Beautiful landscape' }
+]
+
+useHead({
+  link: [
+    { rel: 'preload', as: 'image', href: heroImages[0].url }
+  ]
+})
+
 const route = useRoute()
 const auth = useMemberAuth()
 const form = reactive({
@@ -179,22 +205,24 @@ const handlePasswordInput = () => {
 
 const validateDetails = () => {
   const passwordValid = validatePassword()
-  const confirmValid = validateConfirmPassword()
-  return passwordValid && confirmValid
+  //const confirmValid = validateConfirmPassword()
+  return passwordValid
 }
 
 const requestCode = async () => {
+  if (loading.value || resendCooldown.value > 0) return
   if (!validateEmail()) return
   loading.value = true
   error.value = false
   message.value = ''
   codeError.value = ''
   try {
+    startResendCooldown()
     await auth.sendRegistrationCode(form.email)
     codeSent.value = true
     verificationCode.value = ''
     message.value = 'A verification code is on its way to your email.'
-    startResendCooldown()
+    
   } catch (caught) {
     error.value = true
     message.value = caught instanceof Error ? caught.message : 'Unable to send a verification code.'
@@ -239,6 +267,12 @@ const submit = async () => {
 const handleGoogleLogin = () => {
   loading.value = true
   auth.googleLogin('/wish')
+}
+
+const formatCountdown = (seconds: number): string => {
+  const m = Math.floor(seconds / 60)
+  const s = seconds % 60
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
 onBeforeUnmount(() => { if (cooldownTimer) clearInterval(cooldownTimer) })

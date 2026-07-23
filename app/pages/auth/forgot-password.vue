@@ -1,6 +1,6 @@
 <template>
   <main class="auth-page">
-    <div class="auth-layout">
+    <div class="auth-layout auth-layout-authentication">
       <section class="auth-shell auth-shell-forgot">
         <div class="auth-form-wrap">
           <h1 class="auth-title">Forgot your password?</h1>
@@ -35,15 +35,28 @@
         </div>
       </section>
 
-      <!-- Hero image -->
-      <section class="auth-hero">
-        <img src="/images/auth/hero-forgot-password.png" alt="Beautiful landscape" class="auth-hero-image">
-      </section>
+      <!-- Hero carousel -->
+      <AuthHeroCarousel :images="heroImages" />
     </div>
   </main>
 </template>
 
 <script setup lang="ts">
+interface CarouselImage {
+  url: string
+  alt?: string
+}
+
+const heroImages: CarouselImage[] = [
+  { url: '/images/auth/hero-signin.png', alt: 'Beautiful landscape' }
+]
+
+useHead({
+  link: [
+    { rel: 'preload', as: 'image', href: heroImages[0].url }
+  ]
+})
+
 const email = ref('')
 const loading = ref(false)
 const message = ref('')

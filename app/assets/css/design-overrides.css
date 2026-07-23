@@ -659,11 +659,11 @@ a {
     margin-top: 40px;
   }
 
-  .carousel-track {
+  .explore-china-section .carousel-track {
     gap: 32px;
   }
 
-  .carousel-slide {
+  .explore-china-section .carousel-slide {
     flex: 0 0 497px;
     min-width: 497px;
   }
@@ -1290,7 +1290,7 @@ a {
     height: min(120vw, 480px);
   }
 
-  .carousel-slide {
+  .explore-china-section .carousel-slide {
     flex-basis: min(84vw, 497px);
   }
 
