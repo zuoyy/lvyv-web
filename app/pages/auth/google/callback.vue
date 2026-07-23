@@ -1,9 +1,9 @@
 <template>
-  <main class="auth-page">
+  <main class="auth-page google-callback-page">
     <section class="auth-shell auth-shell-centered google-callback-shell">
-      <p class="auth-kicker">Google sign in</p>
+      <p v-if="failed" class="auth-kicker">Google sign in</p>
       <h1>{{ title }}</h1>
-      <p class="auth-intro">{{ message }}</p>
+      <p v-if="message" class="auth-intro">{{ message }}</p>
       <NuxtLink v-if="failed" class="auth-submit" to="/login">Back to login</NuxtLink>
     </section>
   </main>
@@ -12,8 +12,8 @@
 <script setup lang="ts">
 const route = useRoute()
 const auth = useMemberAuth()
-const title = ref('Completing sign in...')
-const message = ref('Please wait while we finish connecting your Google account.')
+const title = ref('Signing you in...')
+const message = ref('')
 const failed = ref(false)
 
 const safeRedirect = (value: unknown) => {
@@ -36,8 +36,6 @@ onMounted(async () => {
     auth.token.value = result.accessToken
     const member = await auth.loadMember()
     const redirect = safeRedirect(route.query.redirect)
-    title.value = 'Signed in'
-    message.value = 'Your Google account is now connected.'
     if (member && !member.passportCountryCode) {
       await navigateTo('/profile?complete=passport')
     } else {
@@ -53,7 +51,24 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.google-callback-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: 100svh;
+  padding: 80px 20px 0;
+}
+
+.google-callback-page > .google-callback-shell {
+  width: min(100%, 460px);
+  min-height: 0;
+  margin: 0;
+  padding: 32px 20px;
+  text-align: center;
+}
+
 .google-callback-shell {
-  min-height: 360px;
+  min-height: 0;
 }
 </style>
