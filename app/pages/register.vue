@@ -292,6 +292,7 @@ const submit = async () => {
       passportCountryCode: form.passportCountryCode,
       gender: Number(form.gender),
       birthday: form.birthday,
+      avatar: randomRegistrationAvatar(),
       timezone: form.timezone,
       verificationCode: verificationCode.value,
     })
