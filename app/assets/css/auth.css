@@ -140,6 +140,26 @@
   color: #808080;
 }
 
+.auth-select-wrap {
+  padding-right: 12px;
+}
+
+.auth-select-wrap select {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: #1a1a1a;
+  font-family: 'Roboto', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 15px;
+  outline: none;
+  cursor: pointer;
+}
+
+.auth-select-wrap select:invalid {
+  color: #808080;
+}
+
 /* ---- Password input with toggle ---- */
 .auth-input-wrap-password {
   padding: 14px 10px 14px 16px;

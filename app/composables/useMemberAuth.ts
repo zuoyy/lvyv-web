@@ -17,6 +17,8 @@ export interface MemberProfile {
   timezone: string
   timezoneMode: number
   passportCountryCode?: string
+  gender?: number
+  birthday?: string
   nickname?: string
   avatar?: string
   bio?: string
@@ -95,7 +97,7 @@ export const useMemberAuth = () => {
     googleExchange: (ticket: string) => request<LoginResult>('/auth/google/exchange', { ticket }),
     loadMember,
     clearSession,
-    register: (data: { email: string; password: string; verificationCode: string; passportCountryCode: string; timezone?: string }) => request<number>('/auth/register', data),
+    register: (data: { email: string; password: string; verificationCode: string; passportCountryCode: string; gender: number; birthday: string; timezone?: string }) => request<number>('/auth/register', data),
     sendRegistrationCode: (email: string) => request<void>('/auth/registration-code', { email }),
     verifyEmailCode: (email: string, code: string) => request<void>('/auth/verify-email-code', { email, code }),
     resendVerificationCode: (email: string) => request<void>('/auth/resend-verification-code', { email }),
