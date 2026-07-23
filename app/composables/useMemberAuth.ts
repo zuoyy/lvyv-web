@@ -97,7 +97,7 @@ export const useMemberAuth = () => {
     googleExchange: (ticket: string) => request<LoginResult>('/auth/google/exchange', { ticket }),
     loadMember,
     clearSession,
-    register: (data: { email: string; password: string; verificationCode: string; passportCountryCode: string; gender: number; birthday: string; avatar: string; timezone?: string }) => request<number>('/auth/register', data),
+    register: (data: { email: string; password: string; verificationCode: string; avatar: string; timezone?: string }) => request<number>('/auth/register', data),
     sendRegistrationCode: (email: string) => request<void>('/auth/registration-code', { email }),
     verifyEmailCode: (email: string, code: string) => request<void>('/auth/verify-email-code', { email, code }),
     resendVerificationCode: (email: string) => request<void>('/auth/resend-verification-code', { email }),

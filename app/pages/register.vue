@@ -61,32 +61,6 @@
               <p v-if="confirmError" class="auth-input-error">{{ confirmError }}</p>
             </div>
 
-            <div class="auth-input-group">
-              <p class="auth-input-label">Country of Passport</p>
-              <AuthCountrySelect v-model="form.passportCountryCode" :invalid="countryInvalid" input-id="register-passport-country" />
-              <p v-if="countryError" class="auth-input-error">{{ countryError }}</p>
-            </div>
-
-            <div class="auth-input-group">
-              <p class="auth-input-label">Gender</p>
-              <div class="auth-input-wrap auth-select-wrap" :class="{ 'auth-input-wrap-error': genderError }">
-                <select id="reg-gender" v-model="form.gender" required :aria-invalid="Boolean(genderError)" @change="genderError = ''">
-                  <option disabled value="">Select gender</option>
-                  <option :value="1">Male</option>
-                  <option :value="2">Female</option>
-                </select>
-              </div>
-              <p v-if="genderError" class="auth-input-error">{{ genderError }}</p>
-            </div>
-
-            <div class="auth-input-group">
-              <p class="auth-input-label">Birthday</p>
-              <div class="auth-input-wrap" :class="{ 'auth-input-wrap-error': birthdayError }">
-                <input id="reg-birthday" v-model="form.birthday" type="date" required min="1900-01-01" :max="maxBirthday" :aria-invalid="Boolean(birthdayError)" @input="birthdayError = ''" @blur="validateBirthday">
-              </div>
-              <p v-if="birthdayError" class="auth-input-error">{{ birthdayError }}</p>
-            </div>
-
             <button class="auth-submit auth-submit-register" :disabled="loading || !codeSent || verificationCode.length !== 6">
               {{ loading ? 'Joining...' : 'Join' }}
             </button>
@@ -119,9 +93,6 @@ const form = reactive({
   email: typeof route.query.verify === 'string' ? route.query.verify : '',
   password: '',
   confirmPassword: '',
-  passportCountryCode: '',
-  gender: '' as '' | number,
-  birthday: '',
   timezone: detectMemberTimeZone(),
 })
 const verificationCode = ref('')
@@ -134,13 +105,8 @@ const emailError = ref('')
 const codeError = ref('')
 const passwordError = ref('')
 const confirmError = ref('')
-const countryError = ref('')
-const countryInvalid = ref(false)
-const genderError = ref('')
-const birthdayError = ref('')
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
-const maxBirthday = ref('')
 let cooldownTimer: ReturnType<typeof setInterval> | undefined
 
 const startResendCooldown = () => {
@@ -211,42 +177,10 @@ const handlePasswordInput = () => {
   if (form.confirmPassword) confirmError.value = ''
 }
 
-const validateGender = () => {
-  genderError.value = ''
-  if (form.gender !== 1 && form.gender !== 2) {
-    genderError.value = 'Please select your gender.'
-    return false
-  }
-  return true
-}
-
-const validateBirthday = () => {
-  birthdayError.value = ''
-  if (!form.birthday) {
-    birthdayError.value = 'Please enter your birthday.'
-    return false
-  }
-  if (form.birthday < '1900-01-01' || (maxBirthday.value && form.birthday > maxBirthday.value)) {
-    birthdayError.value = 'Please enter a valid birthday.'
-    return false
-  }
-  return true
-}
-
 const validateDetails = () => {
   const passwordValid = validatePassword()
   const confirmValid = validateConfirmPassword()
-  const genderValid = validateGender()
-  const birthdayValid = validateBirthday()
-  countryError.value = ''
-  countryInvalid.value = false
-  let countryValid = true
-  if (!form.passportCountryCode) {
-    countryInvalid.value = true
-    countryError.value = 'Choose the country that issued your passport.'
-    countryValid = false
-  }
-  return passwordValid && confirmValid && countryValid && genderValid && birthdayValid
+  return passwordValid && confirmValid
 }
 
 const requestCode = async () => {
@@ -289,9 +223,6 @@ const submit = async () => {
     await auth.register({
       email: form.email,
       password: form.password,
-      passportCountryCode: form.passportCountryCode,
-      gender: Number(form.gender),
-      birthday: form.birthday,
       avatar: randomRegistrationAvatar(),
       timezone: form.timezone,
       verificationCode: verificationCode.value,
@@ -309,15 +240,6 @@ const handleGoogleLogin = () => {
   loading.value = true
   auth.googleLogin('/wish')
 }
-
-onMounted(() => {
-  const today = new Date()
-  maxBirthday.value = [
-    today.getFullYear(),
-    String(today.getMonth() + 1).padStart(2, '0'),
-    String(today.getDate()).padStart(2, '0'),
-  ].join('-')
-})
 
 onBeforeUnmount(() => { if (cooldownTimer) clearInterval(cooldownTimer) })
 </script>
