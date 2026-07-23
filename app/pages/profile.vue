@@ -14,6 +14,9 @@
     
     <main class="profile-content">
       <div class="content-wrapper">
+        <p v-if="needsPassportCompletion" class="profile-completion-banner">
+          Complete your passport country so we can personalize your travel planning.
+        </p>
         <PersonalInfo
           v-if="activeTab === 'personal-info'"
           :email="form.email"
@@ -61,6 +64,8 @@ const activeTab = ref('personal-info')
 const avatar = ref('')
 const preferences = ref<string[]>([])
 const showSidebar = ref(false)
+const route = useRoute()
+const needsPassportCompletion = ref(route.query.complete === 'passport')
 
 const form = reactive({
   email: '',
@@ -90,6 +95,7 @@ onMounted(async () => {
     form.timezone = member.timezone
     form.timezoneMode = member.timezoneMode
     avatar.value = member.avatar || ''
+    needsPassportCompletion.value = !form.passportCountryCode && route.query.complete === 'passport'
   } catch {
     auth.clearSession()
     await navigateTo('/login?redirect=/profile')
@@ -103,6 +109,7 @@ const save = async () => {
     nickname: form.nickname || undefined,
     bio: form.bio || undefined,
   })
+  needsPassportCompletion.value = false
 }
 </script>
 
@@ -153,6 +160,16 @@ const save = async () => {
 .content-wrapper {
   max-width: 800px;
   margin: 0 auto;
+}
+
+.profile-completion-banner {
+  margin: 0 0 24px;
+  border-left: 3px solid #105446;
+  background: #edf5ed;
+  padding: 14px 16px;
+  color: #105446;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .empty-state {

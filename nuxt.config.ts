@@ -15,9 +15,13 @@ export default defineNuxtConfig({
     devProxy: {
       '/web-api': {
         // Nitro 会移除匹配到的代理前缀，因此目标地址需要显式补回 /web-api。
-        target: 'http://47.109.99.83:8088/web-api',
+        target: 'http://localhost:8088/web-api',
         changeOrigin: true
       }
+    },
+    prerender: {
+      // 积分页中的未来功能入口尚未实现，不参与静态路由爬取。
+      ignore: ['/badges', '/trips']
     }
   },
 

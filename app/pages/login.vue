@@ -92,7 +92,9 @@ const onHeroError = () => {
 }
 
 const route = useRoute()
-const email = ref(typeof route.query.email === 'string' ? route.query.email : '')
+const email = ref(typeof route.query.account === 'string'
+  ? route.query.account
+  : typeof route.query.email === 'string' ? route.query.email : '')
 const password = ref('')
 const showPassword = ref(false)
 const rememberMe = ref(false)
@@ -103,17 +105,14 @@ const auth = useMemberAuth()
 
 const handleGoogleLogin = async () => {
   loading.value = true
-  try {
-    auth.googleLogin()
-  } finally {
-    loading.value = false
-  }
+  const requestedRedirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/wish'
+  auth.googleLogin(requestedRedirect)
 }
 
 const STORAGE_KEY = 'lvyv_remember_me'
 
 const loadRememberedInfo = () => {
-  if (process.client) {
+  if (import.meta.client) {
     try {
       const stored = localStorage.getItem(STORAGE_KEY)
       if (stored) {
@@ -130,7 +129,7 @@ const loadRememberedInfo = () => {
 }
 
 const saveRememberedInfo = () => {
-  if (process.client) {
+  if (import.meta.client) {
     try {
       if (rememberMe.value && email.value) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({

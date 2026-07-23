@@ -282,6 +282,59 @@
   margin-top: 32px;
 }
 
+.auth-shell-register-inline {
+  min-height: 655px;
+  justify-content: space-between;
+}
+
+.auth-input-wrap-code {
+  padding-right: 8px;
+}
+
+.auth-input-wrap-code input {
+  min-width: 0;
+  padding-right: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.auth-input-wrap-code input:disabled {
+  opacity: 1;
+  cursor: text;
+}
+
+.code-send-button {
+  flex: 0 0 auto;
+  min-width: 116px;
+  height: 32px;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: #696969;
+  font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 11px;
+  line-height: 16px;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+}
+
+.code-send-button:hover:not(:disabled) {
+  color: #105446;
+}
+
+.code-send-button:disabled {
+  color: #a4a4a4;
+  cursor: not-allowed;
+}
+
+.auth-field-hint {
+  margin: 0;
+  padding: 0 16px;
+  color: #828282;
+  font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 11px;
+  line-height: 14px;
+}
+
 /* ---- Forgot password button (no large top margin) ---- */
 .auth-submit-forgot {
   margin-top: 16px;
@@ -1208,4 +1261,3 @@
     min-width: 0;
   }
 }
-

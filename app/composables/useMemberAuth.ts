@@ -82,8 +82,9 @@ export const useMemberAuth = () => {
     return result
   }
 
-  const googleLogin = () => {
-    window.location.href = `${config.public.apiBase}/auth/google`
+  const googleLogin = (redirect = '/wish') => {
+    const safeRedirect = redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/wish'
+    window.location.assign(`${config.public.apiBase}/auth/google?redirect=${encodeURIComponent(safeRedirect)}`)
   }
 
   return {
@@ -91,9 +92,11 @@ export const useMemberAuth = () => {
     member,
     login,
     googleLogin,
+    googleExchange: (ticket: string) => request<LoginResult>('/auth/google/exchange', { ticket }),
     loadMember,
     clearSession,
-    register: (data: { email: string; password: string; passportCountryCode: string; nickname?: string; mobile?: string; timezone?: string }) => request<number>('/auth/register', data),
+    register: (data: { email: string; password: string; verificationCode: string; passportCountryCode: string; timezone?: string }) => request<number>('/auth/register', data),
+    sendRegistrationCode: (email: string) => request<void>('/auth/registration-code', { email }),
     verifyEmailCode: (email: string, code: string) => request<void>('/auth/verify-email-code', { email, code }),
     resendVerificationCode: (email: string) => request<void>('/auth/resend-verification-code', { email }),
     forgotPassword: (email: string) => request<void>('/auth/forgot-password', { email }),
