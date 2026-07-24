@@ -4,6 +4,11 @@
   </div>
 </template>
 
+<style>
+@import '~/assets/css/auth.css';
+@import '~/assets/css/auth-modern.css';
+</style>
+
 <style scoped>
 .auth-page-wrapper {
   min-height: 100vh;
