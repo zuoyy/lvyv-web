@@ -1,80 +1,107 @@
 <template>
-  <main class="auth-page">
-    <div class="auth-layout">
-      <section class="auth-shell auth-shell-forgot">
-        <div class="auth-form-wrap">
-          <h1 class="auth-title">Forgot your password?</h1>
-
-          <p class="auth-forgot-desc">
-            Enter the email address associated with your account and we'll send
-            you a link to reset your password.
+  <main class="modern-auth-page">
+    <section class="modern-auth-panel modern-auth-panel-forgot">
+      <div class="modern-auth-content">
+        <!-- Sent State (Figma Node 346:2286) -->
+        <template v-if="emailSent">
+          <h1>Recovery Email Sent!</h1>
+          <p class="modern-auth-forgot-desc">
+            Please check your email for next steps to reset your password.
           </p>
 
-          <p v-if="message" class="auth-message" :class="{ error }" role="alert">{{ message }}</p>
+          <div class="modern-auth-forgot-actions">
+            <a href="mailto:support@lvyv.com" class="modern-auth-secondary-btn">
+              contact Support
+            </a>
 
-          <form class="auth-fields" @submit.prevent="submit" novalidate>
-            <!-- Email -->
-            <div class="auth-input-group">
-              <div class="auth-input-wrap">
-                <input id="forgot-email" v-model.trim="email" type="email" autocomplete="email" required placeholder="Enter your Email">
-              </div>
+            <NuxtLink to="/login" class="modern-auth-primary modern-auth-accent-primary">
+              BACK to login
+            </NuxtLink>
+          </div>
+        </template>
+
+        <!-- Form Input State (Figma Nodes 346:2235, 346:2278, 346:2280) -->
+        <div v-else class="modern-auth-forgot-entry">
+          <h1>Reset your password</h1>
+
+          <p class="modern-auth-forgot-footer-desc">
+            Type in your registered email address to reset password
+          </p>
+
+          <p v-if="message" class="modern-auth-message" :class="{ error }" role="alert">{{ message }}</p>
+
+          <form class="modern-auth-forgot-form" novalidate @submit.prevent="submit">
+            <div class="modern-auth-forgot-input-wrap">
+              <input
+                id="forgot-email"
+                v-model.trim="email"
+                type="email"
+                autocomplete="email"
+                aria-label="Email Address"
+                required
+                placeholder="Email Address *"
+                :class="{ invalid: emailError }"
+                @input="emailError = ''"
+              >
+              <small v-if="emailError">{{ emailError }}</small>
             </div>
 
-            <!-- Submit button -->
-            <button class="auth-submit auth-submit-forgot" :disabled="loading">
-              {{ loading ? 'Sending...' : 'Send password reset instructions' }}
+            <!-- Next Button (Node 346:2280) -->
+            <button type="submit" class="modern-auth-next-btn" :disabled="loading || !isEmailValid">
+              <span>{{ loading ? 'Sending...' : 'Next' }}</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 4L10.59 5.41L16.17 11H4V13H16.17L10.59 18.59L12 20L20 12L12 4Z" fill="currentColor"/>
+              </svg>
             </button>
           </form>
 
-          <!-- Divider -->
-          <div class="auth-divider"></div>
+          <NuxtLink to="/login" class="modern-auth-forgot-back">
+            BACK to login
+          </NuxtLink>
         </div>
+      </div>
+    </section>
 
-        <div class="auth-signup-offer">
-          <NuxtLink to="/login" class="auth-signup-link" style="color: #8f8f8f;">Back to login</NuxtLink>
-        </div>
-      </section>
-
-      <!-- Hero image -->
-      <section class="auth-hero">
-        <img src="/images/auth/hero-forgot-password.png" alt="Beautiful landscape" class="auth-hero-image">
-      </section>
-    </div>
+    <AuthVisualPanel />
   </main>
 </template>
 
 <script setup lang="ts">
 const email = ref('')
+const emailSent = ref(false)
 const loading = ref(false)
 const message = ref('')
 const error = ref(false)
+const emailError = ref('')
 const auth = useMemberAuth()
 
+const isEmailValid = computed(() => {
+  return email.value.trim().length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())
+})
+
 const submit = async () => {
-  loading.value = true
+  emailError.value = ''
+  message.value = ''
   error.value = false
 
   if (!email.value) {
-    error.value = true
-    message.value = 'Please fill out this field.'
-    loading.value = false
+    emailError.value = 'Please fill out this field.'
     return
   }
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!emailRegex.test(email.value)) {
-    error.value = true
-    message.value = 'Please enter a valid email address.'
-    loading.value = false
+  if (!isEmailValid.value) {
+    emailError.value = 'Please enter a valid email address.'
     return
   }
+
+  loading.value = true
 
   try {
     await auth.forgotPassword(email.value)
-    message.value = 'If a verified account exists, a password reset link has been sent.'
-  } catch (e) {
+    emailSent.value = true
+  } catch (caught) {
     error.value = true
-    message.value = e instanceof Error ? e.message : 'Unable to submit request'
+    message.value = caught instanceof Error ? caught.message : 'Unable to submit request'
   } finally {
     loading.value = false
   }

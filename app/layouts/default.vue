@@ -145,7 +145,11 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 const activeSection = ref('hero')
 const isScrolled = ref(false)
 const route = useRoute()
-const isAuthenticationPage = computed(() => route.path === '/login' || route.path === '/register')
+const isAuthenticationPage = computed(() =>
+  route.path === '/login' ||
+  route.path === '/register' ||
+  route.path.startsWith('/auth/')
+)
 const { token: memberToken, member, loadMember, clearSession, logout: logoutMember } = useMemberAuth()
 const accountOpen = ref(false)
 const accountMenu = ref(null)
