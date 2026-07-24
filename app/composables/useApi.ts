@@ -30,7 +30,7 @@ export const useApi = <T = any>(
         token.value = null
         if (import.meta.client) {
           // 仅在客户端进行重定向，避免影响服务端渲染流程
-          navigateTo('/login')
+          navigateTo('/login/')
         }
       }
     },

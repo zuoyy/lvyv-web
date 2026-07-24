@@ -28,6 +28,7 @@ body {
 
 .navbar {
   position: fixed;
+  transition: background-color 80ms linear, border-color 80ms linear, box-shadow 120ms ease;
 }
 
 .section-title-primary {
@@ -68,7 +69,7 @@ a {
     border: 0;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
-    transition: var(--transition-smooth); /* Smooth transition on scroll background change */
+    transition: background-color 80ms linear, border-color 80ms linear, box-shadow 120ms ease;
   }
 
   .navbar.scrolled {
@@ -173,10 +174,17 @@ a {
   }
 
   .hero-bg {
-    background-size: 103.333% 102.073% !important;
-    background-position: right top !important;
     transform: none;
     animation: none !important;
+  }
+
+  .hero-bg img {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 103.333%;
+    height: 102.073%;
+    object-position: right top;
   }
 
   .hero-overlay {
@@ -1195,9 +1203,10 @@ a {
 }
 
 @media (min-width: 1600px) {
-  .hero-bg {
-    background-size: cover !important;
-    background-position: center 54% !important;
+  .hero-bg img {
+    width: 100%;
+    height: 100%;
+    object-position: center 54%;
   }
 }
 
@@ -1208,6 +1217,16 @@ a {
 
   .navbar {
     height: 72px;
+    background: transparent;
+    border-bottom: 0;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .navbar.scrolled {
+    background: #fff;
+    border-bottom: 1px solid rgba(21, 75, 63, 0.08);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
   }
 
   .nav-container {
@@ -1235,6 +1254,11 @@ a {
   .hero-section {
     min-height: 720px;
     padding: 135px 20px 76px;
+  }
+
+  .hero-bg {
+    transform: none;
+    animation: none !important;
   }
 
   .hero-overlay {

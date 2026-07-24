@@ -127,7 +127,7 @@ const handleNextPage = () => {
 
 onMounted(async () => {
   if (!auth.token.value) {
-    await navigateTo('/login?redirect=/points')
+    await navigateTo('/login/?redirect=/points')
     return
   }
   

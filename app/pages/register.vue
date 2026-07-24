@@ -64,7 +64,7 @@
         </form>
 
         <p class="modern-auth-footer-link">
-          Already have an account? <NuxtLink to="/login">Log in</NuxtLink>
+          Already have an account? <NuxtLink to="/login/">Log in</NuxtLink>
         </p>
 
         <div class="modern-auth-divider"><span>OR</span></div>
@@ -240,7 +240,7 @@ const submit = async () => {
       timezone: form.timezone,
       verificationCode: verificationCode.value,
     })
-    await navigateTo(`/login?account=${encodeURIComponent(form.email)}`)
+    await navigateTo(`/login/?account=${encodeURIComponent(form.email)}`)
   } catch (caught) {
     error.value = true
     message.value = caught instanceof Error ? caught.message : 'Unable to create account.'

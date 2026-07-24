@@ -48,7 +48,7 @@
               <input v-model="rememberMe" type="checkbox">
               <span>Remember me</span>
             </label>
-            <NuxtLink to="/auth/forgot-password">Forgot Password?</NuxtLink>
+            <NuxtLink to="/auth/forgot-password/">Forgot Password?</NuxtLink>
           </div>
 
           <button class="modern-auth-primary" :disabled="loading || !isLoginFormValid">
@@ -57,7 +57,7 @@
         </form>
 
         <p class="modern-auth-footer-link">
-          Don't have an account? <NuxtLink to="/register">Sign up</NuxtLink>
+          Don't have an account? <NuxtLink to="/register/">Sign up</NuxtLink>
         </p>
       </div>
     </section>
@@ -174,7 +174,7 @@ const submit = async () => {
     await navigateTo(redirect)
   } catch (caught) {
     if (caught instanceof ApiRequestError && caught.code === 1_003_000_006) {
-      await navigateTo(`/register?verify=${encodeURIComponent(email.value)}`)
+      await navigateTo(`/register/?verify=${encodeURIComponent(email.value)}`)
       return
     }
     error.value = true

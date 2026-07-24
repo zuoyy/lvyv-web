@@ -3,7 +3,30 @@
     <!-- Hero Section -->
     <section class="hero-section" id="hero">
       <div class="hero-overlay"></div>
-      <div v-for="(bg, index) in heroBgs" :key="index" class="hero-bg" :class="{ 'active': activeBg === index }" :style="{ backgroundImage: `url('${bg}')` }"></div>
+      <div
+        v-for="slide in requestedHeroSlides"
+        :key="slide.id"
+        class="hero-bg"
+        :class="{ active: activeBg === slide.index }"
+      >
+        <picture>
+          <source media="(max-width: 767px)" type="image/webp" :srcset="slide.mobileWebpSrcset">
+          <source media="(min-width: 1920px)" type="image/webp" :srcset="slide.wideWebpSrcset" sizes="100vw">
+          <source type="image/webp" :srcset="slide.webpSrcset" sizes="100vw">
+          <img
+            :ref="element => setHeroImageRef(element, slide.index)"
+            :src="slide.fallback"
+            alt=""
+            :width="slide.width"
+            :height="slide.height"
+            decoding="async"
+            loading="eager"
+            :fetchpriority="slide.index === 0 ? 'high' : 'low'"
+            @load="handleHeroLoad(slide.index, $event)"
+            @error="handleHeroError(slide.index)"
+          >
+        </picture>
+      </div>
       <div class="hero-content">
         <h1 class="sr-only">Meet China, Not Just Visit It.</h1>
         <div class="hero-title-art" aria-hidden="true">
@@ -22,7 +45,7 @@
 
       <!-- Carousel Indicators / Dots -->
       <div class="hero-carousel-dots">
-        <span v-for="(bg, index) in heroBgs" :key="index" class="dot" :class="{ 'active': activeBg === index }" @click="setBg(index)"></span>
+        <span v-for="slide in heroSlides" :key="slide.id" class="dot" :class="{ 'active': activeBg === slide.index }" @click="setBg(slide.index)"></span>
       </div>
     </section>
 
@@ -58,7 +81,8 @@
         <div class="cards-grid">
           <!-- Video Card 1 -->
           <div class="video-card">
-            <div class="card-img-wrapper" style="background-image: url('/images/home/meet-people.png');">
+            <div class="card-img-wrapper">
+              <ResponsivePicture class="home-media-layer" fallback="/images/home/meet-people.png" :webp-srcset="meetPeopleSrcset" sizes="(min-width: 992px) 33vw, 90vw" :width="1200" :height="1440" />
               <span class="video-badge">Meet</span>
               <div class="play-btn-circle">
                 <font-awesome-icon :icon="['fas', 'play']" aria-hidden="true" />
@@ -78,7 +102,8 @@
 
           <!-- Video Card 2 -->
           <div class="video-card">
-            <div class="card-img-wrapper" style="background-image: url('/images/home/meet-stories.png');">
+            <div class="card-img-wrapper">
+              <ResponsivePicture class="home-media-layer" fallback="/images/home/meet-stories.png" :webp-srcset="meetStoriesSrcset" sizes="(min-width: 992px) 33vw, 90vw" :width="2276" :height="2731" />
               <span class="video-badge">Meet</span>
               <div class="play-btn-circle">
                 <font-awesome-icon :icon="['fas', 'play']" aria-hidden="true" />
@@ -98,7 +123,8 @@
 
           <!-- Video Card 3 -->
           <div class="video-card">
-            <div class="card-img-wrapper" style="background-image: url('/images/home/meet-yourself.png');">
+            <div class="card-img-wrapper">
+              <ResponsivePicture class="home-media-layer" fallback="/images/home/meet-yourself.png" :webp-srcset="meetYourselfSrcset" sizes="(min-width: 992px) 33vw, 90vw" :width="794" :height="953" />
               <span class="video-badge">Meet</span>
               <div class="play-btn-circle">
                 <font-awesome-icon :icon="['fas', 'play']" aria-hidden="true" />
@@ -138,7 +164,7 @@
               <img src="/images/home/how-icon-city.svg" alt="" class="step-icon">
               <h4>Choose a City</h4>
               <p>Start where your curiosity leads.</p>
-              <div class="step-photo" style="background-image: url('/images/home/step1.png');"></div>
+              <div class="step-photo"><ResponsivePicture fallback="/images/home/step1.png" :webp-srcset="step1Srcset" sizes="150px" :width="486" :height="393" /></div>
             </div>
             <!-- Step 2 -->
             <div class="step-node">
@@ -146,7 +172,7 @@
               <img src="/images/home/how-icon-mission.svg" alt="" class="step-icon">
               <h4>Get Your Mission</h4>
               <p>Complete curated local challenges designed just for you.</p>
-              <div class="step-photo" style="background-image: url('/images/home/step2.png');"></div>
+              <div class="step-photo"><ResponsivePicture fallback="/images/home/step2.png" :webp-srcset="step2Srcset" sizes="150px" :width="486" :height="393" /></div>
             </div>
             <!-- Step 3 -->
             <div class="step-node">
@@ -154,7 +180,7 @@
               <img src="/images/home/how-icon-meet.svg" alt="" class="step-icon">
               <h4>Meet Someone</h4>
               <p>Connect with locals and fellow travelers through shared experiences.</p>
-              <div class="step-photo" style="background-image: url('/images/home/step3.png');"></div>
+              <div class="step-photo"><ResponsivePicture fallback="/images/home/step3.png" :webp-srcset="step3Srcset" sizes="150px" :width="486" :height="393" /></div>
             </div>
             <!-- Step 4 -->
             <div class="step-node">
@@ -162,7 +188,7 @@
               <img src="/images/home/how-icon-story.svg" alt="" class="step-icon">
               <h4>Unlock Stories</h4>
               <p>Explore places and moments that guidebooks never tell you.</p>
-              <div class="step-photo" style="background-image: url('/images/home/step4.png');"></div>
+              <div class="step-photo"><ResponsivePicture fallback="/images/home/step4.png" :webp-srcset="step4Srcset" sizes="150px" :width="594" :height="370" /></div>
             </div>
             <!-- Step 5 -->
             <div class="step-node">
@@ -170,7 +196,7 @@
               <img src="/images/home/how-icon-camera.svg" alt="" class="step-icon">
               <h4>Stay Connected</h4>
               <p>Collect memories, friendships, and stories you'll carry home.</p>
-              <div class="step-photo" style="background-image: url('/images/home/step5.png');"></div>
+              <div class="step-photo"><ResponsivePicture fallback="/images/home/step5.png" :webp-srcset="step5Srcset" sizes="150px" :width="594" :height="370" /></div>
             </div>
           </div>
         </div>
@@ -196,7 +222,8 @@
           <div class="carousel-track" ref="carouselTrack" :style="{ transform: `translateX(-${carouselOffset}px)`, transition: 'transform 0.5s ease' }">
             <!-- Slide 1 -->
             <div class="carousel-slide">
-              <div class="explore-card" style="background-image: url('/images/home/explore-xian.png');">
+              <div class="explore-card">
+                <ResponsivePicture class="home-media-layer" fallback="/images/home/explore-xian.png" :webp-srcset="exploreXianSrcset" sizes="(min-width: 992px) 497px, 84vw" :width="1200" :height="851" />
                 <div class="card-gradient"></div>
                 <div class="explore-info">
                   <h3>Meet History</h3>
@@ -206,7 +233,8 @@
             </div>
             <!-- Slide 2 -->
             <div class="carousel-slide">
-              <div class="explore-card" style="background-image: url('/images/home/explore-chengdu.png');">
+              <div class="explore-card">
+                <ResponsivePicture class="home-media-layer" fallback="/images/home/explore-chengdu.png" :webp-srcset="exploreChengduSrcset" sizes="(min-width: 992px) 497px, 84vw" :width="1254" :height="1254" />
                 <div class="card-gradient"></div>
                 <div class="explore-info">
                   <h3>Meet Lifestyle</h3>
@@ -216,7 +244,8 @@
             </div>
             <!-- Slide 3 -->
             <div class="carousel-slide">
-              <div class="explore-card" style="background-image: url('/images/home/explore-beijing.png');">
+              <div class="explore-card">
+                <ResponsivePicture class="home-media-layer" fallback="/images/home/explore-beijing.png" :webp-srcset="exploreBeijingSrcset" sizes="(min-width: 992px) 497px, 84vw" :width="736" :height="1307" />
                 <div class="card-gradient"></div>
                 <div class="explore-info">
                   <h3>Meet Tradition</h3>
@@ -320,7 +349,7 @@
             <div class="double-pill-outer">
               <div class="double-pill-middle">
                 <div class="double-pill-inner">
-                  <div class="pill-frame-image" style="background-image: url('/images/home/explorers-wall.png');"></div>
+                  <div class="pill-frame-image"><ResponsivePicture fallback="/images/home/explorers-wall.png" :webp-srcset="explorersWallSrcset" sizes="(min-width: 992px) 50vw, 90vw" :width="1402" :height="876" /></div>
                 </div>
               </div>
             </div>
@@ -369,7 +398,23 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
+import {
+  exploreBeijingSrcset,
+  exploreChengduSrcset,
+  explorersWallSrcset,
+  exploreXianSrcset,
+  heroPreload,
+  heroSlides,
+  meetPeopleSrcset,
+  meetStoriesSrcset,
+  meetYourselfSrcset,
+  step1Srcset,
+  step2Srcset,
+  step3Srcset,
+  step4Srcset,
+  step5Srcset,
+} from '~/utils/homeImages'
 
 // ==========================================
 // SEO Optimization Meta Info
@@ -381,6 +426,18 @@ useSeoMeta({
   ogDescription: 'The First Friend in China. Discover real people, hidden stories, and unforgettable journeys through authentic encounters.',
   ogImage: '/images/common/logo.png',
   twitterCard: 'summary_large_image'
+})
+
+useHead({
+  link: [{
+    rel: 'preload',
+    as: 'image',
+    type: 'image/webp',
+    href: heroPreload,
+    imagesrcset: heroSlides[0].webpSrcset,
+    imagesizes: '(max-width: 767px) 256px, 100vw',
+    fetchpriority: 'high',
+  }],
 })
 
 // ==========================================
@@ -481,31 +538,101 @@ const handleSubscribe = () => {
 // ==========================================
 // 5. Hero Background Carousel Action
 // ==========================================
-const heroBgs = [
-  '/images/home/hero-bg.png',
-  '/images/home/hero-bg-2.png',
-  '/images/home/hero-banner-4.png'
-]
 const activeBg = ref(0)
+const requestedHeroIndices = reactive(new Set([0]))
+const loadedHeroIndices = reactive(new Set())
+const failedHeroIndices = reactive(new Set())
+const requestedHeroSlides = computed(() => heroSlides.filter(slide => requestedHeroIndices.has(slide.index)))
+const heroImageElements = []
+let pendingActiveBg = null
 let bgTimer = null
+let heroIdleHandle = null
+
+const setHeroImageRef = (element, index) => {
+  heroImageElements[index] = element
+}
+
+const requestHero = (index, idle = false) => {
+  if (requestedHeroIndices.has(index) || failedHeroIndices.has(index)) return
+
+  const request = () => {
+    heroIdleHandle = null
+    requestedHeroIndices.add(index)
+  }
+
+  if (!idle) {
+    request()
+  } else if ('requestIdleCallback' in window) {
+    heroIdleHandle = window.requestIdleCallback(request, { timeout: 1500 })
+  } else {
+    heroIdleHandle = window.setTimeout(request, 300)
+  }
+}
+
+const requestNextHero = (index) => {
+  const next = heroSlides.find(slide => slide.index > index && !requestedHeroIndices.has(slide.index) && !failedHeroIndices.has(slide.index))
+  if (next) requestHero(next.index, true)
+}
+
+const handleHeroLoad = async (index, event) => {
+  if (loadedHeroIndices.has(index)) return
+  const image = event?.currentTarget || heroImageElements[index]
+  if (image?.decode) await image.decode().catch(() => {})
+  loadedHeroIndices.add(index)
+
+  if (pendingActiveBg === index) {
+    activeBg.value = index
+    pendingActiveBg = null
+    startBgTimer()
+  }
+
+  if (index === 0) startBgTimer()
+  requestNextHero(index)
+}
+
+const handleHeroError = (index) => {
+  failedHeroIndices.add(index)
+  requestedHeroIndices.delete(index)
+  if (pendingActiveBg === index) pendingActiveBg = null
+  requestNextHero(index)
+}
+
+const getNextLoadedHero = () => {
+  for (let offset = 1; offset <= heroSlides.length; offset += 1) {
+    const index = (activeBg.value + offset) % heroSlides.length
+    if (loadedHeroIndices.has(index)) return index
+  }
+  return activeBg.value
+}
 
 const startBgTimer = () => {
   if (bgTimer) clearInterval(bgTimer)
   bgTimer = setInterval(() => {
-    activeBg.value = (activeBg.value + 1) % heroBgs.length
+    activeBg.value = getNextLoadedHero()
   }, 6000)
 }
 
 const setBg = (index) => {
-  activeBg.value = index
-  startBgTimer() // Reset and restart 6s timer on click
+  if (index === 0 || loadedHeroIndices.has(index)) {
+    activeBg.value = index
+    startBgTimer()
+    return
+  }
+  pendingActiveBg = index
+  requestHero(index)
 }
 
-onMounted(() => {
-  startBgTimer()
+onMounted(async () => {
+  await nextTick()
+  const firstImage = heroImageElements[0]
+  if (firstImage?.complete && firstImage.naturalWidth > 0) handleHeroLoad(0)
 })
 
 onUnmounted(() => {
   if (bgTimer) clearInterval(bgTimer)
+  if (heroIdleHandle !== null) {
+    if ('cancelIdleCallback' in window) window.cancelIdleCallback(heroIdleHandle)
+    else clearTimeout(heroIdleHandle)
+  }
 })
 </script>

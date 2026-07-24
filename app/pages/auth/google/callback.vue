@@ -4,7 +4,7 @@
       <p v-if="failed" class="auth-kicker">Google sign in</p>
       <h1>{{ title }}</h1>
       <p v-if="message" class="auth-intro">{{ message }}</p>
-      <NuxtLink v-if="failed" class="auth-submit" to="/login">Back to login</NuxtLink>
+      <NuxtLink v-if="failed" class="auth-submit" to="/login/">Back to login</NuxtLink>
     </section>
   </main>
 </template>

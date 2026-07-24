@@ -73,7 +73,7 @@
               onmouseout="this.style.opacity=0.7"
             >
               <img
-                src="/images/common/yyzz.png"
+                :src="businessLicenseIconUrl"
                 alt="电子营业执照"
                 style="width: 16px; height: 16px; min-width: 16px; display: inline-block; vertical-align: middle;"
               >
@@ -141,9 +141,10 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
+import businessLicenseIconUrl from '~/assets/generated/common/yyzz-48.png'
 
 const activeSection = ref('hero')
-const isScrolled = ref(false)
+const isScrolled = ref(import.meta.client ? window.scrollY > 20 : false)
 const { token: memberToken, member, loadMember, clearSession, logout: logoutMember } = useMemberAuth()
 const accountOpen = ref(false)
 const accountMenu = ref(null)
@@ -176,20 +177,19 @@ watch(memberToken, async (value) => {
   }
 })
 
-const handleScroll = () => {
-  if (window.scrollY > 20) {
-    isScrolled.value = true
-  } else {
-    isScrolled.value = false
-  }
-}
+const handleScroll = () => { isScrolled.value = window.scrollY > 20 }
 
 const handleDocumentClick = (event) => {
   if (accountMenu.value && !accountMenu.value.contains(event.target)) accountOpen.value = false
 }
 
 onMounted(() => {
-  window.addEventListener('scroll', handleScroll)
+  handleScroll()
+  if (typeof window.__lvyvNavbarScrollCleanup === 'function') {
+    window.__lvyvNavbarScrollCleanup()
+    delete window.__lvyvNavbarScrollCleanup
+  }
+  window.addEventListener('scroll', handleScroll, { passive: true })
   document.addEventListener('click', handleDocumentClick)
   if (memberToken.value && !member.value) loadMember().catch(clearSession)
 })

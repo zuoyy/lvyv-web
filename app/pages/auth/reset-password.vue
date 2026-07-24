@@ -9,7 +9,7 @@
             Your password has been updated. Existing sessions have been signed out.
           </p>
 
-          <NuxtLink to="/login" class="modern-auth-primary modern-auth-accent-primary" style="margin-top: 28px;">
+          <NuxtLink to="/login/" class="modern-auth-primary modern-auth-accent-primary" style="margin-top: 28px;">
             LOG IN with your new password
           </NuxtLink>
         </template>
@@ -78,7 +78,7 @@
           </form>
 
           <!-- BACK to login Button (Node 346:2340) -->
-          <NuxtLink to="/login" class="modern-auth-forgot-back">
+          <NuxtLink to="/login/" class="modern-auth-forgot-back">
             BACK to login
           </NuxtLink>
         </div>

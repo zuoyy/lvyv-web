@@ -29,7 +29,6 @@ export default defineNuxtConfig({
   css: [
     '~/assets/css/fonts.css',
     '~/assets/css/style.css',
-    '~/assets/css/element-variables.css',
     '~/assets/css/design-overrides.css'
   ],
 
@@ -44,6 +43,13 @@ export default defineNuxtConfig({
       link: [
         // 版本参数用于绕过浏览器对 favicon 的长期缓存
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico?v=2' }
+      ],
+      script: [
+        {
+          key: 'navbar-scroll-bootstrap',
+          tagPosition: 'bodyClose',
+          innerHTML: "(()=>{const nav=document.querySelector('.navbar');if(!nav)return;const sync=()=>nav.classList.toggle('scrolled',window.scrollY>20);sync();window.addEventListener('scroll',sync,{passive:true});window.__lvyvNavbarScrollCleanup=()=>window.removeEventListener('scroll',sync)})()"
+        }
       ]
     }
   }

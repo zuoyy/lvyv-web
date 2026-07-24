@@ -80,7 +80,7 @@ const form = reactive({
 
 onMounted(async () => {
   if (!auth.token.value) {
-    await navigateTo('/login?redirect=/profile')
+    await navigateTo('/login/?redirect=/profile')
     return
   }
   try {
@@ -98,7 +98,7 @@ onMounted(async () => {
     needsPassportCompletion.value = !form.passportCountryCode && route.query.complete === 'passport'
   } catch {
     auth.clearSession()
-    await navigateTo('/login?redirect=/profile')
+    await navigateTo('/login/?redirect=/profile')
   }
 })
 

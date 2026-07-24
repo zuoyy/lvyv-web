@@ -14,7 +14,7 @@
               contact Support
             </a>
 
-            <NuxtLink to="/login" class="modern-auth-primary modern-auth-accent-primary">
+            <NuxtLink to="/login/" class="modern-auth-primary modern-auth-accent-primary">
               BACK to login
             </NuxtLink>
           </div>
@@ -55,7 +55,7 @@
             </button>
           </form>
 
-          <NuxtLink to="/login" class="modern-auth-forgot-back">
+          <NuxtLink to="/login/" class="modern-auth-forgot-back">
             BACK to login
           </NuxtLink>
         </div>
