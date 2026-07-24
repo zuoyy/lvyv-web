@@ -46,7 +46,7 @@
               <button type="button" role="menuitem" @click="logout">Log out</button>
             </div>
           </div>
-          <NuxtLink v-else to="/login" external class="nav-login">Login</NuxtLink>
+          <a v-else href="/login/" class="nav-login">Login</a>
           <NuxtLink to="/wish" class="nav-start-planning">Start Planning</NuxtLink>
         </div>
       </div>
