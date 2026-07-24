@@ -283,7 +283,10 @@ h2 {
 }
 
 .lang-icon {
-  font-size: 1.1rem;
+  display: block;
+  flex: 0 0 17px;
+  width: 17px;
+  height: 17px;
 }
 
 .nav-login {
@@ -1520,6 +1523,35 @@ h2 {
   opacity: 0.55;
   white-space: nowrap;
   /* Force single line display on desktop screen */
+}
+
+.footer-records {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.footer-record-link,
+.footer-record-link:visited {
+  display: inline-flex;
+  align-items: center;
+  color: inherit;
+  opacity: 0.7;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: opacity 0.2s ease;
+}
+
+.footer-police-record {
+  gap: 4px;
+}
+
+.footer-record-link:hover,
+.footer-record-link:focus-visible {
+  color: inherit;
+  opacity: 1;
 }
 
 .footer-links-column h4 {

@@ -6,6 +6,7 @@ import sharp from 'sharp'
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
 const webpGroups = [
+  { source: 'public/images/auth/hero-auth-aurora.jpg', output: 'app/assets/generated/auth/hero-auth-aurora', widths: [1080], quality: 92 },
   { source: 'public/images/home/hero-bg.png', output: 'app/assets/generated/home/hero-bg', widths: [768, 1440, 2560], quality: 92 },
   { source: 'public/images/home/hero-bg-2.png', output: 'app/assets/generated/home/hero-bg-2', widths: [768, 1440, 2880], quality: 92 },
   { source: 'public/images/home/hero-banner-4.png', output: 'app/assets/generated/home/hero-banner-4', widths: [768, 1440, 2560, 4096], quality: 92 },

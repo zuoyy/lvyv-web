@@ -31,7 +31,7 @@
         <div class="nav-actions">
           <!-- Language Selector -->
           <div class="lang-selector">
-            <font-awesome-icon :icon="['fas', 'globe']" class="lang-icon" aria-hidden="true" />
+            <AuthGlobeIcon :icon="faGlobe" class="lang-icon" aria-hidden="true" />
             <span class="lang-text">EN</span>
           </div>
           <div v-if="memberToken" ref="accountMenu" class="member-account">
@@ -62,15 +62,14 @@
           <img src="/images/common/logo-footer.svg" alt="Lvyv Logo" class="footer-logo">
           <p class="brand-subtext">The First Friends in China.</p>
           <p class="copyright">© 2026&nbsp; Lvyv International Travel &amp; Culture Co., Ltd.</p>
-          <p class="copyright" style="display: flex; align-items: center; flex-wrap: nowrap; white-space: nowrap; gap: 10px;">
+          <p class="copyright footer-records">
             <a
               href="https://zzlz.gsxt.gov.cn/businessCheck/verifKey.do?showType=p&amp;serial=91110101MAKF4XU185-SAIC_SHOW_10000091110101MAKF4XU1851784705248157&amp;signData=MEUCIQCAptI+6G+AsKo4TFSprcYjTn9cnGu+S+tBBIork1PibQIgD+GcoDzK3VA3WAIx3gz+ERcY6rtfCmm2AllRnoM44BM="
               target="_blank"
               rel="noopener"
               referrerpolicy="origin"
-              style="display: inline-flex; align-items: center; transition: opacity 0.2s;"
-              onmouseover="this.style.opacity=1"
-              onmouseout="this.style.opacity=0.7"
+              class="footer-record-link footer-license-link"
+              aria-label="电子营业执照"
             >
               <img
                 :src="businessLicenseIconUrl"
@@ -82,9 +81,7 @@
               href="https://beian.mps.gov.cn/#/query/webSearch?code=11011302008211"
               rel="noreferrer"
               target="_blank"
-              style="color: inherit; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; transition: opacity 0.2s; white-space: nowrap;"
-              onmouseover="this.style.opacity=1"
-              onmouseout="this.style.opacity=0.7"
+              class="footer-record-link footer-police-record"
             >
               <img
                 src="/images/common/gongan.png"
@@ -93,7 +90,7 @@
               >
               <span>京公网安备11011302008211号</span>
             </a>
-            <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: none; transition: opacity 0.2s; white-space: nowrap;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">京ICP备2026042546号-1</a>
+            <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" class="footer-record-link">京ICP备2026042546号-1</a>
           </p>
         </div>
 
@@ -141,6 +138,8 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { FontAwesomeIcon as AuthGlobeIcon } from '@fortawesome/vue-fontawesome'
+import { faGlobe } from '@fortawesome/free-solid-svg-icons'
 import businessLicenseIconUrl from '~/assets/generated/common/yyzz-48.png'
 
 const activeSection = ref('hero')
