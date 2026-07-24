@@ -67,6 +67,10 @@
 </template>
 
 <script setup lang="ts">
+definePageMeta({
+  layout: 'auth'
+})
+
 const email = ref('')
 const emailSent = ref(false)
 const loading = ref(false)

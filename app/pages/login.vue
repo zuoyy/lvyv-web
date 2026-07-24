@@ -67,6 +67,10 @@
 </template>
 
 <script setup lang="ts">
+definePageMeta({
+  layout: 'auth'
+})
+
 const route = useRoute()
 const email = ref(typeof route.query.account === 'string'
   ? route.query.account

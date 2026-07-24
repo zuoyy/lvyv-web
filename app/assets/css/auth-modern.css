@@ -4,7 +4,7 @@
   width: 100%;
   max-width: 1440px;
   height: 820px;
-  margin: max(0px, calc((100vh - 820px) / 2)) auto;
+  margin: 0 auto;
   overflow: hidden;
   background: #ffffff;
 }

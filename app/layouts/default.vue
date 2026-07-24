@@ -1,13 +1,13 @@
 <template>
   <div class="app-layout">
     <!-- Header / Navigation -->
-    <header v-if="!isAuthenticationPage" class="navbar" :class="{ 'scrolled': isScrolled }">
+    <header class="navbar" :class="{ 'scrolled': isScrolled }">
       <div class="nav-container">
         <NuxtLink to="/" class="brand">
           <img src="/images/common/logo-header.svg" alt="Lvyv Logo" class="brand-logo">
         </NuxtLink>
 
-        <nav v-if="!isAuthenticationPage" class="nav-links">
+        <nav class="nav-links">
           <NuxtLink to="/#hero" :class="{ active: $route && $route.path === '/' && activeSection === 'hero' }">Home</NuxtLink>
           <NuxtLink to="/wish" :class="{ active: $route && $route.path === '/wish' }">Wish</NuxtLink>
           <div class="nav-item-dropdown">
@@ -28,7 +28,7 @@
           <NuxtLink to="/faq" :class="{ active: $route && $route.path === '/faq' }">FAQ</NuxtLink>
         </nav>
 
-        <div v-if="!isAuthenticationPage" class="nav-actions">
+        <div class="nav-actions">
           <!-- Language Selector -->
           <div class="lang-selector">
             <font-awesome-icon :icon="['fas', 'globe']" class="lang-icon" aria-hidden="true" />
@@ -56,7 +56,7 @@
     <slot />
 
     <!-- Footer -->
-    <footer v-if="!isAuthenticationPage" class="footer">
+    <footer class="footer">
       <div class="container footer-grid">
         <div class="footer-brand-info">
           <img src="/images/common/logo-footer.svg" alt="Lvyv Logo" class="footer-logo">
@@ -144,12 +144,6 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 
 const activeSection = ref('hero')
 const isScrolled = ref(false)
-const route = useRoute()
-const isAuthenticationPage = computed(() =>
-  route.path === '/login' ||
-  route.path === '/register' ||
-  route.path.startsWith('/auth/')
-)
 const { token: memberToken, member, loadMember, clearSession, logout: logoutMember } = useMemberAuth()
 const accountOpen = ref(false)
 const accountMenu = ref(null)
