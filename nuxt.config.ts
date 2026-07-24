@@ -31,7 +31,8 @@ export default defineNuxtConfig({
     '~/assets/css/style.css',
     '~/assets/css/element-variables.css',
     '~/assets/css/design-overrides.css',
-    '~/assets/css/auth.css'
+    '~/assets/css/auth.css',
+    '~/assets/css/auth-modern.css'
   ],
 
   app: {

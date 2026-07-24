@@ -1,96 +1,72 @@
 <template>
-  <main class="auth-page">
-    <div class="auth-layout auth-layout-authentication">
-      <section class="auth-shell auth-shell-login">
-        <div class="auth-form-wrap">
-          <h1 class="auth-title">Great to meet you!</h1>
+  <main class="modern-auth-page">
+    <section class="modern-auth-panel modern-auth-panel-login">
+      <div class="modern-auth-content">
+        <h1>Welcome back!</h1>
 
-          <p v-if="message" class="auth-message" :class="{ error }">{{ message }}</p>
+        <p v-if="message" class="modern-auth-message" :class="{ error }" role="alert">{{ message }}</p>
 
-          <form @submit.prevent="submit" novalidate>
-            <div class="auth-fields">
-              <!-- Email -->
-              <div class="auth-input-group">
-                <p class="auth-input-label">Login</p>
-                <div class="auth-input-wrap">
-                  <input
-                    id="email"
-                    v-model.trim="email"
-                    type="email"
-                    autocomplete="email"
-                    required
-                    placeholder="Enter you Email"
-                  >
-                </div>
-              </div>
+        <button class="modern-auth-google" type="button" :disabled="loading" @click="handleGoogleLogin">
+          <img src="/images/auth/google-icon.svg" alt="">
+          <span>{{ loading ? 'Redirecting...' : 'Log in with Google' }}</span>
+        </button>
 
-              <!-- Password -->
-              <div class="auth-input-group">
-                <p class="auth-input-label">Password</p>
-                <div class="auth-input-wrap auth-input-wrap-password">
-                  <input
-                    id="password"
-                    v-model="password"
-                    :type="showPassword ? 'text' : 'password'"
-                    autocomplete="current-password"
-                    required
-                    placeholder="Enter password"
-                  >
-                  <button type="button" class="password-toggle" @click="showPassword = !showPassword" aria-label="Toggle password visibility">
-                    <font-awesome-icon :icon="['fas', showPassword ? 'eye-slash' : 'eye']" />
-                  </button>
-                </div>
-              </div>
-            </div>
+        <div class="modern-auth-divider"><span>OR</span></div>
 
-            <!-- Remember me + Forgot password -->
-            <div class="auth-row">
-              <div class="auth-remember" @click="rememberMe = !rememberMe">
-                <div class="toggle-switch" :class="{ active: rememberMe }">
-                  <div class="toggle-knob"></div>
-                </div>
-                <p class="auth-remember-text">Remember me</p>
-              </div>
-              <NuxtLink to="/auth/forgot-password" class="auth-forgot-link">Forgot password?</NuxtLink>
-            </div>
+        <form class="modern-auth-form" novalidate @submit.prevent="submit">
+          <label class="modern-auth-field" for="email">
+            <span>E-mail</span>
+            <input
+              id="email"
+              v-model.trim="email"
+              type="email"
+              autocomplete="email"
+              required
+              placeholder="example@gmail.com"
+            >
+          </label>
 
-            <!-- Sign in button -->
-            <button class="auth-submit" :disabled="loading">
-              {{ loading ? 'Logging in...' : 'Sign in' }}
-            </button>
-          </form>
+          <label class="modern-auth-field" for="password">
+            <span>Password</span>
+            <span class="modern-auth-password">
+              <input
+                id="password"
+                v-model="password"
+                :type="showPassword ? 'text' : 'password'"
+                autocomplete="current-password"
+                required
+                placeholder="Enter your Password"
+              >
+              <button type="button" @click="showPassword = !showPassword" :aria-label="showPassword ? 'Hide password' : 'Show password'">
+                <font-awesome-icon :icon="['fas', showPassword ? 'eye-slash' : 'eye']" />
+              </button>
+            </span>
+          </label>
 
-          <!-- Divider -->
-          <div class="auth-divider"></div>
+          <div class="modern-auth-options">
+            <label class="modern-auth-remember">
+              <input v-model="rememberMe" type="checkbox">
+              <span>Remember me</span>
+            </label>
+            <NuxtLink to="/auth/forgot-password">Forgot Password?</NuxtLink>
+          </div>
 
-          <!-- Google sign in -->
-          <button class="auth-google-btn" type="button" :disabled="loading" @click="handleGoogleLogin">
-            <img src="/images/auth/google-icon.svg" alt="Google" class="google-icon">
-            <span>{{ loading ? 'Redirecting...' : 'Or sign in with Google' }}</span>
+          <button class="modern-auth-primary" :disabled="loading || !isLoginFormValid">
+            {{ loading ? 'Logging in...' : 'Log in' }}
           </button>
-        </div>
+        </form>
 
-        <!-- Sign up offer -->
-        <div class="auth-signup-offer">
-          <p class="auth-signup-text">Dont have an account?</p>
-          <NuxtLink to="/register" class="auth-signup-link">Sign up now</NuxtLink>
-        </div>
-      </section>
+        <p class="modern-auth-footer-link">
+          Don't have an account? <NuxtLink to="/register">Sign up</NuxtLink>
+        </p>
+      </div>
+    </section>
 
-      <!-- Hero image -->
-      <section class="auth-hero auth-hero-stretch">
-        <img :src="heroImageSrc" alt="Beautiful landscape" class="auth-hero-image" @error="onHeroError">
-      </section>
-    </div>
+    <AuthVisualPanel />
   </main>
 </template>
 
 <script setup lang="ts">
-const heroImageSrc = '/images/auth/hero-signin.png'
-const onHeroError = () => {
-  console.error('Hero image failed to load:', heroImageSrc)
-}
-
 const route = useRoute()
 const email = ref(typeof route.query.account === 'string'
   ? route.query.account
@@ -102,6 +78,10 @@ const loading = ref(false)
 const message = ref('')
 const error = ref(false)
 const auth = useMemberAuth()
+
+const isLoginFormValid = computed(() => {
+  return email.value.trim().length > 0 && password.value.length > 0
+})
 
 const handleGoogleLogin = async () => {
   loading.value = true

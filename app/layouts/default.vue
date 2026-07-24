@@ -1,7 +1,7 @@
 <template>
   <div class="app-layout">
     <!-- Header / Navigation -->
-    <header class="navbar" :class="{ 'scrolled': isScrolled }">
+    <header v-if="!isAuthenticationPage" class="navbar" :class="{ 'scrolled': isScrolled }">
       <div class="nav-container">
         <NuxtLink to="/" class="brand">
           <img src="/images/common/logo-header.svg" alt="Lvyv Logo" class="brand-logo">
@@ -56,7 +56,7 @@
     <slot />
 
     <!-- Footer -->
-    <footer class="footer">
+    <footer v-if="!isAuthenticationPage" class="footer">
       <div class="container footer-grid">
         <div class="footer-brand-info">
           <img src="/images/common/logo-footer.svg" alt="Lvyv Logo" class="footer-logo">

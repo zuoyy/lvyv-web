@@ -1,88 +1,82 @@
 <template>
-  <main class="auth-page">
-    <div class="auth-layout auth-layout-authentication">
-      <section class="auth-shell auth-shell-register-inline">
-        <div class="auth-form-wrap">
-          <h1 class="auth-title">Join Lvyv</h1>
+  <main class="modern-auth-page">
+    <section class="modern-auth-panel modern-auth-panel-register">
+      <div class="modern-auth-content">
+        <h1>Get Started Now</h1>
 
-          <p v-if="message" class="auth-message" :class="{ error }" role="alert">{{ message }}</p>
+        <p v-if="message" class="modern-auth-message" :class="{ error }" role="alert">{{ message }}</p>
 
-          <form class="auth-fields" @submit.prevent="submit" novalidate>
-            <div class="auth-input-group">
-              <p class="auth-input-label">Enter email</p>
-              <div class="auth-input-wrap" :class="{ 'auth-input-wrap-error': emailError }">
-                <input id="reg-email" v-model.trim="form.email" type="email" autocomplete="email" required placeholder="Enter you Email" @input="resetCodeState">
-              </div>
-              <p v-if="emailError" class="auth-input-error">{{ emailError }}</p>
-            </div>
+        <form class="modern-auth-form" novalidate @submit.prevent="submit">
+          <label class="modern-auth-field" for="reg-email">
+            <span>E-mail</span>
+            <input id="reg-email" v-model.trim="form.email" type="email" autocomplete="email" required placeholder="example@gmail.com" :class="{ invalid: emailError }" @input="resetCodeState">
+            <small v-if="emailError">{{ emailError }}</small>
+          </label>
 
-            <div class="auth-input-group">
-              <p class="auth-input-label">Verification code</p>
-              <div class="auth-input-wrap auth-input-wrap-code" :class="{ 'auth-input-wrap-error': codeError }">
-                <input
-                  id="reg-verification-code"
-                  v-model="verificationCode"
-                  type="text"
-                  inputmode="numeric"
-                  autocomplete="one-time-code"
-                  maxlength="6"
-                  pattern="[0-9]{6}"
-                  placeholder="Enter the verification code"
-                  :disabled="!codeSent"
-                  @input="verificationCode = verificationCode.replace(/\D/g, '').slice(0, 6)"
-                >
-                <button class="code-send-button" type="button" :disabled="loading || resendCooldown > 0" @click="requestCode">
-                  {{ resendCooldown > 0 ? `Resend in ${resendCooldown}s` : codeSent ? 'Resend code' : 'Get verification code' }}
-                </button>
-              </div>
-              <p v-if="codeSent && !codeError" class="auth-field-hint">The code expires in 10 minutes.</p>
-              <p v-if="codeError" class="auth-input-error">{{ codeError }}</p>
-            </div>
+          <label class="modern-auth-field" for="reg-verification-code">
+            <span>Code</span>
+            <span class="modern-auth-code">
+              <input
+                id="reg-verification-code"
+                v-model="verificationCode"
+                type="text"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                maxlength="6"
+                pattern="[0-9]{6}"
+                placeholder="Enter your Email-code"
+                :disabled="!codeSent"
+                :class="{ invalid: codeError }"
+                @input="verificationCode = verificationCode.replace(/\D/g, '').slice(0, 6)"
+              >
+              <button type="button" :disabled="loading || resendCooldown > 0 || !isEmailValid" @click="requestCode">
+                {{ resendCooldown > 0 ? `00:${String(resendCooldown).padStart(2, '0')}` : codeSent ? 'Resend' : 'Get code' }}
+              </button>
+            </span>
+            <small v-if="codeError">{{ codeError }}</small>
+          </label>
 
-            <div class="auth-input-group">
-              <p class="auth-input-label">Password <span class="auth-label-hint">(min. 8 char)</span></p>
-              <div class="auth-input-wrap auth-input-wrap-password" :class="{ 'auth-input-wrap-error': passwordError }">
-                <input id="reg-password" v-model="form.password" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" required minlength="8" maxlength="32" placeholder="Enter password" @input="handlePasswordInput" @blur="validatePassword">
-                <button type="button" class="password-toggle" @click="showPassword = !showPassword" :aria-label="showPassword ? 'Hide password' : 'Show password'">
-                  <font-awesome-icon :icon="['fas', showPassword ? 'eye-slash' : 'eye']" />
-                </button>
-              </div>
-              <p v-if="passwordError" class="auth-input-error">{{ passwordError }}</p>
-            </div>
+          <label class="modern-auth-field" for="reg-password">
+            <span>Password</span>
+            <span class="modern-auth-password" :class="{ invalid: passwordError }">
+              <input id="reg-password" v-model="form.password" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" required minlength="8" maxlength="32" placeholder="Enter your Password" @input="handlePasswordInput" @blur="validatePassword">
+              <button type="button" @click="showPassword = !showPassword" :aria-label="showPassword ? 'Hide password' : 'Show password'">
+                <font-awesome-icon :icon="['fas', showPassword ? 'eye-slash' : 'eye']" />
+              </button>
+            </span>
+            <small v-if="passwordError">{{ passwordError }}</small>
+          </label>
 
-            <div class="auth-input-group">
-              <p class="auth-input-label">Confirm password</p>
-              <div class="auth-input-wrap auth-input-wrap-password" :class="{ 'auth-input-wrap-error': confirmError }">
-                <input id="reg-confirm-password" v-model="form.confirmPassword" :type="showConfirmPassword ? 'text' : 'password'" autocomplete="new-password" required minlength="8" maxlength="32" placeholder="Enter password again" @input="confirmError = ''" @blur="validateConfirmPassword">
-                <button type="button" class="password-toggle" @click="showConfirmPassword = !showConfirmPassword" :aria-label="showConfirmPassword ? 'Hide password' : 'Show password'">
-                  <font-awesome-icon :icon="['fas', showConfirmPassword ? 'eye-slash' : 'eye']" />
-                </button>
-              </div>
-              <p v-if="confirmError" class="auth-input-error">{{ confirmError }}</p>
-            </div>
+          <label class="modern-auth-field" for="reg-confirm-password">
+            <span>Confirm password</span>
+            <span class="modern-auth-password" :class="{ invalid: confirmError }">
+              <input id="reg-confirm-password" v-model="form.confirmPassword" :type="showConfirmPassword ? 'text' : 'password'" autocomplete="new-password" required minlength="8" maxlength="32" placeholder="Enter your Password again" @input="confirmError = ''" @blur="validateConfirmPassword">
+              <button type="button" @click="showConfirmPassword = !showConfirmPassword" :aria-label="showConfirmPassword ? 'Hide password' : 'Show password'">
+                <font-awesome-icon :icon="['fas', showConfirmPassword ? 'eye-slash' : 'eye']" />
+              </button>
+            </span>
+            <small v-if="confirmError">{{ confirmError }}</small>
+          </label>
 
-            <button class="auth-submit auth-submit-register" :disabled="loading || !codeSent || verificationCode.length !== 6">
-              {{ loading ? 'Joining...' : 'Join' }}
-            </button>
-          </form>
-
-          <div class="auth-divider"></div>
-          <button class="auth-google-btn" type="button" :disabled="loading" @click="handleGoogleLogin">
-            <img src="/images/auth/google-icon.svg" alt="Google" class="google-icon">
-            <span>{{ loading ? 'Redirecting...' : 'Sign up with Google' }}</span>
+          <button class="modern-auth-primary" :disabled="loading || !isRegisterFormValid">
+            {{ loading ? 'Signing up...' : 'Sign up' }}
           </button>
-        </div>
+        </form>
 
-        <div class="auth-signup-offer">
-          <p class="auth-signup-text">Already have an account?</p>
-          <NuxtLink to="/login" class="auth-signup-link">Login</NuxtLink>
-        </div>
-      </section>
+        <p class="modern-auth-footer-link">
+          Already have an account? <NuxtLink to="/login">Log in</NuxtLink>
+        </p>
 
-      <section class="auth-hero auth-hero-stretch">
-        <img src="/images/auth/hero-register.png" alt="Beautiful landscape" class="auth-hero-image">
-      </section>
-    </div>
+        <div class="modern-auth-divider"><span>OR</span></div>
+
+        <button class="modern-auth-google" type="button" :disabled="loading" @click="handleGoogleLogin">
+          <img src="/images/auth/google-icon.svg" alt="">
+          <span>{{ loading ? 'Redirecting...' : 'Continue with Google' }}</span>
+        </button>
+      </div>
+    </section>
+
+    <AuthVisualPanel />
   </main>
 </template>
 
@@ -108,6 +102,21 @@ const confirmError = ref('')
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
 let cooldownTimer: ReturnType<typeof setInterval> | undefined
+
+const isEmailValid = computed(() => {
+  return form.email.trim().length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())
+})
+
+const isRegisterFormValid = computed(() => {
+  return (
+    form.email.trim().length > 0 &&
+    codeSent.value &&
+    verificationCode.value.length === 6 &&
+    form.password.length >= 8 &&
+    form.confirmPassword.length >= 8 &&
+    form.password === form.confirmPassword
+  )
+})
 
 const startResendCooldown = () => {
   resendCooldown.value = 60

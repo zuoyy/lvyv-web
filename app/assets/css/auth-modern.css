@@ -1,0 +1,532 @@
+.modern-auth-page {
+  display: grid;
+  grid-template-columns: 674px 766px;
+  width: 100%;
+  max-width: 1440px;
+  height: 820px;
+  margin: max(0px, calc((100vh - 820px) / 2)) auto;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.modern-auth-panel {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+  padding: 80px 50px 64px;
+  box-sizing: border-box;
+  background: #ffffff;
+}
+
+.modern-auth-content {
+  width: min(528px, 100%);
+}
+
+.modern-auth-content h1 {
+  margin: 0;
+  color: #000000;
+  font-family: 'Poppins', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 32px;
+  font-weight: 500;
+  line-height: 48px;
+  letter-spacing: 0;
+}
+
+.modern-auth-panel-login .modern-auth-content h1 {
+  margin-bottom: 38px;
+}
+
+.modern-auth-panel-register .modern-auth-content h1 {
+  margin-bottom: 28px;
+}
+
+.modern-auth-message {
+  margin: -24px 0 20px;
+  padding: 10px 12px;
+  border-left: 3px solid #105446;
+  border-radius: 6px;
+  background: #edf7f2;
+  color: #105446;
+  font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.modern-auth-message.error {
+  border-color: #b83a3a;
+  background: #f9eaea;
+  color: #8f2626;
+}
+
+.modern-auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.modern-auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #67728a;
+  font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: -0.0096em;
+}
+
+.modern-auth-field > input,
+.modern-auth-code > input,
+.modern-auth-password {
+  width: 100%;
+  height: 55px;
+  border: 1px solid #cbd5e0;
+  border-radius: 12px;
+  box-shadow: inset 0 2px 0 0 rgba(231, 235, 238, 0.2);
+  box-sizing: border-box;
+  background: #ffffff;
+}
+
+.modern-auth-field > input,
+.modern-auth-code > input,
+.modern-auth-password input {
+  padding: 0 12px;
+  outline: none;
+  color: #203d33;
+  font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: -0.0096em;
+}
+
+.modern-auth-field > input::placeholder,
+.modern-auth-code > input::placeholder,
+.modern-auth-password input::placeholder {
+  color: rgba(32, 61, 51, 0.4);
+}
+
+.modern-auth-field > input:focus,
+.modern-auth-code > input:focus,
+.modern-auth-password:focus-within {
+  border-color: #105446;
+  box-shadow: 0 0 0 3px rgba(16, 84, 70, 0.1), inset 0 2px 0 0 rgba(231, 235, 238, 0.2);
+}
+
+.modern-auth-field > input.invalid,
+.modern-auth-code > input.invalid,
+.modern-auth-password.invalid {
+  border-color: #b83a3a;
+}
+
+.modern-auth-field small {
+  margin-top: -3px;
+  color: #b83a3a;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 16px;
+}
+
+.modern-auth-password {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.modern-auth-password input {
+  flex: 1;
+  height: 100%;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+}
+
+.modern-auth-password input:focus {
+  outline: none;
+}
+
+.modern-auth-password button {
+  display: grid;
+  flex: 0 0 44px;
+  place-items: center;
+  width: 44px;
+  height: 40px;
+  margin-right: 6px;
+  border: 0;
+  border-left: 1px solid #cfd9e0;
+  background: transparent;
+  color: #7589a6;
+  font-size: 16px;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.modern-auth-password button:hover {
+  color: #105446;
+}
+
+.modern-auth-code {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 106px;
+  gap: 14px;
+}
+
+.modern-auth-code > input:disabled {
+  opacity: 1;
+  background: #ffffff;
+}
+
+.modern-auth-code button {
+  height: 55px;
+  border: 1px solid #cff380;
+  border-radius: 12px;
+  background: #cff380;
+  color: #203d33;
+  font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.modern-auth-code button:hover:not(:disabled) {
+  background: #c2ea6a;
+  border-color: #c2ea6a;
+}
+
+.modern-auth-code button:disabled {
+  cursor: not-allowed;
+  background: rgba(207, 243, 128, 0.5);
+  border-color: rgba(207, 243, 128, 0.5);
+  color: rgba(32, 61, 51, 0.5);
+  opacity: 1;
+}
+
+.modern-auth-options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 2px;
+  color: #718096;
+  font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.modern-auth-remember {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #718096;
+  font-size: 16px;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.modern-auth-remember input {
+  width: 19px;
+  height: 19px;
+  margin: 0;
+  border: 1px solid #cfd9e0;
+  border-radius: 4px;
+  accent-color: #105446;
+  cursor: pointer;
+}
+
+.modern-auth-options a {
+  color: #1c4532;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.modern-auth-primary,
+.modern-auth-google {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 60px;
+  padding: 0 24px;
+  box-sizing: border-box;
+  font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.modern-auth-primary {
+  margin-top: 24px;
+  border: 0;
+  border-radius: 20px;
+  background: #105446;
+  color: #f7fafc;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 28px;
+}
+
+.modern-auth-primary:hover:not(:disabled) {
+  background: #0c453a;
+}
+
+.modern-auth-primary:disabled {
+  cursor: not-allowed;
+  background: rgba(16, 84, 70, 0.3);
+  color: #f7fafc;
+  opacity: 1;
+}
+
+.modern-auth-google:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.modern-auth-google {
+  border: 1px solid #cbd5e0;
+  border-radius: 30px;
+  background: #ffffff;
+  color: #67728a;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 28px;
+}
+
+.modern-auth-google:hover:not(:disabled) {
+  border-color: #94a3b8;
+  background: #f7fafc;
+}
+
+.modern-auth-google img {
+  position: absolute;
+  left: 26px;
+  width: 26px;
+  height: 25px;
+}
+
+.modern-auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 28px 0;
+  color: #718096;
+  font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: -0.0128em;
+}
+
+.modern-auth-divider::before,
+.modern-auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #a0aec0;
+}
+
+.modern-auth-divider span {
+  min-width: 22px;
+  text-align: center;
+}
+
+.modern-auth-panel-register .modern-auth-primary {
+  margin-top: 10px;
+}
+
+.modern-auth-panel-register .modern-auth-divider {
+  margin: 28px 0;
+}
+
+.modern-auth-footer-link {
+  margin: 18px 0 24px;
+  color: #666666;
+  font-family: 'Poppins', 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  text-align: left;
+}
+
+.modern-auth-footer-link a {
+  margin-left: 4px;
+  color: #111111;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.15s ease;
+}
+
+.modern-auth-footer-link a:hover {
+  color: #105446;
+}
+
+.modern-auth-visual {
+  position: relative;
+  min-width: 0;
+  height: 820px;
+  min-height: 820px;
+  overflow: hidden;
+  background: #06234d;
+}
+
+.modern-auth-visual-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  user-select: none;
+  pointer-events: none;
+}
+
+.modern-auth-visual-logo {
+  position: absolute;
+  z-index: 2;
+  top: 43.7805%;
+  left: 35.1175%;
+  width: min(298px, 38.9034%);
+  height: auto;
+  user-select: none;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.modern-auth-visual-logo:hover {
+  opacity: 0.9;
+  transform: scale(1.02);
+}
+
+.modern-auth-visual-logo img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.modern-auth-visual-ellipse {
+  position: absolute;
+  z-index: 1;
+  top: -38.9648%;
+  left: 19.4517%;
+  display: grid;
+  width: 140.2851%;
+  height: 104.4922%;
+  place-items: center;
+  pointer-events: none;
+}
+
+.modern-auth-visual-ellipse img {
+  width: 74.7464%;
+  height: 74.0923%;
+  transform: rotate(26.84deg);
+}
+
+.modern-auth-visual-pagination {
+  position: absolute;
+  z-index: 2;
+  top: 90.995%;
+  left: 47.5196%;
+  display: block;
+  width: min(106px, 13.8381%);
+  height: auto;
+  user-select: none;
+  pointer-events: none;
+}
+
+.modern-auth-visual img {
+  vertical-align: top;
+}
+
+@media (max-width: 1440px) {
+  .modern-auth-page {
+    grid-template-columns: minmax(520px, 46.8056%) minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 1100px) {
+  .modern-auth-page {
+    grid-template-columns: minmax(520px, 52%) minmax(0, 1fr);
+  }
+
+  .modern-auth-panel {
+    padding-right: 40px;
+    padding-left: 48px;
+  }
+}
+
+@media (max-width: 900px) {
+  .modern-auth-page {
+    display: block;
+    height: auto;
+    min-height: 100vh;
+    margin-block: 0;
+    overflow: visible;
+  }
+
+  .modern-auth-panel {
+    min-height: 100vh;
+    padding: 48px 24px 64px;
+  }
+
+  .modern-auth-content {
+    margin: 0 auto;
+  }
+
+  .modern-auth-content h1 {
+    font-size: 28px;
+    line-height: 40px;
+  }
+
+  .modern-auth-visual {
+    display: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .modern-auth-panel {
+    padding: 36px 20px 52px;
+  }
+
+  .modern-auth-content h1 {
+    font-size: 26px;
+    line-height: 36px;
+  }
+
+  .modern-auth-panel-login .modern-auth-content h1 {
+    margin-bottom: 28px;
+  }
+
+  .modern-auth-options {
+    font-size: 14px;
+  }
+
+  .modern-auth-code {
+    grid-template-columns: minmax(0, 1fr) 96px;
+    gap: 10px;
+  }
+
+  .modern-auth-code button,
+  .modern-auth-field {
+    font-size: 14px;
+  }
+
+  .modern-auth-primary,
+  .modern-auth-google {
+    height: 56px;
+  }
+
+  .modern-auth-primary {
+    font-size: 18px;
+  }
+
+  .modern-auth-google {
+    font-size: 15px;
+  }
+}
