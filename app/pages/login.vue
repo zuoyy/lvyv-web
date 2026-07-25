@@ -89,7 +89,7 @@ const isLoginFormValid = computed(() => {
 
 const handleGoogleLogin = async () => {
   loading.value = true
-  const requestedRedirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/wish'
+  const requestedRedirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
   auth.googleLogin(requestedRedirect)
 }
 
@@ -169,8 +169,8 @@ const submit = async () => {
   try {
     await auth.login(email.value, password.value)
     saveRememberedInfo()
-    const requestedRedirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/wish'
-    const redirect = requestedRedirect.startsWith('/') && !requestedRedirect.startsWith('//') ? requestedRedirect : '/wish'
+    const requestedRedirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
+    const redirect = requestedRedirect.startsWith('/') && !requestedRedirect.startsWith('//') ? requestedRedirect : '/'
     await navigateTo(redirect)
   } catch (caught) {
     if (caught instanceof ApiRequestError && caught.code === 1_003_000_006) {

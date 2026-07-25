@@ -41,10 +41,12 @@
               <span class="member-name">{{ memberDisplayName }}</span>
               <span class="member-chevron" aria-hidden="true" />
             </button>
-            <div v-if="accountOpen" class="member-menu" role="menu">
-              <NuxtLink to="/profile" role="menuitem" @click="accountOpen = false">My Profile</NuxtLink>
-              <button type="button" role="menuitem" @click="logout">Log out</button>
-            </div>
+            <Transition name="dropdown-fade">
+              <div v-if="accountOpen" class="member-menu" role="menu">
+                <NuxtLink to="/profile" role="menuitem" @click="accountOpen = false">My Profile</NuxtLink>
+                <button type="button" role="menuitem" @click="logout">Log out</button>
+              </div>
+            </Transition>
           </div>
           <a v-else href="/login/" class="nav-login">Login</a>
           <NuxtLink to="/wish" class="nav-start-planning">Start Planning</NuxtLink>

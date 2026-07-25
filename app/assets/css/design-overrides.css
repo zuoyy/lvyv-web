@@ -1654,14 +1654,33 @@ a {
 .member-menu {
   position: absolute;
   z-index: 100;
-  top: calc(100% + 10px);
-  right: 0;
-  width: 152px;
+  top: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 160px;
   padding: 6px;
-  border: 1px solid #dce4de;
-  border-radius: 6px;
-  background: #fff;
-  box-shadow: 0 12px 30px rgba(21, 75, 63, .14);
+  border: 1px solid rgba(21, 75, 63, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 16px 36px rgba(21, 75, 63, 0.07), 0 2px 8px rgba(0, 0, 0, 0.01);
+  white-space: nowrap;
+}
+
+/* Member menu top small arrow (matching Cities dropdown) */
+.member-menu::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 10px;
+  height: 10px;
+  background: #ffffff;
+  border-left: 1px solid rgba(21, 75, 63, 0.08);
+  border-top: 1px solid rgba(21, 75, 63, 0.08);
+  z-index: -1;
 }
 
 .member-menu a,
@@ -1670,22 +1689,38 @@ a {
   width: 100%;
   min-height: 38px;
   align-items: center;
-  padding: 8px 10px;
+  padding: 9px 14px;
   border: 0;
-  border-radius: 4px;
+  border-radius: 10px;
   background: transparent;
   color: #203d33;
-  font: inherit;
+  font-family: Inter, sans-serif;
   font-size: 14px;
+  font-weight: 500;
   text-align: left;
   text-decoration: none;
   cursor: pointer;
+  box-sizing: border-box;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .member-menu a:hover,
 .member-menu button:hover {
-  background: #edf5e8;
+  background-color: #f3f7f4;
   color: #105446;
+  transform: translateX(3px);
+}
+
+.dropdown-fade-enter-active,
+.dropdown-fade-leave-active {
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dropdown-fade-enter-from,
+.dropdown-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(8px) scale(0.96);
 }
 
 @media (max-width: 600px) {
