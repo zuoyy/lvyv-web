@@ -1,0 +1,40 @@
+.faq-markdown {
+  --faq-markdown-ink: var(--help-ink, #18342b);
+  --faq-markdown-text: #4e5c55;
+  --faq-markdown-muted-bg: var(--help-soft, #f4f7f5);
+  --faq-markdown-border: var(--help-border, #dce5df);
+  --faq-markdown-accent: var(--help-accent, #105446);
+  color: var(--faq-markdown-text);
+}
+
+.faq-markdown h2,
+.faq-markdown h3,
+.faq-markdown h4 {
+  color: var(--faq-markdown-ink);
+  font-family: inherit;
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: 0;
+  scroll-margin-top: 120px;
+}
+
+.faq-markdown h2 { margin: 42px 0 14px; font-size: 22px; }
+.faq-markdown h2:first-child { margin-top: 0; }
+.faq-markdown h3 { margin: 32px 0 12px; font-size: 18px; }
+.faq-markdown h4 { margin: 26px 0 10px; font-size: 16px; }
+.faq-markdown p { margin: 0 0 14px; color: var(--faq-markdown-text); font-size: 15px; line-height: 1.9; }
+.faq-markdown ul,
+.faq-markdown ol { display: flex; flex-direction: column; gap: 12px; margin: 20px 0; padding-left: 22px; color: var(--faq-markdown-text); font-size: 14px; line-height: 1.7; }
+.faq-markdown li { padding-left: 3px; }
+.faq-markdown li::marker { color: #75a683; }
+.faq-markdown a { color: var(--faq-markdown-accent); text-decoration: underline; text-underline-offset: 3px; }
+.faq-markdown blockquote { margin: 20px 0; padding: 15px 17px; color: #2e6b3a; background: #f1f8f1; border: 1px solid #d6ead7; border-radius: 8px; }
+.faq-markdown blockquote p { margin: 0; color: inherit; font-size: 13px; line-height: 1.65; }
+.faq-markdown pre { overflow-x: auto; padding: 16px; color: #f5f8f6; background: #17231f; border-radius: 6px; }
+.faq-markdown code { font-size: 0.9em; }
+.faq-markdown :not(pre) > code { padding: 2px 5px; color: var(--faq-markdown-accent); background: var(--faq-markdown-muted-bg); border-radius: 4px; }
+.faq-markdown img { max-width: 100%; height: auto; }
+.faq-markdown table { display: block; max-width: 100%; margin: 20px 0; overflow-x: auto; border-collapse: collapse; }
+.faq-markdown th,
+.faq-markdown td { padding: 9px 12px; text-align: left; border: 1px solid var(--faq-markdown-border); }
+.faq-markdown th { color: var(--faq-markdown-ink); background: var(--faq-markdown-muted-bg); }

@@ -25,7 +25,7 @@
           </div>
           <NuxtLink to="/stories" :class="{ active: $route && $route.path === '/stories' }">Stories</NuxtLink>
           <NuxtLink to="/about" :class="{ active: $route && $route.path === '/about' }">About</NuxtLink>
-          <NuxtLink to="/faq" :class="{ active: $route && $route.path === '/faq' }">FAQ</NuxtLink>
+          <NuxtLink to="/en/faq/" :class="{ active: $route && $route.path.includes('/faq') }">FAQ</NuxtLink>
         </nav>
 
         <div class="nav-actions">
@@ -126,7 +126,7 @@
         <div class="footer-links-column">
           <h4>Support</h4>
           <ul>
-            <li><NuxtLink to="/faq">FAQ</NuxtLink></li>
+            <li><NuxtLink to="/en/faq/">FAQ</NuxtLink></li>
             <li><NuxtLink to="#">Safety</NuxtLink></li>
             <li><NuxtLink to="#">Privacy Policy</NuxtLink></li>
           </ul>

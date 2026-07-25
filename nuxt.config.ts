@@ -5,13 +5,20 @@ export default defineNuxtConfig({
 
   // 运行时配置，可以通过环境变量（如 NUXT_PUBLIC_API_BASE）覆盖
   runtimeConfig: {
+    contentApiBase: 'http://127.0.0.1:8088/web-api',
+    previewSecret: '',
     public: {
-      apiBase: '/web-api' // Nginx 将此前缀代理到后端会员接口
+      apiBase: '/web-api'
     }
   },
 
   // 本地开发时直连 lvyv-server；生产静态站点仍由 Nginx 代理 /web-api。
   nitro: {
+    routeRules: {
+      '/faq/**': { swr: 60 },
+      '/en/faq/**': { swr: 60 },
+      '/zh/faq/**': { swr: 60 }
+    },
     devProxy: {
       '/web-api': {
         // Nitro 会移除匹配到的代理前缀，因此目标地址需要显式补回 /web-api。
@@ -28,6 +35,7 @@ export default defineNuxtConfig({
   // 全局 CSS 引入
   css: [
     '~/assets/css/fonts.css',
+    '~/assets/css/faq-markdown.css',
     '~/assets/css/style.css',
     '~/assets/css/design-overrides.css'
   ],

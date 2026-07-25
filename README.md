@@ -1,6 +1,6 @@
 # lvyv-web
 
-LVYV 官网，基于 Nuxt 4 构建并静态生成，由 Nginx 托管。
+LVYV 官网，基于 Nuxt 4 构建。普通页面静态托管，FAQ 内容页面由 Nuxt Node SSR 提供。
 
 ## 环境要求
 
@@ -32,7 +32,7 @@ npm run build
 npm run generate
 ```
 
-静态产物位于 `.output/public`。本地预览：
+SSR 构建产物位于 `.output/server`，公共静态资源位于 `.output/public`。本地预览：
 
 ```bash
 npm run preview
@@ -56,4 +56,10 @@ nuxt.config.ts
 
 ## 部署
 
-`deploy-web.sh` 会使用 Node 24 执行静态生成，将 `.output/public` 打包上传，并通过 Nginx 版本目录和软链接原子切换发布。
+`deploy-web.sh` 负责普通静态页面；`deploy/deploy-ssr.sh` 负责构建并原子发布 FAQ Node SSR 服务。SSR 发布会在健康检查成功后保留新版本，失败时恢复旧版本。
+
+HOST=127.0.0.1 \
+PORT=3001 \
+NUXT_CONTENT_API_BASE=http://127.0.0.1:8088/web-api \
+NUXT_PUBLIC_API_BASE=/web-api \
+node .output/server/index.mjs
