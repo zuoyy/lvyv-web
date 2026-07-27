@@ -45,6 +45,8 @@
             :mobile="form.mobile"
             :passport-country-code="form.passportCountryCode"
             :bio="form.bio"
+            :gender="form.gender"
+            :birthday="form.birthday"
             :preferences="preferences"
             :avatar="avatar"
             :timezone="form.timezone"
@@ -76,6 +78,8 @@ interface ProfileDraft {
   avatar: string
   timezone: string
   timezoneMode: number
+  gender: number
+  birthday: string
 }
 
 const auth = useMemberAuth()
@@ -101,6 +105,8 @@ const form = reactive({
   locale: 'en-US',
   timezone: '',
   timezoneMode: 0,
+  gender: 0,
+  birthday: '',
 })
 
 const displayName = computed(() => form.nickname.trim() || form.email.split('@')[0] || '')
@@ -131,6 +137,8 @@ onMounted(async () => {
     form.locale = member.locale || 'en-US'
     form.timezone = member.timezone || ''
     form.timezoneMode = member.timezoneMode || 0
+    form.gender = member.gender || 0
+    form.birthday = member.birthday || ''
     avatar.value = member.avatar || ''
     needsPassportCompletion.value = !form.passportCountryCode && route.query.complete === 'passport'
   } catch {
@@ -152,6 +160,8 @@ const saveProfile = async (draft: ProfileDraft) => {
     timezoneMode: draft.timezoneMode,
     passportCountryCode: draft.passportCountryCode,
     avatar: draft.avatar || undefined,
+    gender: draft.gender,
+    birthday: draft.birthday || null,
   })
 
   form.nickname = draft.nickname
@@ -160,6 +170,8 @@ const saveProfile = async (draft: ProfileDraft) => {
   form.bio = draft.bio
   form.timezone = draft.timezone
   form.timezoneMode = draft.timezoneMode
+  form.gender = draft.gender
+  form.birthday = draft.birthday
   preferences.value = [...draft.preferences]
   avatar.value = draft.avatar
   needsPassportCompletion.value = false

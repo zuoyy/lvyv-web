@@ -28,7 +28,19 @@ export default defineNuxtConfig({
     },
     prerender: {
       // 积分页中的未来功能入口尚未实现，不参与静态路由爬取。
-      ignore: ['/badges', '/trips']
+      ignore: [
+        '/badges',
+        '/trips',
+        '/faq',
+        '/faq/',
+        '/faq/**',
+        '/en/faq',
+        '/en/faq/',
+        '/en/faq/**',
+        '/zh/faq',
+        '/zh/faq/',
+        '/zh/faq/**'
+      ]
     }
   },
 

@@ -103,7 +103,7 @@ export const useMemberAuth = () => {
     resendVerificationCode: (email: string) => request<void>('/auth/resend-verification-code', { email }),
     forgotPassword: (email: string) => request<void>('/auth/forgot-password', { email }),
     resetPassword: (value: string, password: string) => request<void>('/auth/reset-password', { token: value, password }),
-    updateProfile: async (data: { email: string; mobile?: string; nickname?: string; locale: string; timezone: string; timezoneMode: number; passportCountryCode: string; avatar?: string; bio?: string }) => {
+    updateProfile: async (data: { email: string; mobile?: string; nickname?: string; locale: string; timezone: string; timezoneMode: number; passportCountryCode: string; avatar?: string; bio?: string; gender?: number; birthday?: string | null }) => {
       await request<void>('/auth/profile', data, 'PUT')
       return loadMember()
     },

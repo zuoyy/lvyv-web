@@ -43,6 +43,22 @@
           <input v-model="formData.mobile" class="text-input" type="tel" inputmode="tel" placeholder="+1 202 555 0123">
           <span class="field-hint">Only used for travel and emergency contact.</span>
         </label>
+
+        <label class="field">
+          <span class="field-label">Gender <em>Optional</em></span>
+          <select v-model.number="formData.gender" class="text-input">
+            <option :value="0">Prefer not to say</option>
+            <option :value="1">Male</option>
+            <option :value="2">Female</option>
+          </select>
+          <span class="field-hint">Used only to personalize your account experience.</span>
+        </label>
+
+        <label class="field">
+          <span class="field-label">Birthday <em>Optional</em></span>
+          <input v-model="formData.birthday" class="text-input" type="date" :max="today">
+          <span class="field-hint">Choose a date if you want us to remember it.</span>
+        </label>
       </div>
 
       <label class="field">
@@ -107,6 +123,8 @@ interface ProfileDraft {
   avatar: string
   timezone: string
   timezoneMode: number
+  gender: number
+  birthday: string
 }
 
 const props = defineProps<{
@@ -119,6 +137,8 @@ const props = defineProps<{
   avatar: string
   timezone: string
   timezoneMode: number
+  gender: number
+  birthday: string
   onSave: (draft: ProfileDraft) => Promise<void>
 }>()
 
@@ -131,7 +151,16 @@ const formData = reactive({
   preferences: [...props.preferences],
   timezone: props.timezone || detectMemberTimeZone(),
   timezoneMode: props.timezoneMode === 1 ? 1 : 0,
+  gender: props.gender || 0,
+  birthday: props.birthday || '',
 })
+
+const getLocalDateValue = (date = new Date()) => {
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
+  return localDate.toISOString().slice(0, 10)
+}
+
+const today = getLocalDateValue()
 
 const timezoneOptions = [
   { value: 'America/New_York', label: 'UTC-05:00 · New York' },
@@ -158,6 +187,8 @@ const syncFromProps = () => {
   formData.preferences = [...props.preferences]
   formData.timezone = props.timezone || detectMemberTimeZone()
   formData.timezoneMode = props.timezoneMode === 1 ? 1 : 0
+  formData.gender = props.gender || 0
+  formData.birthday = props.birthday || ''
   localAvatar.value = props.avatar
 }
 
@@ -184,6 +215,8 @@ const handleSubmit = async () => {
       avatar: localAvatar.value,
       timezone: formData.timezoneMode === 1 ? formData.timezone : detectMemberTimeZone(),
       timezoneMode: Number(formData.timezoneMode),
+      gender: Number(formData.gender) || 0,
+      birthday: formData.birthday || '',
     })
     statusMessage.value = 'Your profile has been updated.'
   } catch (caught) {
