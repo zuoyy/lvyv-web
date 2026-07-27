@@ -1,238 +1,37 @@
 <template>
-  <div class="points-card">
-    <div class="points-card-bg"></div>
-    <div class="points-card-content">
-      <div class="points-balance-section">
-        <div class="points-label">Available Points</div>
-        <div class="points-amount">{{ points.availablePoints.toLocaleString() }}</div>
-        <div class="points-equivalent">≈ ${{ equivalentAmount.toFixed(2) }} USD</div>
-      </div>
-      
-      <div class="points-divider"></div>
-      
-      <div class="points-level-section">
-        <div class="level-info">
-          <div class="level-badge">
-            <font-awesome-icon :icon="['fas', 'medal']" class="badge-icon" />
-            <span class="level-name">{{ points.levelCode + ' ' +points.levelName || 'Explorer' }}</span>
-          </div>
-          <div class="level-progress-text">
-            {{ points.levelPoints.toLocaleString() }} / {{ points.nextLevelPoints.toLocaleString() }} points to next level
-          </div>
-        </div>
-        <div class="level-progress-bar">
-          <div 
-            class="level-progress-fill" 
-            :style="{ width: progressPercentage + '%' }"
-          ></div>
-        </div>
-      </div>
-      
-      <div class="points-stats-row">
-        <div class="stat-item">
-          <div class="stat-value">{{ points.totalEarnedPoints.toLocaleString() }}</div>
-          <div class="stat-label">Total Earned</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-value">{{ points.totalSpentPoints.toLocaleString() }}</div>
-          <div class="stat-label">Total Spent</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-value">{{ points.frozenPoints.toLocaleString() }}</div>
-          <div class="stat-label">Frozen</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-value">{{ points.totalExpiredPoints.toLocaleString() }}</div>
-          <div class="stat-label">Expired</div>
-        </div>
+  <section class="points-overview" aria-label="Points balance">
+    <div class="balance-block">
+      <p>Available points</p>
+      <strong>{{ points.availablePoints.toLocaleString() }}</strong>
+      <span>About ${{ equivalentAmount.toFixed(2) }} USD in travel value</span>
+    </div>
+    <div class="level-block">
+      <div class="level-heading"><span><font-awesome-icon :icon="['fas', 'medal']" />{{ levelName }}</span><small>{{ progressLabel }}</small></div>
+      <div class="progress-track" role="progressbar" :aria-valuenow="progressPercentage" aria-valuemin="0" aria-valuemax="100"><span :style="{ width: `${progressPercentage}%` }" /></div>
+      <div class="points-stats">
+        <div><strong>{{ points.totalEarnedPoints.toLocaleString() }}</strong><span>Earned</span></div>
+        <div><strong>{{ points.totalSpentPoints.toLocaleString() }}</strong><span>Spent</span></div>
+        <div><strong>{{ points.frozenPoints.toLocaleString() }}</strong><span>Frozen</span></div>
+        <div><strong>{{ points.totalExpiredPoints.toLocaleString() }}</strong><span>Expired</span></div>
       </div>
     </div>
-  </div>
+  </section>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import type { PointsAccount } from './types'
-
-const props = defineProps<{
-  points: PointsAccount
-}>()
-
-const equivalentAmount = computed(() => {
-  return props.points.availablePoints * 0.001
-})
-
-const progressPercentage = computed(() => {
-  if (props.points.nextLevelPoints === 0) return 0
-  return Math.min(100, (props.points.levelPoints / props.points.nextLevelPoints) * 100)
-})
+const props = defineProps<{ points: PointsAccount }>()
+const equivalentAmount = computed(() => props.points.availablePoints * 0.001)
+const levelName = computed(() => [props.points.levelCode, props.points.levelName].filter(Boolean).join(' ') || 'Explorer')
+const progressPercentage = computed(() => props.points.nextLevelPoints > 0 ? Math.min(100, Math.round((props.points.levelPoints / props.points.nextLevelPoints) * 100)) : 100)
+const progressLabel = computed(() => props.points.nextLevelPoints > 0 ? `${props.points.levelPoints.toLocaleString()} / ${props.points.nextLevelPoints.toLocaleString()} to next level` : 'Highest level reached')
 </script>
 
 <style scoped>
-.points-card {
-  position: relative;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 10px 40px rgba(16, 84, 70, 0.15);
-}
-
-.points-card-bg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, #105446 0%, #1C846F 100%);
-}
-
-.points-card-content {
-  position: relative;
-  z-index: 1;
-  padding: 40px;
-  color: #ffffff;
-}
-
-.points-balance-section {
-  text-align: center;
-  margin-bottom: 32px;
-}
-
-.points-label {
-  font-family: 'Roboto', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  opacity: 0.8;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 8px;
-}
-
-.points-amount {
-  font-family: 'Didot', 'Playfair Display', Georgia, serif;
-  font-size: 64px;
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: -2px;
-  margin-bottom: 8px;
-}
-
-.points-equivalent {
-  font-family: 'Roboto', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 18px;
-  font-weight: 500;
-  opacity: 0.9;
-}
-
-.points-divider {
-  height: 1px;
-  background: rgba(255, 255, 255, 0.2);
-  margin: 0 20px 32px;
-}
-
-.points-level-section {
-  margin-bottom: 32px;
-}
-
-.level-info {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.level-badge {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(255, 255, 255, 0.15);
-  padding: 8px 16px;
-  border-radius: 20px;
-}
-
-.badge-icon {
-  font-size: 16px;
-  color: #CFF380;
-}
-
-.level-name {
-  font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.level-progress-text {
-  font-family: 'Roboto', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 13px;
-  opacity: 0.8;
-}
-
-.level-progress-bar {
-  height: 8px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.level-progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #CFF380, #A8E6CF);
-  border-radius: 4px;
-  transition: width 0.5s ease;
-}
-
-.points-stats-row {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
-}
-
-.stat-item {
-  text-align: center;
-}
-
-.stat-value {
-  font-family: 'Didot', 'Playfair Display', Georgia, serif;
-  font-size: 28px;
-  font-weight: 600;
-  line-height: 1.2;
-  margin-bottom: 4px;
-}
-
-.stat-label {
-  font-family: 'Roboto', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 12px;
-  font-weight: 500;
-  opacity: 0.7;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-@media (max-width: 768px) {
-  .points-card-content {
-    padding: 28px 20px;
-  }
-  
-  .points-amount {
-    font-size: 48px;
-  }
-  
-  .points-equivalent {
-    font-size: 16px;
-  }
-  
-  .level-info {
-    flex-direction: column;
-    gap: 8px;
-    text-align: center;
-  }
-  
-  .points-stats-row {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
-  }
-  
-  .stat-value {
-    font-size: 24px;
-  }
-}
+.points-overview { display: grid; grid-template-columns: minmax(230px, .8fr) minmax(0, 1.5fr); min-height: 230px; border: 1px solid #d7e0da; background: #fff; box-shadow: 0 14px 34px rgba(25,55,45,.06); }
+.balance-block { display: flex; flex-direction: column; justify-content: center; padding: 34px; background: #174d40; color: #fff; }.balance-block p { margin: 0 0 10px; color: #c9d8d2; font-size: 10px; font-weight: 800; text-transform: uppercase; }.balance-block strong { font: 600 54px/1 'Playfair Display', Georgia, serif; }.balance-block > span { margin-top: 10px; color: #cbd9d4; font-size: 11px; }
+.level-block { display: flex; flex-direction: column; justify-content: center; padding: 30px; }.level-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; }.level-heading > span { display: flex; align-items: center; gap: 8px; color: #304239; font-size: 13px; font-weight: 800; }.level-heading svg { color: #8da936; }.level-heading small { color: #87938c; font-size: 10px; }
+.progress-track { height: 7px; margin-top: 13px; overflow: hidden; background: #e5eae6; }.progress-track span { display: block; height: 100%; background: #9fbe4d; transition: width .4s ease; }
+.points-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 31px; }.points-stats div { display: flex; flex-direction: column; gap: 5px; }.points-stats strong { color: #2f4138; font: 600 20px/1 'Playfair Display', Georgia, serif; }.points-stats span { color: #89958f; font-size: 9px; font-weight: 700; text-transform: uppercase; }
+@media (max-width: 700px) { .points-overview { grid-template-columns: 1fr; }.balance-block { padding: 28px; }.balance-block strong { font-size: 46px; }.level-block { padding: 25px 22px; }.level-heading { align-items: flex-start; flex-direction: column; gap: 6px; }.points-stats { grid-template-columns: repeat(2, 1fr); gap: 20px; } }
 </style>

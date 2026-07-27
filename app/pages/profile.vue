@@ -1,70 +1,95 @@
 <template>
-  <div class="profile-container">
-    <button class="mobile-menu-btn" @click="showSidebar = true">
-      <font-awesome-icon :icon="['fas', 'bars']" />
-    </button>
-    
-    <div class="sidebar-overlay" v-if="showSidebar" @click="showSidebar = false"></div>
-    
-    <ProfileSidebar 
-      v-model:activeTab="activeTab" 
-      :show="showSidebar"
-      @close="showSidebar = false"
-    />
-    
-    <main class="profile-content">
-      <div class="content-wrapper">
-        <p v-if="needsPassportCompletion" class="profile-completion-banner">
-          Complete your passport country so we can personalize your travel planning.
-        </p>
-        <PersonalInfo
-          v-if="activeTab === 'personal-info'"
-          :email="form.email"
-          :nickname="form.nickname"
-          :mobile="form.mobile"
-          :passportCountryCode="form.passportCountryCode"
-          :bio="form.bio || ''"
-          :preferences="preferences"
-          :avatar="avatar"
-          :timezone="form.timezone"
-          :timezoneMode="form.timezoneMode"
-          @update:nickname="form.nickname = $event"
-          @update:mobile="form.mobile = $event"
-          @update:passportCountryCode="form.passportCountryCode = $event"
-          @update:bio="form.bio = $event"
-          @update:preferences="preferences = $event"
-          @update:avatar="avatar = $event"
-          @update:timezone="form.timezone = $event"
-          @update:timezoneMode="form.timezoneMode = $event"
-          @save="save"
-        />
-        
-        <AccountSecurity v-else-if="activeTab === 'account-security'" />
-        
-        <Settings v-else-if="activeTab === 'settings'" />
-        
-        <div v-else class="empty-state">
-          <p class="empty-title">Welcome to Your Profile</p>
-          <p class="empty-desc">Select a section from the sidebar to get started.</p>
+  <main class="profile-page">
+    <div v-if="loading" class="profile-loading" role="status">
+      <span class="loading-mark" />
+      <span>Loading your account...</span>
+    </div>
+
+    <template v-else>
+      <header class="profile-heading">
+        <div>
+          <p class="profile-eyebrow">My account</p>
+          <h1>Profile &amp; preferences</h1>
+          <p>Keep your travel details, security and communication choices up to date.</p>
+        </div>
+        <button class="mobile-menu-button" type="button" @click="showSidebar = true">
+          <font-awesome-icon :icon="['fas', 'bars']" />
+          <span>Account menu</span>
+        </button>
+      </header>
+
+      <div v-if="needsPassportCompletion" class="profile-completion-banner" role="status">
+        <font-awesome-icon :icon="['fas', 'circle-exclamation']" />
+        <div>
+          <strong>One detail left</strong>
+          <span>Add your passport country before you start planning.</span>
         </div>
       </div>
-    </main>
-  </div>
+
+      <div class="profile-layout">
+        <div v-if="showSidebar" class="sidebar-overlay" @click="showSidebar = false" />
+        <ProfileSidebar
+          v-model:active-tab="activeTab"
+          :show="showSidebar"
+          :display-name="displayName"
+          :email="form.email"
+          :avatar="avatar"
+          @close="showSidebar = false"
+        />
+
+        <section class="profile-workspace" :aria-label="activeSectionLabel">
+          <PersonalInfo
+            v-if="activeTab === 'personal-info'"
+            :email="form.email"
+            :nickname="form.nickname"
+            :mobile="form.mobile"
+            :passport-country-code="form.passportCountryCode"
+            :bio="form.bio"
+            :preferences="preferences"
+            :avatar="avatar"
+            :timezone="form.timezone"
+            :timezone-mode="form.timezoneMode"
+            :on-save="saveProfile"
+          />
+          <AccountSecurity v-else-if="activeTab === 'account-security'" />
+          <Settings v-else-if="activeTab === 'settings'" />
+        </section>
+      </div>
+    </template>
+  </main>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
 import ProfileSidebar from '~/components/profile/ProfileSidebar.vue'
 import PersonalInfo from '~/components/profile/PersonalInfo.vue'
 import AccountSecurity from '~/components/profile/AccountSecurity.vue'
 import Settings from '~/components/profile/Settings.vue'
 
+type ProfileSection = 'personal-info' | 'account-security' | 'settings'
+
+interface ProfileDraft {
+  nickname: string
+  mobile: string
+  passportCountryCode: string
+  bio: string
+  preferences: string[]
+  avatar: string
+  timezone: string
+  timezoneMode: number
+}
+
 const auth = useMemberAuth()
-const activeTab = ref('personal-info')
+const route = useRoute()
+const router = useRouter()
+const validSections: ProfileSection[] = ['personal-info', 'account-security', 'settings']
+const requestedSection = typeof route.query.section === 'string' ? route.query.section : ''
+const activeTab = ref<ProfileSection>(validSections.includes(requestedSection as ProfileSection)
+  ? requestedSection as ProfileSection
+  : 'personal-info')
 const avatar = ref('')
 const preferences = ref<string[]>([])
 const showSidebar = ref(false)
-const route = useRoute()
+const loading = ref(true)
 const needsPassportCompletion = ref(route.query.complete === 'passport')
 
 const form = reactive({
@@ -78,11 +103,23 @@ const form = reactive({
   timezoneMode: 0,
 })
 
+const displayName = computed(() => form.nickname.trim() || form.email.split('@')[0] || '')
+const activeSectionLabel = computed(() => ({
+  'personal-info': 'Personal information',
+  'account-security': 'Account security',
+  settings: 'Settings',
+})[activeTab.value])
+
+watch(activeTab, (section) => {
+  router.replace({ query: { ...route.query, section, complete: undefined } })
+})
+
 onMounted(async () => {
   if (!auth.token.value) {
     await navigateTo('/login/?redirect=/profile')
     return
   }
+
   try {
     const member = auth.member.value || await auth.loadMember()
     if (!member) throw new Error('Unable to load your profile')
@@ -91,130 +128,241 @@ onMounted(async () => {
     form.mobile = member.mobile || ''
     form.passportCountryCode = member.passportCountryCode || ''
     form.bio = member.bio || ''
-    form.locale = member.locale
-    form.timezone = member.timezone
-    form.timezoneMode = member.timezoneMode
+    form.locale = member.locale || 'en-US'
+    form.timezone = member.timezone || ''
+    form.timezoneMode = member.timezoneMode || 0
     avatar.value = member.avatar || ''
     needsPassportCompletion.value = !form.passportCountryCode && route.query.complete === 'passport'
   } catch {
     auth.clearSession()
     await navigateTo('/login/?redirect=/profile')
+    return
+  } finally {
+    loading.value = false
   }
 })
 
-const save = async () => {
+const saveProfile = async (draft: ProfileDraft) => {
   await auth.updateProfile({
-    ...form,
-    mobile: form.mobile || undefined,
-    nickname: form.nickname || undefined,
-    bio: form.bio || undefined,
+    email: form.email,
+    mobile: draft.mobile || undefined,
+    nickname: draft.nickname || undefined,
+    locale: form.locale,
+    timezone: draft.timezone,
+    timezoneMode: draft.timezoneMode,
+    passportCountryCode: draft.passportCountryCode,
+    avatar: draft.avatar || undefined,
   })
+
+  form.nickname = draft.nickname
+  form.mobile = draft.mobile
+  form.passportCountryCode = draft.passportCountryCode
+  form.bio = draft.bio
+  form.timezone = draft.timezone
+  form.timezoneMode = draft.timezoneMode
+  preferences.value = [...draft.preferences]
+  avatar.value = draft.avatar
   needsPassportCompletion.value = false
 }
 </script>
 
 <style scoped>
-.profile-container {
+.profile-page {
   min-height: 100vh;
-  background: #F8F8F8;
-  display: block;
+  padding: 124px 32px 96px;
+  background: #f4f6f3;
+  color: #1c2925;
 }
 
-.mobile-menu-btn {
+.profile-heading,
+.profile-layout,
+.profile-completion-banner {
+  width: min(1180px, 100%);
+  margin-inline: auto;
+}
+
+.profile-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 28px;
+  margin-bottom: 38px;
+}
+
+.profile-eyebrow {
+  margin: 0 0 10px;
+  color: #65746e;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.profile-heading h1 {
+  margin: 0;
+  color: #163e34;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(34px, 4vw, 50px);
+  font-weight: 600;
+  line-height: 1.05;
+}
+
+.profile-heading p:last-child {
+  max-width: 620px;
+  margin: 13px 0 0;
+  color: #63716c;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.mobile-menu-button {
+  min-height: 44px;
   display: none;
-  position: fixed;
-  top: calc(80px + 16px);
-  left: 16px;
-  z-index: 1000;
-  width: 44px;
-  height: 44px;
-  border: none;
-  background: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  align-items: center;
+  gap: 9px;
+  padding: 0 15px;
+  border: 1px solid #cad3ce;
+  background: #fff;
+  color: #174d40;
+  font: 700 13px/1 'Inter', sans-serif;
   cursor: pointer;
-  color: #105446;
-  font-size: 20px;
+}
+
+.profile-completion-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 28px;
+  padding: 16px 18px;
+  border-left: 4px solid #bfdc72;
+  background: #f8fbe9;
+  color: #30472c;
+}
+
+.profile-completion-banner > svg {
+  color: #5c7b30;
+  font-size: 19px;
+}
+
+.profile-completion-banner div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 9px;
+  font-size: 13px;
+}
+
+.profile-completion-banner strong {
+  color: #203a2a;
+}
+
+.profile-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 52px;
+}
+
+.profile-workspace {
+  min-width: 0;
+  flex: 1;
+  padding: 38px 42px 44px;
+  border: 1px solid #dfe5e1;
+  background: #fff;
+  box-shadow: 0 14px 38px rgba(28, 56, 47, 0.06);
+}
+
+.profile-loading {
+  min-height: 55vh;
+  display: flex;
   align-items: center;
   justify-content: center;
+  gap: 12px;
+  color: #65746e;
+  font-size: 14px;
+}
+
+.loading-mark {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #ccd5d0;
+  border-top-color: #174d40;
+  border-radius: 50%;
+  animation: spin 700ms linear infinite;
 }
 
 .sidebar-overlay {
   display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 950;
 }
 
-.profile-content {
-  margin-left: 200px;
-  padding: 80px 48px;
-  background: #ffffff;
-  min-height: 100vh;
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
-.content-wrapper {
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-.profile-completion-banner {
-  margin: 0 0 24px;
-  border-left: 3px solid #105446;
-  background: #edf5ed;
-  padding: 14px 16px;
-  color: #105446;
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 0;
-  color: #808080;
-}
-
-.empty-title {
-  font-family: 'Poppins', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 20px;
-  font-weight: 600;
-  color: #1a1a1a;
-  margin: 0 0 8px;
-}
-
-.empty-desc {
-  font-family: 'Roboto', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 15px;
-  color: #666666;
-  margin: 0;
-}
-
-@media (max-width: 768px) {
-  .mobile-menu-btn {
-    display: flex;
+@media (max-width: 980px) {
+  .profile-layout {
+    gap: 30px;
   }
-  
-  .sidebar-overlay {
+
+  .profile-workspace {
+    padding: 32px;
+  }
+}
+
+@media (max-width: 820px) {
+  .profile-page {
+    padding: 104px 20px 72px;
+  }
+
+  .profile-heading {
+    align-items: flex-start;
+    margin-bottom: 28px;
+  }
+
+  .profile-heading h1 {
+    font-size: 36px;
+  }
+
+  .mobile-menu-button {
+    display: flex;
+    flex: 0 0 auto;
+  }
+
+  .profile-layout {
     display: block;
   }
-  
-  .profile-content {
-    margin-left: 0;
-    padding: 24px;
-    padding-top: 80px;
+
+  .sidebar-overlay {
+    position: fixed;
+    z-index: 1090;
+    inset: 0;
+    display: block;
+    background: rgba(10, 25, 20, 0.46);
+  }
+
+  .profile-workspace {
+    padding: 28px 24px 34px;
   }
 }
 
-@media (min-width: 769px) {
-  .profile-container .profile-sidebar {
-    display: flex;
+@media (max-width: 560px) {
+  .profile-page {
+    padding-inline: 14px;
+  }
+
+  .profile-heading {
+    display: block;
+  }
+
+  .profile-heading h1 {
+    font-size: 32px;
+  }
+
+  .mobile-menu-button {
+    width: 100%;
+    justify-content: center;
+    margin-top: 20px;
+  }
+
+  .profile-workspace {
+    padding: 24px 18px 30px;
   }
 }
 </style>

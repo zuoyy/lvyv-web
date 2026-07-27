@@ -1,4 +1,4 @@
-const REGISTRATION_AVATAR_URLS = Array.from(
+export const REGISTRATION_AVATAR_URLS = Array.from(
   { length: 12 },
   (_, index) => `https://www.lvyv.com/images/avatar/avatar_${index + 1}.png`,
 )

@@ -1,114 +1,113 @@
 <template>
-  <div class="personal-info">
-    <div class="info-header">
-      <h2 class="section-title">Personal Info</h2>
-      <p class="section-desc">Update your personal information</p>
-    </div>
-    
-    <div class="info-content">
-      <div class="info-avatar">
-        <AvatarUploader v-model="localAvatar" />
+  <section class="personal-info">
+    <header class="section-header">
+      <div>
+        <p class="section-kicker">Profile</p>
+        <h2>Personal information</h2>
+        <p class="section-desc">The details that help us shape a better trip for you.</p>
       </div>
-      
-      <el-form :model="formData" label-position="top" class="info-form" @submit.prevent="handleSubmit">
-        <el-form-item label="Nickname">
-          <el-input
-            v-model="formData.nickname"
-            placeholder="Enter your nickname"
-            maxlength="50"
-            show-word-limit
-            class="form-input"
-          />
-        </el-form-item>
-        
-        <el-form-item label="Email">
-          <el-input
-            :value="email"
-            placeholder="Your email"
-            disabled
-            class="form-input form-input-readonly"
-          />
-          <small class="form-hint">Your verified login email cannot be changed here.</small>
-        </el-form-item>
-        
-        <el-form-item label="Country of Passport" :error="countryError">
-          <CountrySelect v-model="formData.passportCountryCode" placeholder="Select country" />
-        </el-form-item>
-        
-        <el-form-item label="Phone Number">
-          <el-input
-            v-model="formData.mobile"
-            placeholder="+1 202 555 0123"
-            class="form-input"
-          />
-          <small class="form-hint">Used for emergency contact (optional)</small>
-        </el-form-item>
-        
-        <el-form-item label="Bio">
-          <el-input
-            v-model="formData.bio"
-            type="textarea"
-            :rows="4"
-            placeholder="Tell us about yourself (max 200 characters)"
-            maxlength="200"
-            show-word-limit
-            class="form-textarea"
-          />
-        </el-form-item>
-        
-        <el-form-item label="Timezone">
-          <div class="timezone-item">
-            <div class="timezone-info">
-              <div class="timezone-label">{{ formData.timezoneMode === 1 ? 'Manual' : 'Auto-detect' }}</div>
-              <div class="timezone-desc">{{ formData.timezoneMode === 1 ? 'Manually set your timezone' : 'Automatically detected based on your location' }}</div>
-            </div>
-            <el-switch
-              v-model="formData.timezoneMode"
-              :active-value="1"
-              :inactive-value="0"
-              active-color="#105446"
-              inactive-color="#e5e5e5"
-            />
+      <span class="section-status"><font-awesome-icon :icon="['fas', 'check']" /> Private</span>
+    </header>
+
+    <form class="info-form" @submit.prevent="handleSubmit">
+      <div class="avatar-row">
+        <AvatarUploader v-model="localAvatar" />
+        <div class="avatar-copy">
+          <strong>Set your avatar</strong>
+          <p>Tap the avatar to update your profile photo.</p>
+          <span>Your avatar helps people recognise your account.</span>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <label class="field">
+          <span class="field-label">Nickname</span>
+          <input v-model="formData.nickname" class="text-input" type="text" maxlength="50" placeholder="What should we call you?">
+          <span class="field-meta">{{ formData.nickname.length }}/50</span>
+        </label>
+
+        <label class="field">
+          <span class="field-label">Email</span>
+          <input :value="email" class="text-input" type="email" readonly aria-describedby="email-note">
+          <span id="email-note" class="field-hint">Your verified sign-in email.</span>
+        </label>
+
+        <label class="field">
+          <span class="field-label">Country of passport <em>Required</em></span>
+          <CountrySelect v-model="formData.passportCountryCode" :invalid="countryInvalid" />
+          <span v-if="countryError" class="field-error">{{ countryError }}</span>
+        </label>
+
+        <label class="field">
+          <span class="field-label">Phone number <em>Optional</em></span>
+          <input v-model="formData.mobile" class="text-input" type="tel" inputmode="tel" placeholder="+1 202 555 0123">
+          <span class="field-hint">Only used for travel and emergency contact.</span>
+        </label>
+      </div>
+
+      <label class="field">
+        <span class="field-label">Bio <em>Optional</em></span>
+        <textarea v-model="formData.bio" class="text-input text-area" maxlength="200" rows="4" placeholder="Tell local friends a little about you." />
+        <span class="field-meta">{{ formData.bio.length }}/200</span>
+      </label>
+
+      <div class="preference-block">
+        <TravelPreferences v-model="formData.preferences" />
+      </div>
+
+      <section class="timezone-block" aria-labelledby="timezone-title">
+        <div class="timezone-heading">
+          <div>
+            <h3 id="timezone-title">Trip reminder time zone</h3>
+            <p>{{ formData.timezoneMode === 1 ? 'Using a fixed time zone.' : 'Off. We use your device time zone automatically.' }}</p>
           </div>
-          <div v-if="formData.timezoneMode === 1" class="timezone-select-wrapper">
-            <el-select
-              v-model="formData.timezone"
-              placeholder="Select timezone"
-              class="form-select timezone-select"
-              filterable
-              clearable
-            >
-              <el-option
-                v-for="tz in timezoneOptions"
-                :key="tz.value"
-                :label="tz.label"
-                :value="tz.value"
-              />
-            </el-select>
-          </div>
-        </el-form-item>
-        
-        <el-form-item>
-          <TravelPreferences v-model="formData.preferences" />
-        </el-form-item>
-        
-        <el-form-item class="form-actions">
-          <el-button type="default" @click="handleCancel">Cancel</el-button>
-          <el-button type="primary" :loading="saving" @click="handleSubmit">
-            {{ saving ? 'Saving...' : 'Save Changes' }}
-          </el-button>
-        </el-form-item>
-      </el-form>
-    </div>
-  </div>
+          <label class="toggle-control">
+            <input v-model="formData.timezoneMode" type="checkbox" :true-value="1" :false-value="0">
+            <span class="toggle-track"><span /></span>
+            <span class="sr-only">Use a fixed time zone</span>
+          </label>
+        </div>
+        <label v-if="formData.timezoneMode === 1" class="field timezone-select-field">
+          <span class="field-label">Choose a time zone</span>
+          <select v-model="formData.timezone" class="text-input">
+            <option value="">Select a time zone</option>
+            <option v-for="tz in timezoneOptions" :key="tz.value" :value="tz.value">{{ tz.label }}</option>
+          </select>
+        </label>
+      </section>
+
+      <div v-if="statusMessage" class="form-notice" :class="{ error: statusError }" role="status">
+        <font-awesome-icon :icon="['fas', statusError ? 'circle-exclamation' : 'check']" />
+        <span>{{ statusMessage }}</span>
+      </div>
+
+      <div class="form-actions">
+        <button class="button button-quiet" type="button" :disabled="saving" @click="handleCancel">Discard</button>
+        <button class="button button-primary" type="submit" :disabled="saving">
+          <span v-if="saving" class="button-spinner" />
+          {{ saving ? 'Saving changes' : 'Save changes' }}
+        </button>
+      </div>
+    </form>
+  </section>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { reactive, ref, watch } from 'vue'
 import AvatarUploader from './AvatarUploader.vue'
 import TravelPreferences from './TravelPreferences.vue'
 import CountrySelect from '../CountrySelect.vue'
+
+interface ProfileDraft {
+  nickname: string
+  mobile: string
+  passportCountryCode: string
+  bio: string
+  preferences: string[]
+  avatar: string
+  timezone: string
+  timezoneMode: number
+}
 
 const props = defineProps<{
   email: string
@@ -120,373 +119,139 @@ const props = defineProps<{
   avatar: string
   timezone: string
   timezoneMode: number
-}>()
-
-const emit = defineEmits<{
-  'update:nickname': [value: string]
-  'update:mobile': [value: string]
-  'update:passportCountryCode': [value: string]
-  'update:bio': [value: string]
-  'update:preferences': [value: string[]]
-  'update:avatar': [value: string]
-  'update:timezone': [value: string]
-  'update:timezoneMode': [value: number]
-  save: []
+  onSave: (draft: ProfileDraft) => Promise<void>
 }>()
 
 const localAvatar = ref(props.avatar)
-
 const formData = reactive({
   nickname: props.nickname,
   mobile: props.mobile,
   passportCountryCode: props.passportCountryCode,
   bio: props.bio,
   preferences: [...props.preferences],
-  timezone: props.timezone,
-  timezoneMode: props.timezoneMode
+  timezone: props.timezone || detectMemberTimeZone(),
+  timezoneMode: props.timezoneMode === 1 ? 1 : 0,
 })
 
 const timezoneOptions = [
-  { value: 'America/New_York', label: 'UTC-05:00 New York' },
-  { value: 'America/Los_Angeles', label: 'UTC-08:00 Los Angeles' },
-  { value: 'America/Chicago', label: 'UTC-06:00 Chicago' },
-  { value: 'America/Toronto', label: 'UTC-05:00 Toronto' },
-  { value: 'Europe/London', label: 'UTC+00:00 London' },
-  { value: 'Europe/Paris', label: 'UTC+01:00 Paris' },
-  { value: 'Europe/Berlin', label: 'UTC+01:00 Berlin' },
-  { value: 'Europe/Moscow', label: 'UTC+03:00 Moscow' },
-  { value: 'Asia/Tokyo', label: 'UTC+09:00 Tokyo' },
-  { value: 'Asia/Shanghai', label: 'UTC+08:00 Shanghai' },
-  { value: 'Asia/Hong_Kong', label: 'UTC+08:00 Hong Kong' },
-  { value: 'Asia/Singapore', label: 'UTC+08:00 Singapore' },
-  { value: 'Asia/Dubai', label: 'UTC+04:00 Dubai' },
-  { value: 'Australia/Sydney', label: 'UTC+10:00 Sydney' },
-  { value: 'Australia/Melbourne', label: 'UTC+10:00 Melbourne' },
-  { value: 'Oceania/Auckland', label: 'UTC+12:00 Auckland' },
-  { value: 'America/Sao_Paulo', label: 'UTC-03:00 Sao Paulo' },
-  { value: 'Africa/Cairo', label: 'UTC+02:00 Cairo' },
-  { value: 'Africa/Johannesburg', label: 'UTC+02:00 Johannesburg' },
-  { value: 'Asia/Seoul', label: 'UTC+09:00 Seoul' },
-  { value: 'Asia/Taipei', label: 'UTC+08:00 Taipei' },
-  { value: 'Asia/Bangkok', label: 'UTC+07:00 Bangkok' },
-  { value: 'Asia/Jakarta', label: 'UTC+07:00 Jakarta' },
-  { value: 'Asia/Mumbai', label: 'UTC+05:30 Mumbai' },
-  { value: 'America/Mexico_City', label: 'UTC-06:00 Mexico City' },
+  { value: 'America/New_York', label: 'UTC-05:00 · New York' },
+  { value: 'America/Los_Angeles', label: 'UTC-08:00 · Los Angeles' },
+  { value: 'Europe/London', label: 'UTC+00:00 · London' },
+  { value: 'Europe/Paris', label: 'UTC+01:00 · Paris' },
+  { value: 'Asia/Shanghai', label: 'UTC+08:00 · Shanghai' },
+  { value: 'Asia/Tokyo', label: 'UTC+09:00 · Tokyo' },
+  { value: 'Asia/Singapore', label: 'UTC+08:00 · Singapore' },
+  { value: 'Australia/Sydney', label: 'UTC+10:00 · Sydney' },
 ]
-
-watch(() => props.avatar, (value) => {
-  localAvatar.value = value
-})
-
-watch(() => props.nickname, (value) => {
-  if (!formData.nickname) {
-    formData.nickname = value
-  }
-})
-
-watch(() => props.mobile, (value) => {
-  if (!formData.mobile) {
-    formData.mobile = value
-  }
-})
-
-watch(() => props.passportCountryCode, (value) => {
-  if (!formData.passportCountryCode) {
-    formData.passportCountryCode = value
-  }
-})
-
-watch(() => props.bio, (value) => {
-  if (!formData.bio) {
-    formData.bio = value
-  }
-})
-
-watch(() => props.preferences, (value) => {
-  if (formData.preferences.length === 0 && value.length > 0) {
-    formData.preferences = [...value]
-  }
-})
-
-watch(() => props.timezone, (value) => {
-  formData.timezone = value
-})
-
-watch(() => props.timezoneMode, (value) => {
-  formData.timezoneMode = value
-})
 
 const saving = ref(false)
 const countryInvalid = ref(false)
 const countryError = ref('')
+const statusMessage = ref('')
+const statusError = ref(false)
+
+const syncFromProps = () => {
+  formData.nickname = props.nickname
+  formData.mobile = props.mobile
+  formData.passportCountryCode = props.passportCountryCode
+  formData.bio = props.bio
+  formData.preferences = [...props.preferences]
+  formData.timezone = props.timezone || detectMemberTimeZone()
+  formData.timezoneMode = props.timezoneMode === 1 ? 1 : 0
+  localAvatar.value = props.avatar
+}
+
+watch(() => props.avatar, (value) => { localAvatar.value = value })
+watch(() => formData.timezoneMode, (mode) => {
+  if (mode === 0 || !formData.timezone) formData.timezone = detectMemberTimeZone()
+})
 
 const handleSubmit = async () => {
-  countryInvalid.value = false
-  countryError.value = ''
-  
-  if (!formData.passportCountryCode) {
-    countryInvalid.value = true
-    countryError.value = 'Choose the country that issued your passport.'
-    return
-  }
-  
+  countryInvalid.value = !formData.passportCountryCode
+  countryError.value = countryInvalid.value ? 'Choose the country that issued your passport.' : ''
+  statusMessage.value = ''
+  statusError.value = false
+  if (countryInvalid.value) return
+
   saving.value = true
-  
   try {
-    emit('update:nickname', formData.nickname)
-    emit('update:mobile', formData.mobile)
-    emit('update:passportCountryCode', formData.passportCountryCode)
-    emit('update:bio', formData.bio)
-    emit('update:preferences', formData.preferences)
-    emit('update:avatar', localAvatar.value)
-    emit('update:timezone', formData.timezone)
-    emit('update:timezoneMode', formData.timezoneMode)
-    emit('save')
-    ElMessage.success('Your profile has been updated.')
+    await props.onSave({
+      nickname: formData.nickname.trim(),
+      mobile: formData.mobile.trim(),
+      passportCountryCode: formData.passportCountryCode,
+      bio: formData.bio.trim(),
+      preferences: [...formData.preferences],
+      avatar: localAvatar.value,
+      timezone: formData.timezoneMode === 1 ? formData.timezone : detectMemberTimeZone(),
+      timezoneMode: Number(formData.timezoneMode),
+    })
+    statusMessage.value = 'Your profile has been updated.'
   } catch (caught) {
-    ElMessage.error(caught instanceof Error ? caught.message : 'Unable to update your profile.')
+    statusError.value = true
+    statusMessage.value = caught instanceof Error ? caught.message : 'Unable to update your profile.'
   } finally {
     saving.value = false
   }
 }
 
 const handleCancel = () => {
-  localAvatar.value = props.avatar
-  formData.nickname = props.nickname
-  formData.mobile = props.mobile
-  formData.passportCountryCode = props.passportCountryCode
-  formData.bio = props.bio
-  formData.preferences = [...props.preferences]
-  formData.timezone = props.timezone
-  formData.timezoneMode = props.timezoneMode
+  syncFromProps()
+  countryInvalid.value = false
+  countryError.value = ''
+  statusMessage.value = ''
 }
-
-onMounted(() => {
-  if (typeof window !== 'undefined') {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-})
 </script>
 
 <style scoped>
-.personal-info {
-  max-width: 600px;
-}
-
-.info-header {
-  margin-bottom: 32px;
-}
-
-.section-title {
-  margin: 0;
-  font-family: 'Didot', 'Playfair Display', Georgia, serif;
-  font-size: 24px;
-  font-weight: 700;
-  color: #1D1D1D;
-}
-
-.section-desc {
-  margin: 8px 0 0;
-  font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 15px;
-  color: #666666;
-}
-
-.info-content {
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-}
-
-.info-avatar {
-  display: flex;
-  justify-content: center;
-  padding: 20px 0;
-  border-bottom: 1px solid #e5e5e5;
-}
-
-.info-form {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.info-form :deep(.el-form-item__label) {
-  font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-  color: #1D1D1D;
-  padding: 0 0 8px;
-}
-
-.form-input {
-  :deep(.el-input__wrapper) {
-    background: #f2f2f2;
-    border-radius: 6px;
-    border-color: #e5e5e5;
-    box-shadow: none;
-  }
-  
-  :deep(.el-input__wrapper:hover) {
-    border-color: #105446;
-  }
-  
-  :deep(.el-input__wrapper.is-focus) {
-    border-color: #C0F177;
-    box-shadow: none;
-  }
-  
-  :deep(.el-input__inner) {
-    font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-    font-size: 15px;
-    color: #1D1D1D;
-    padding: 12px 16px;
-  }
-}
-
-.form-input-readonly {
-  :deep(.el-input__wrapper) {
-    background: #e9e9e9;
-  }
-  
-  :deep(.el-input__inner) {
-    color: #808080;
-  }
-}
-
-.form-textarea {
-  :deep(.el-textarea__inner) {
-    background: #f2f2f2;
-    border-radius: 6px;
-    border-color: #e5e5e5;
-    font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-    font-size: 15px;
-    color: #1D1D1D;
-    padding: 12px 16px;
-  }
-  
-  :deep(.el-textarea__inner:hover) {
-    border-color: #105446;
-  }
-  
-  :deep(.el-textarea__inner:focus) {
-    border-color: #C0F177;
-    box-shadow: none;
-  }
-}
-
-.form-hint {
-  font-size: 12px;
-  color: #808080;
-  margin: 4px 0 0 5px;
-  display: block;
-}
-
-.form-actions {
-  display: flex;
-  gap: 16px;
-  justify-content: flex-end;
-  margin-top: 16px;
-  padding: 0;
-  
-  :deep(.el-button--default) {
-    padding: 12px 24px;
-    border: 1px solid #e5e5e5;
-    border-radius: 6px;
-    background: #ffffff;
-    color: #333333;
-    font-family: 'Roboto', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-    font-size: 15px;
-    font-weight: 500;
-    
-    &:hover {
-      border-color: #105446;
-      color: #105446;
-      background: #ffffff;
-    }
-  }
-  
-  :deep(.el-button--primary) {
-    padding: 12px 32px;
-    border: none;
-    border-radius: 6px;
-    background: #C0F177;
-    color: #1D1D1D;
-    font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-    font-size: 15px;
-    font-weight: 700;
-    
-    &:hover:not(:disabled) {
-      background: #b5e66e;
-    }
-    
-    &:disabled {
-      opacity: 0.6;
-    }
-  }
-}
-
-.info-message {
-  margin-top: 16px;
-}
-
-.timezone-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.timezone-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.timezone-label {
-  font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  color: #1D1D1D;
-}
-
-.timezone-desc {
-  font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 13px;
-  color: #808080;
-}
-
-.timezone-select-wrapper {
-  margin-top: 16px;
-}
-
-.timezone-select {
-  :deep(.el-select__wrapper) {
-    background: #ffffff;
-    border-radius: 8px;
-    border: 1px solid #e0e0e0;
-    box-shadow: none;
-    height: 48px;
-  }
-  
-  :deep(.el-select__wrapper:hover) {
-    border-color: #105446;
-  }
-  
-  :deep(.el-select__wrapper.is-focus) {
-    border-color: #C0F177;
-    box-shadow: none;
-  }
-  
-  :deep(.el-select__placeholder) {
-    font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-    font-size: 16px;
-    color: #999999;
-  }
-  
-  :deep(.el-select__text) {
-    font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-    font-size: 16px;
-    color: #1a1a1a;
-  }
-}
+.personal-info { max-width: 820px; }
+.section-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding-bottom: 28px; border-bottom: 1px solid #e1e7e2; }
+.section-kicker { margin: 0 0 8px; color: #6a7971; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.section-header h2 { margin: 0; color: #173f34; font: 600 30px/1.15 'Playfair Display', Georgia, serif; }
+.section-desc { margin: 9px 0 0; color: #718079; font-size: 14px; line-height: 1.5; }
+.section-status { display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px; background: #edf5ed; color: #386347; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.info-form { display: flex; flex-direction: column; gap: 28px; padding-top: 30px; }
+.avatar-row { display: flex; align-items: center; gap: 20px; padding-bottom: 26px; border-bottom: 1px solid #e9eeea; }
+.avatar-copy { display: flex; flex-direction: column; gap: 5px; }
+.avatar-copy strong { color: #24352e; font-size: 14px; }
+.avatar-copy p { max-width: 360px; margin: 0; color: #6d7a74; font-size: 13px; line-height: 1.5; }
+.avatar-copy span { color: #9aa59f; font-size: 11px; }
+.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 20px; }
+.field { position: relative; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.field-label { display: flex; align-items: baseline; gap: 7px; color: #26372f; font-size: 12px; font-weight: 700; }
+.field-label em { color: #84928b; font-size: 11px; font-style: normal; font-weight: 500; }
+.text-input { width: 100%; min-height: 46px; box-sizing: border-box; padding: 12px 13px; border: 1px solid #ccd6d0; border-radius: 2px; outline: none; background: #fff; color: #22352c; font: 400 14px/1.4 'Inter', sans-serif; transition: border-color .18s, box-shadow .18s; }
+.text-input:hover { border-color: #8ca59a; }
+.text-input:focus { border-color: #174d40; box-shadow: 0 0 0 3px rgba(23, 77, 64, .12); }
+.text-input[readonly] { background: #f2f5f2; color: #6e7d76; cursor: not-allowed; }
+select.text-input { appearance: auto; }
+.text-area { min-height: 120px; resize: vertical; }
+.field-hint, .field-meta { color: #8a9690; font-size: 11px; line-height: 1.35; }
+.field-meta { position: absolute; right: 0; bottom: -18px; }
+.field-error { color: #b0473d; font-size: 11px; }
+.preference-block { padding: 25px 0 0; border-top: 1px solid #e9eeea; }
+.timezone-block { padding: 24px 0 0; border-top: 1px solid #e9eeea; }
+.timezone-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.timezone-heading h3 { margin: 0; color: #26372f; font-size: 14px; }
+.timezone-heading p { margin: 5px 0 0; color: #7c8983; font-size: 12px; }
+.timezone-select-field { max-width: 380px; margin-top: 20px; }
+.toggle-control { position: relative; display: inline-flex; align-items: center; flex: 0 0 auto; cursor: pointer; }
+.toggle-control input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.toggle-track { width: 42px; height: 24px; display: flex; align-items: center; padding: 3px; box-sizing: border-box; border-radius: 30px; background: #c8d1cb; transition: background .18s; }
+.toggle-track span { width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .2); transition: transform .18s; }
+.toggle-control input:checked + .toggle-track { background: #174d40; }
+.toggle-control input:checked + .toggle-track span { transform: translateX(18px); }
+.toggle-control input:focus-visible + .toggle-track { outline: 3px solid rgba(23, 77, 64, .2); outline-offset: 2px; }
+.form-notice { display: flex; align-items: center; gap: 8px; padding: 12px 14px; background: #edf5ed; color: #386347; font-size: 13px; }
+.form-notice.error { background: #fff1ef; color: #a33e35; }
+.form-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding-top: 5px; }
+.button { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 9px; padding: 0 18px; border: 1px solid transparent; border-radius: 2px; font: 700 13px/1 'Inter', sans-serif; cursor: pointer; transition: background .18s, color .18s, border-color .18s; }
+.button:disabled { opacity: .58; cursor: wait; }
+.button-primary { background: #174d40; color: #fff; }
+.button-primary:hover:not(:disabled) { background: #0e392e; }
+.button-quiet { border-color: #ccd6d0; background: #fff; color: #52605b; }
+.button-quiet:hover:not(:disabled) { border-color: #174d40; color: #174d40; }
+.button-spinner { width: 13px; height: 13px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (max-width: 640px) { .section-header { display: block; } .section-status { margin-top: 16px; } .form-grid { grid-template-columns: 1fr; } .avatar-row { align-items: flex-start; } .avatar-copy { padding-top: 7px; } .form-actions { flex-direction: column-reverse; align-items: stretch; } .button { width: 100%; } }
 </style>

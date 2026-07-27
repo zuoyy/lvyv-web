@@ -1,190 +1,160 @@
 <template>
-  <div class="points-container">
-    <button class="mobile-menu-btn" @click="showSidebar = true">
-      <font-awesome-icon :icon="['fas', 'bars']" />
-    </button>
-    
-    <div class="sidebar-overlay" v-if="showSidebar" @click="showSidebar = false"></div>
-    
-    <ProfileSidebar 
-      v-model:activeTab="activeTab" 
-      :show="showSidebar"
-      @close="showSidebar = false"
-    />
-    
-    <main class="points-content">
-      <div class="content-wrapper">
-        <div class="page-header">
-          <h1 class="page-title">Points Rules</h1>
-          <p class="page-desc">Learn how to earn and spend your loyalty points</p>
-        </div>
-        
-        <div class="rules-section">
-          <div class="rules-card">
-            <div class="rules-card-header">
-              <font-awesome-icon :icon="['fas', 'gift']" class="rules-icon" />
-              <h2 class="rules-card-title">How to Earn Points</h2>
-            </div>
-            
-            <div class="rules-table-wrapper">
-              <table class="rules-table">
-                <thead>
-                  <tr>
-                    <th class="col-action">Action</th>
-                    <th class="col-points">Points</th>
-                    <th class="col-limit">Limit</th>
-                    <th class="col-description">Description</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(rule, index) in earnRules" :key="index" class="rule-row">
-                    <td class="col-action">
-                      <div class="action-cell">
-                        <font-awesome-icon :icon="rule.icon" class="action-icon" />
-                        <span class="action-text">{{ rule.action }}</span>
-                      </div>
-                    </td>
-                    <td class="col-points">
-                      <span class="points-value">+{{ rule.points }}</span>
-                    </td>
-                    <td class="col-limit">
-                      <span class="limit-value">{{ rule.limit }}</span>
-                    </td>
-                    <td class="col-description">
-                      <span class="description-text">{{ rule.description }}</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+  <AccountPageShell
+    active-page="points"
+    kicker="Loyalty"
+    title="Points rules"
+    description="A clear view of how points are earned, spent and tied to membership levels."
+    :ready="ready"
+  >
+    <template #actions>
+      <NuxtLink class="back-link" to="/points">
+        <font-awesome-icon :icon="['fas', 'arrow-left']" />
+        Back to points
+      </NuxtLink>
+    </template>
+
+    <div v-if="loadingAccount" class="content-state" role="status">
+      <span class="state-spinner" />
+      Loading rules...
+    </div>
+    <div v-else-if="accountError" class="content-state error-state">
+      <font-awesome-icon :icon="['fas', 'circle-exclamation']" />
+      <strong>We could not load your account.</strong>
+      <span>{{ accountError }}</span>
+      <button type="button" @click="reloadAccount">Try again</button>
+    </div>
+
+    <section v-else class="rules-page">
+      <div class="rules-summary">
+        <article v-for="item in summaryItems" :key="item.label" class="summary-card">
+          <font-awesome-icon :icon="item.icon" class="summary-icon" />
+          <div>
+            <p>{{ item.label }}</p>
+            <strong>{{ item.value }}</strong>
           </div>
-          
-          <div class="rules-card rules-card-spending">
-            <div class="rules-card-header spending-header">
-              <font-awesome-icon :icon="['fas', 'shopping-cart']" class="rules-icon" />
-              <h2 class="rules-card-title">How to Spend Points</h2>
-            </div>
-            
-            <div class="rules-table-wrapper">
-              <table class="rules-table">
-                <thead>
-                  <tr>
-                    <th class="col-action">Spending Method</th>
-                    <th class="col-points">Points Required</th>
-                    <th class="col-description">Description</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(rule, index) in spendRules" :key="index" class="rule-row">
-                    <td class="col-action">
-                      <div class="action-cell">
-                        <font-awesome-icon :icon="rule.icon" class="action-icon" />
-                        <span class="action-text">{{ rule.method }}</span>
-                      </div>
-                    </td>
-                    <td class="col-points">
-                      <span class="points-value spending-value">{{ rule.points }}</span>
-                    </td>
-                    <td class="col-description">
-                      <span class="description-text">{{ rule.description }}</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-          
-          <div class="rules-card rules-card-exchange">
-            <div class="rules-card-header exchange-header">
-              <font-awesome-icon :icon="['fas', 'exchange-alt']" class="rules-icon" />
-              <h2 class="rules-card-title">Exchange Rate Mechanism</h2>
-            </div>
-            
-            <div class="exchange-content">
-              <div class="exchange-section">
-                <h3 class="exchange-subtitle">Anchor Currency</h3>
-                <p class="exchange-text">United States Dollar (USD)</p>
-              </div>
-              
-              <div class="exchange-section">
-                <h3 class="exchange-subtitle">Fixed Rate</h3>
-                <p class="exchange-text">100 points = $1.00 USD</p>
-              </div>
-              
-              <div class="exchange-section">
-                <h3 class="exchange-subtitle">Multi-Currency Display</h3>
-                <p class="exchange-text">On the points detail page, the equivalent value is displayed based on the user's passport issuing country:</p>
-                <ul class="currency-list">
-                  <li class="currency-item">
-                    <font-awesome-icon :icon="['fas', 'check']" class="currency-check" />
-                    <span class="currency-text">US users: 100 points = $1.00</span>
-                  </li>
-                  <li class="currency-item">
-                    <font-awesome-icon :icon="['fas', 'check']" class="currency-check" />
-                    <span class="currency-text">European users: 100 points ≈ €0.93 (real-time rate)</span>
-                  </li>
-                  <li class="currency-item">
-                    <font-awesome-icon :icon="['fas', 'check']" class="currency-check" />
-                    <span class="currency-text">UK users: 100 points ≈ £0.79 (real-time rate)</span>
-                  </li>
-                </ul>
-              </div>
-              
-              <div class="exchange-section">
-                <h3 class="exchange-subtitle">Exchange Rate Source</h3>
-                <p class="exchange-text">OceanPay exchange rate API, updated daily at UTC 00:00</p>
-              </div>
-              
-              <div class="exchange-section">
-                <h3 class="exchange-subtitle">Deduction Calculation</h3>
-                <p class="exchange-text">When using points for deduction, the USD-equivalent amount is converted to the user's payment currency based on the real-time exchange rate at the time of payment.</p>
-              </div>
-            </div>
-          </div>
-          
-          <div class="rules-card rules-card-level">
-            <div class="rules-card-header level-header">
-              <font-awesome-icon :icon="['fas', 'trophy']" class="rules-icon" />
-              <h2 class="rules-card-title">Membership Level System</h2>
-            </div>
-            
-            <div class="level-content">
-              <div class="level-card" v-for="(level, index) in levels" :key="index">
-                <div class="level-header-row">
-                  <div class="level-badge-wrapper">
-                    <font-awesome-icon :icon="level.icon" class="level-icon" />
-                    <span class="level-name">{{ level.name }}</span>
-                  </div>
-                  <div class="level-rank">{{ index + 1 }}</div>
-                </div>
-                <div class="level-threshold">
-                  <span class="threshold-label">Points Threshold:</span>
-                  <span class="threshold-value">{{ level.threshold }}</span>
-                </div>
-                <div class="level-benefits">
-                  <span class="benefits-label">Benefits:</span>
-                  <ul class="benefits-list">
-                    <li v-for="(benefit, idx) in level.benefits" :key="idx" class="benefit-item">
-                      <font-awesome-icon :icon="['fas', 'star']" class="benefit-star" />
-                      <span class="benefit-text">{{ benefit }}</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        </article>
       </div>
-    </main>
-  </div>
+
+      <section class="rules-block">
+        <header class="block-header">
+          <div>
+            <p>Earn</p>
+            <h2>How points are earned</h2>
+          </div>
+          <span>Activities update after verification</span>
+        </header>
+
+        <div class="rule-grid">
+          <article v-for="rule in earnRules" :key="rule.action" class="rule-card">
+            <div class="rule-card-top">
+              <span class="rule-icon-wrap"><font-awesome-icon :icon="rule.icon" /></span>
+              <div>
+                <h3>{{ rule.action }}</h3>
+                <p>{{ rule.description }}</p>
+              </div>
+            </div>
+            <dl class="rule-meta">
+              <div>
+                <dt>Points</dt>
+                <dd>{{ rule.points }}</dd>
+              </div>
+              <div>
+                <dt>Limit</dt>
+                <dd>{{ rule.limit }}</dd>
+              </div>
+            </dl>
+          </article>
+        </div>
+      </section>
+
+      <section class="rules-block">
+        <header class="block-header">
+          <div>
+            <p>Spend</p>
+            <h2>How points are spent</h2>
+          </div>
+          <span>Redemptions follow the account balance</span>
+        </header>
+
+        <div class="spend-list">
+          <article v-for="rule in spendRules" :key="rule.method" class="spend-card">
+            <div class="rule-card-top">
+              <span class="rule-icon-wrap muted"><font-awesome-icon :icon="rule.icon" /></span>
+              <div>
+                <h3>{{ rule.method }}</h3>
+                <p>{{ rule.description }}</p>
+              </div>
+            </div>
+            <strong class="spend-points">{{ rule.points }}</strong>
+          </article>
+        </div>
+      </section>
+
+      <section class="rules-columns">
+        <article class="rules-block rules-panel">
+          <header class="block-header">
+            <div>
+              <p>Conversion</p>
+              <h2>Exchange rate</h2>
+            </div>
+          </header>
+
+          <div class="info-list">
+            <div v-for="item in exchangeItems" :key="item.label" class="info-row">
+              <span>{{ item.label }}</span>
+              <strong>{{ item.value }}</strong>
+            </div>
+          </div>
+
+          <p class="panel-note">
+            Conversion values are shown in USD first, then adapted to the user's payment currency at checkout.
+          </p>
+        </article>
+
+        <article class="rules-block rules-panel">
+          <header class="block-header">
+            <div>
+              <p>Levels</p>
+              <h2>Membership tiers</h2>
+            </div>
+            <span>Progress is based on accumulated level points</span>
+          </header>
+
+          <div class="level-list">
+            <div v-for="(level, index) in levels" :key="level.name" class="level-item">
+              <div class="level-head">
+                <div class="level-name-wrap">
+                  <span class="level-index">{{ index + 1 }}</span>
+                  <div>
+                    <strong>{{ level.name }}</strong>
+                    <p>{{ level.threshold }}</p>
+                  </div>
+                </div>
+                <font-awesome-icon :icon="level.icon" class="level-icon" />
+              </div>
+
+              <ul class="benefit-list">
+                <li v-for="benefit in level.benefits" :key="benefit">
+                  <font-awesome-icon :icon="['fas', 'check']" />
+                  <span>{{ benefit }}</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </article>
+      </section>
+    </section>
+  </AccountPageShell>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import ProfileSidebar from '~/components/profile/ProfileSidebar.vue'
+import AccountPageShell from '~/components/profile/AccountPageShell.vue'
 
-const activeTab = ref('points')
-const showSidebar = ref(false)
+interface SummaryItem {
+  label: string
+  value: string
+  icon: string[]
+}
 
 interface EarnRule {
   action: string
@@ -208,581 +178,442 @@ interface Level {
   icon: string[]
 }
 
+const { ready, accountError, initializeAccount } = useAccountPage('/points/rules')
+const loadingAccount = ref(false)
+
+const summaryItems: SummaryItem[] = [
+  { label: 'Anchor currency', value: 'USD', icon: ['fas', 'globe'] },
+  { label: 'Fixed rate', value: '100 points = $1.00', icon: ['fas', 'scale-balanced'] },
+  { label: 'Redemption', value: 'Up to 20% per order', icon: ['fas', 'ticket-simple'] },
+]
+
 const earnRules: EarnRule[] = [
-  {
-    action: 'Daily Login',
-    points: 5,
-    limit: 'Once per day',
-    description: 'Resets at UTC 00:00',
-    icon: ['fas', 'sign-in-alt']
-  },
-  {
-    action: 'Complete Registration',
-    points: 50,
-    limit: 'One-time',
-    description: 'Automatically awarded after registration',
-    icon: ['fas', 'user-plus']
-  },
-  {
-    action: 'Submit a Wish',
-    points: 20,
-    limit: 'Each time',
-    description: 'Awarded after successful wish submission',
-    icon: ['fas', 'heart']
-  },
-  {
-    action: 'Complete Payment',
-    points: 100,
-    limit: 'Per order',
-    description: 'Awarded after successful payment',
-    icon: ['fas', 'credit-card']
-  },
-  {
-    action: 'Complete Trip',
-    points: 200,
-    limit: 'Per order',
-    description: 'Automatically awarded 1 day after trip end date',
-    icon: ['fas', 'plane']
-  },
-  {
-    action: 'Publish Travel Note',
-    points: 30,
-    limit: 'Up to 3 times per day',
-    description: 'Awarded after successful publication',
-    icon: ['fas', 'book-open']
-  },
-  {
-    action: 'Travel Note Featured',
-    points: 100,
-    limit: 'Unlimited',
-    description: 'Awarded after admin marks as featured',
-    icon: ['fas', 'star']
-  },
-  {
-    action: 'Post Comment',
-    points: 5,
-    limit: 'Up to 10 times per day',
-    description: 'Awarded after successful comment submission',
-    icon: ['fas', 'comment']
-  },
-  {
-    action: 'Answer Question',
-    points: 10,
-    limit: 'Up to 5 times per day',
-    description: 'Awarded after successful answer submission',
-    icon: ['fas', 'help-circle']
-  },
-  {
-    action: 'Answer Accepted',
-    points: 50,
-    limit: 'Unlimited',
-    description: 'Awarded after asker accepts the answer',
-    icon: ['fas', 'check-circle']
-  },
-  {
-    action: 'Complete Task',
-    points: '20~100',
-    limit: 'Based on difficulty',
-    description: 'Awarded after task verification',
-    icon: ['fas', 'clipboard-list']
-  },
-  {
-    action: 'Invite Friend to Register',
-    points: 50,
-    limit: 'Per successful invite',
-    description: 'Awarded after friend completes registration',
-    icon: ['fas', 'share-alt']
-  },
-  {
-    action: 'Friend\'s First Wish',
-    points: 100,
-    limit: 'Per successful invite',
-    description: 'Awarded after friend submits their first wish',
-    icon: ['fas', 'users']
-  }
+  { action: 'Daily login', points: 5, limit: 'Once per day', description: 'Resets at UTC 00:00.', icon: ['fas', 'arrow-right-to-bracket'] },
+  { action: 'Complete registration', points: 50, limit: 'One time', description: 'Awarded after signup is confirmed.', icon: ['fas', 'user-plus'] },
+  { action: 'Submit a wish', points: 20, limit: 'Each submission', description: 'Awarded after the wish is created successfully.', icon: ['fas', 'heart'] },
+  { action: 'Complete payment', points: 100, limit: 'Per order', description: 'Awarded after payment succeeds.', icon: ['fas', 'credit-card'] },
+  { action: 'Complete trip', points: 200, limit: 'Per order', description: 'Awarded one day after the trip ends.', icon: ['fas', 'plane'] },
+  { action: 'Publish travel note', points: 30, limit: 'Up to 3 times a day', description: 'Awarded after the note is published.', icon: ['fas', 'book-open'] },
 ]
 
 const spendRules: SpendRule[] = [
-  {
-    method: 'Order Amount Deduction',
-    points: '100 points = $1.00 USD',
-    description: 'Maximum 20% of order amount can be deducted per order',
-    icon: ['fas', 'minus-circle']
-  },
-  {
-    method: 'Redeem Exclusive Badges',
-    points: '500-2000 points',
-    description: 'Special event badges, cannot be obtained through tasks',
-    icon: ['fas', 'award']
-  },
-  {
-    method: 'Redeem Free Modification',
-    points: '200 points/time',
-    description: 'After exceeding 1 free modification, points can be used for redemption',
-    icon: ['fas', 'edit']
-  }
+  { method: 'Order amount deduction', points: '100 points = $1.00 USD', description: 'Use points to offset part of an order.', icon: ['fas', 'circle-minus'] },
+  { method: 'Redeem exclusive badges', points: '500-2000 points', description: 'Special event rewards with limited availability.', icon: ['fas', 'award'] },
+  { method: 'Redeem free modification', points: '200 points / time', description: 'Use points after the free modification quota is used.', icon: ['fas', 'pen-to-square'] },
+]
+
+const exchangeItems = [
+  { label: 'Base value', value: '100 points = $1.00 USD' },
+  { label: 'Reference source', value: 'OceanPay exchange rate API' },
+  { label: 'Update cycle', value: 'Daily at UTC 00:00' },
+  { label: 'Checkout rule', value: 'Converted using the live payment currency rate' },
 ]
 
 const levels: Level[] = [
-  {
-    name: 'Explorer',
-    threshold: '0 - 999 points',
-    benefits: ['Basic benefits'],
-    icon: ['fas', 'compass']
-  },
-  {
-    name: 'Discoverer',
-    threshold: '1,000 - 4,999 points',
-    benefits: ['Points deduction rate improved to 105 points = $1'],
-    icon: ['fas', 'gem']
-  },
-  {
-    name: 'Storyteller',
-    threshold: '5,000 - 9,999 points',
-    benefits: ['+1 free modification', 'Priority access to new features'],
-    icon: ['fas', 'book']
-  },
-  {
-    name: 'Legend',
-    threshold: '10,000+ points',
-    benefits: ['Points deduction rate improved to 110 points = $1', 'Exclusive customer service channel'],
-    icon: ['fas', 'crown']
-  }
+  { name: 'Explorer', threshold: '0 - 999 points', benefits: ['Basic benefits'], icon: ['fas', 'compass'] },
+  { name: 'Discoverer', threshold: '1,000 - 4,999 points', benefits: ['Points deduction rate improves to 105 points = $1'], icon: ['fas', 'gem'] },
+  { name: 'Storyteller', threshold: '5,000 - 9,999 points', benefits: ['+1 free modification', 'Priority access to new features'], icon: ['fas', 'book'] },
+  { name: 'Legend', threshold: '10,000+ points', benefits: ['Points deduction rate improves to 110 points = $1', 'Exclusive customer service channel'], icon: ['fas', 'crown'] },
 ]
+
+const reloadAccount = async () => {
+  loadingAccount.value = true
+  try {
+    await initializeAccount()
+  } finally {
+    loadingAccount.value = false
+  }
+}
+
+onMounted(async () => {
+  await reloadAccount()
+})
 </script>
 
 <style scoped>
-.points-container {
-  min-height: 100vh;
-  background: #f5f7f3;
-  display: block;
-}
-
-.mobile-menu-btn {
-  display: none;
-  position: fixed;
-  top: calc(80px + 16px);
-  left: 16px;
-  z-index: 1000;
-  width: 44px;
-  height: 44px;
-  border: none;
-  background: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-  color: #105446;
-  font-size: 20px;
+.back-link {
+  min-height: 40px;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 1px solid #cad3ce;
+  background: #fff;
+  color: #174d40;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
 }
 
-.sidebar-overlay {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 950;
+.rules-page {
+  display: grid;
+  gap: 18px;
 }
 
-.points-content {
-  margin-left: 200px;
-  padding: 80px 48px;
-  background: #ffffff;
-  min-height: 100vh;
+.rules-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
 }
 
-.content-wrapper {
-  max-width: 1000px;
-  margin: 0 auto;
+.summary-card,
+.rule-card,
+.spend-card,
+.rules-panel {
+  border: 1px solid #dfe5e1;
+  background: #fff;
 }
 
-.page-header {
-  margin-bottom: 32px;
-}
-
-.page-title {
-  margin: 0;
-  font-family: 'Poppins', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 28px;
-  font-weight: 600;
-  color: #1a1a1a;
-}
-
-.page-desc {
-  margin: 8px 0 0;
-  font-family: 'Roboto', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 15px;
-  color: #666666;
-}
-
-.rules-section {
-  margin-top: 16px;
-}
-
-.rules-card {
-  background: #ffffff;
-  border-radius: 16px;
-  border: 1px solid #e5e5e5;
-  overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
-}
-
-.rules-card-header {
+.summary-card {
+  min-width: 0;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 24px 32px;
-  background: linear-gradient(135deg, #105446 0%, #1C846F 100%);
+  gap: 14px;
+  padding: 18px 20px;
 }
 
-.rules-icon {
-  font-size: 24px;
-  color: #CFF380;
+.summary-icon {
+  flex: 0 0 auto;
+  font-size: 18px;
+  color: #174d40;
 }
 
-.rules-card-title {
+.summary-card p,
+.block-header p,
+.rule-card-top p,
+.spend-card p,
+.level-head p,
+.panel-note {
   margin: 0;
-  font-family: 'Poppins', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 20px;
-  font-weight: 600;
-  color: #ffffff;
+  color: #6c7872;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
-.rules-table-wrapper {
-  overflow-x: auto;
+.summary-card strong {
+  display: block;
+  margin-top: 4px;
+  color: #163e34;
+  font-size: 15px;
+  line-height: 1.25;
 }
 
-.rules-table {
-  width: 100%;
-  border-collapse: collapse;
+.rules-block {
+  padding: 22px;
+  border: 1px solid #dfe5e1;
+  background: #fff;
 }
 
-.rules-table thead {
-  background: #f8faf6;
+.block-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
 }
 
-.rules-table th {
-  padding: 16px 20px;
-  text-align: left;
-  font-family: 'Roboto', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-  color: #666666;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+.block-header h2 {
+  margin: 2px 0 0;
+  color: #163e34;
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.block-header span {
+  color: #7c8882;
+  font-size: 12px;
   white-space: nowrap;
 }
 
-.rules-table th.col-action {
-  width: 20%;
+.rule-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 
-.rules-table th.col-points {
-  width: 12%;
+.rule-card,
+.spend-card {
+  min-width: 0;
+  padding: 18px;
 }
 
-.rules-table th.col-limit {
-  width: 18%;
-}
-
-.rules-table th.col-description {
-  width: 50%;
-}
-
-.rules-table tbody tr {
-  border-bottom: 1px solid #f2f2f2;
-  transition: background 0.2s;
-}
-
-.rules-table tbody tr:hover {
-  background: #fafdf7;
-}
-
-.rules-table tbody tr:last-child {
-  border-bottom: none;
-}
-
-.rules-table td {
-  padding: 16px 20px;
-}
-
-.action-cell {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.action-icon {
-  font-size: 18px;
-  color: #105446;
-}
-
-.action-text {
-  font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 15px;
-  font-weight: 500;
-  color: #1a1a1a;
-}
-
-.points-value {
-  font-family: 'Didot', 'Playfair Display', Georgia, serif;
-  font-size: 18px;
-  font-weight: 700;
-  color: #105446;
-}
-
-.limit-value {
-  font-family: 'Roboto', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 14px;
-  color: #666666;
-}
-
-.description-text {
-  font-family: 'Roboto', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 14px;
-  color: #808080;
-  line-height: 1.5;
-}
-
-.rules-card-spending {
-  margin-top: 24px;
-}
-
-.spending-header {
-  background: linear-gradient(135deg, #d32f2f 0%, #e57373 100%);
-}
-
-.spending-value {
-  color: #d32f2f;
-}
-
-.rules-card-exchange {
-  margin-top: 24px;
-}
-
-.exchange-header {
-  background: linear-gradient(135deg, #1565C0 0%, #42A5F5 100%);
-}
-
-.exchange-content {
-  padding: 24px 32px;
-}
-
-.exchange-section {
-  margin-bottom: 24px;
-}
-
-.exchange-section:last-child {
-  margin-bottom: 0;
-}
-
-.exchange-subtitle {
-  margin: 0 0 8px;
-  font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 15px;
-  font-weight: 600;
-  color: #1a1a1a;
-}
-
-.exchange-text {
-  margin: 0;
-  font-family: 'Roboto', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 14px;
-  color: #666666;
-  line-height: 1.5;
-}
-
-.currency-list {
-  margin: 12px 0 0 20px;
-  padding: 0;
-}
-
-.currency-item {
+.rule-card-top {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 14px;
 }
 
-.currency-item:last-child {
-  margin-bottom: 0;
+.rule-card-top h3,
+.spend-card h3 {
+  margin: 0;
+  color: #173f34;
+  font-size: 16px;
+  line-height: 1.25;
 }
 
-.currency-check {
-  font-size: 12px;
-  color: #105446;
-  flex-shrink: 0;
-  margin-top: 2px;
+.rule-card-top p {
+  margin-top: 5px;
 }
 
-.currency-text {
-  font-family: 'Roboto', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+.rule-icon-wrap {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #eaf2ed;
+  color: #174d40;
+}
+
+.rule-icon-wrap.muted {
+  background: #eef1ef;
+  color: #4a5b54;
+}
+
+.rule-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 16px 0 0;
+}
+
+.rule-meta div {
+  min-width: 0;
+  padding-top: 12px;
+  border-top: 1px solid #edf1ee;
+}
+
+.rule-meta dt {
+  color: #7a8680;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.rule-meta dd {
+  margin: 4px 0 0;
+  color: #1d2d28;
   font-size: 14px;
-  color: #666666;
+  font-weight: 700;
 }
 
-.rules-card-level {
-  margin-top: 24px;
+.spend-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
 }
 
-.level-header {
-  background: linear-gradient(135deg, #FF8F00 0%, #FFB300 100%);
+.spend-card {
+  display: grid;
+  gap: 18px;
 }
 
-.level-content {
-  padding: 24px 32px;
+.spend-points {
+  color: #174d40;
+  font-size: 20px;
+  line-height: 1.15;
 }
 
-.level-card {
-  background: #fafdf7;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 16px;
-  border: 1px solid #e8f5e9;
+.rules-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 
-.level-card:last-child {
-  margin-bottom: 0;
+.rules-panel {
+  display: grid;
+  gap: 16px;
 }
 
-.level-header-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.level-badge-wrapper {
-  display: flex;
-  align-items: center;
+.info-list {
+  display: grid;
   gap: 10px;
 }
 
-.level-icon {
-  font-size: 24px;
-  color: #105446;
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border: 1px solid #edf1ee;
+  background: #f8faf8;
 }
 
-.level-name {
-  font-family: 'Poppins', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 18px;
-  font-weight: 600;
-  color: #1a1a1a;
+.info-row span {
+  color: #6c7872;
+  font-size: 12px;
 }
 
-.level-rank {
-  font-family: 'Didot', 'Playfair Display', Georgia, serif;
-  font-size: 32px;
-  font-weight: 700;
-  color: #CFF380;
-  opacity: 0.5;
+.info-row strong {
+  color: #173f34;
+  font-size: 13px;
+  text-align: right;
 }
 
-.level-threshold {
+.panel-note {
+  padding-top: 2px;
+}
+
+.level-list {
+  display: grid;
+  gap: 12px;
+}
+
+.level-item {
+  padding: 16px;
+  border: 1px solid #edf1ee;
+  background: #fafdf9;
+}
+
+.level-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.level-name-wrap {
   display: flex;
   align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.level-index {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #174d40;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.level-name-wrap strong {
+  display: block;
+  color: #173f34;
+  font-size: 15px;
+}
+
+.level-icon {
+  color: #b68816;
+  font-size: 18px;
+}
+
+.benefit-list {
+  display: grid;
   gap: 8px;
-  margin-bottom: 12px;
-}
-
-.threshold-label {
-  font-family: 'Roboto', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 13px;
-  font-weight: 500;
-  color: #666666;
-}
-
-.threshold-value {
-  font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 14px;
-  font-weight: 600;
-  color: #105446;
-}
-
-.level-benefits {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.benefits-label {
-  font-family: 'Roboto', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 13px;
-  font-weight: 500;
-  color: #666666;
-}
-
-.benefits-list {
-  margin: 0;
+  margin: 12px 0 0;
   padding: 0;
   list-style: none;
 }
 
-.benefit-item {
+.benefit-list li {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
-  margin-bottom: 6px;
+  color: #5d6b65;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
-.benefit-item:last-child {
-  margin-bottom: 0;
+.benefit-list svg {
+  margin-top: 3px;
+  color: #174d40;
 }
 
-.benefit-star {
-  font-size: 12px;
-  color: #FFB300;
+.content-state {
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid #dfe5e1;
+  background: #fff;
+  color: #75827c;
+  font-size: 13px;
+  text-align: center;
 }
 
-.benefit-text {
-  font-family: 'Roboto', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 14px;
-  color: #666666;
+.content-state strong {
+  color: #2e4137;
+  font-size: 16px;
 }
 
-@media (max-width: 768px) {
-  .mobile-menu-btn {
-    display: flex;
+.content-state button {
+  margin-top: 4px;
+  padding: 10px 14px;
+  border: 1px solid #174d40;
+  background: #174d40;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.error-state > svg {
+  color: #a33e35;
+  font-size: 24px;
+}
+
+.state-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #ccd5d0;
+  border-top-color: #174d40;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
-  
-  .sidebar-overlay {
-    display: block;
+}
+
+@media (max-width: 1024px) {
+  .rules-summary,
+  .rules-columns {
+    grid-template-columns: 1fr;
   }
-  
-  .points-content {
-    margin-left: 0;
-    padding: 24px;
-    padding-top: 80px;
+
+  .spend-list,
+  .rule-grid {
+    grid-template-columns: 1fr;
   }
-  
-  .rules-card-header {
-    padding: 20px 24px;
+}
+
+@media (max-width: 700px) {
+  .rules-block {
+    padding: 18px;
   }
-  
-  .rules-card-title {
-    font-size: 18px;
+
+  .block-header {
+    align-items: flex-start;
+    flex-direction: column;
   }
-  
-  .rules-table th,
-  .rules-table td {
-    padding: 12px 16px;
-    font-size: 13px;
+
+  .block-header span {
+    white-space: normal;
   }
-  
-  .action-text {
-    font-size: 14px;
+
+  .rule-card,
+  .spend-card,
+  .level-item {
+    padding: 16px;
   }
-  
-  .points-value {
-    font-size: 16px;
+
+  .rule-meta {
+    grid-template-columns: 1fr;
   }
-  
-  .description-text {
-    font-size: 13px;
+
+  .info-row {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 </style>

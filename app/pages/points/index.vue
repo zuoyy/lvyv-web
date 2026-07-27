@@ -1,263 +1,75 @@
 <template>
-  <div class="points-container">
-    <button class="mobile-menu-btn" @click="showSidebar = true">
-      <font-awesome-icon :icon="['fas', 'bars']" />
-    </button>
-    
-    <div class="sidebar-overlay" v-if="showSidebar" @click="showSidebar = false"></div>
-    
-    <ProfileSidebar 
-      v-model:activeTab="activeTab" 
-      :show="showSidebar"
-      @close="showSidebar = false"
-    />
-    
-    <main class="points-content">
-      <div class="content-wrapper">
-        <div class="page-header">
-          <h1 class="page-title">Points & Rewards</h1>
-          <p class="page-desc">Track your loyalty points and rewards</p>
-        </div>
-        
-        <PointsCard v-if="pointsData" :points="pointsData" />
-        
-        <div class="loading-state" v-else>
-          <font-awesome-icon :icon="['fas', 'circle-notch']" class="loading-icon" spin />
-          <p>Loading your points...</p>
-        </div>
-        
-        <TransactionList 
-          v-if="pointsData"
-          :transactions="transactions"
-          :loading="loadingTransactions"
-          :currentPage="currentPage"
-          :size="size"
-          :total="total"
-          :activeFilter="activeFilter"
-          @filter-change="handleFilterChange"
-          @prev-page="handlePrevPage"
-          @next-page="handleNextPage"
-        />
-      </div>
-    </main>
-  </div>
+  <AccountPageShell
+    active-page="points"
+    kicker="Loyalty"
+    title="Points & rewards"
+    description="See your balance, membership progress and every point movement in one place."
+    :ready="ready"
+  >
+    <div v-if="loadingAccount" class="content-state" role="status"><span class="state-spinner" />Loading your points...</div>
+    <div v-else-if="accountError" class="content-state error-state"><font-awesome-icon :icon="['fas', 'circle-exclamation']" /><strong>We could not load your points.</strong><span>{{ accountError }}</span><button type="button" @click="fetchAccount">Try again</button></div>
+    <template v-else-if="pointsData">
+      <PointsCard :points="pointsData" />
+      <TransactionList :transactions="transactions" :loading="loadingTransactions" :current-page="currentPage" :size="size" :total="total" :active-filter="activeFilter" @filter-change="handleFilterChange" @prev-page="handlePrevPage" @next-page="handleNextPage" />
+    </template>
+  </AccountPageShell>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import ProfileSidebar from '~/components/profile/ProfileSidebar.vue'
+import AccountPageShell from '~/components/profile/AccountPageShell.vue'
 import PointsCard from '~/components/points/PointsCard.vue'
 import TransactionList from '~/components/points/TransactionList.vue'
 import type { PointsAccount, Transaction, TransactionPageResponse, FilterType } from '~/components/points/types'
 
-const auth = useMemberAuth()
-const activeTab = ref('points')
-const showSidebar = ref(false)
+interface ApiResult<T> { code: number; msg?: string; data: T }
+const { auth, ready, initializeAccount } = useAccountPage('/points')
+const config = useRuntimeConfig()
 const pointsData = ref<PointsAccount | null>(null)
-
+const loadingAccount = ref(false)
+const accountError = ref('')
 const activeFilter = ref<FilterType>(0)
 const transactions = ref<Transaction[]>([])
 const loadingTransactions = ref(false)
 const currentPage = ref(1)
 const size = ref(20)
 const total = ref(0)
+const headers = computed(() => ({ Authorization: `Bearer ${auth.token.value}`, 'X-Time-Zone': auth.member.value?.timezone || detectMemberTimeZone() }))
 
 const fetchTransactions = async () => {
-  if (!auth.token.value) return
-  
   loadingTransactions.value = true
-  
   try {
-    const config = useRuntimeConfig()
-    const token = useCookie<string | null>('token')
-    
-    const params: Record<string, any> = {
-      page: currentPage.value,
-      size: size.value
-    }
-    
-    if (activeFilter.value !== 0) {
-      params.changeType = activeFilter.value
-    }
-    
-    const response = await $fetch<{ code: number; msg?: string; data: TransactionPageResponse }>(
-      '/points/transactions/page',
-      {
-        baseURL: config.public.apiBase as string,
-        headers: {
-          Authorization: `Bearer ${token.value}`
-        },
-        params
-      }
-    )
-    
-    if (response.code === 200) {
-      transactions.value = response.data.list
-      total.value = response.data.total
-      currentPage.value = response.data.page
-      size.value = response.data.size
-    }
-  } catch (error) {
-    console.error('Failed to fetch transactions:', error)
-  } finally {
-    loadingTransactions.value = false
-  }
+    const response = await $fetch<ApiResult<TransactionPageResponse>>('/points/transactions/page', { baseURL: config.public.apiBase as string, headers: headers.value, params: { page: currentPage.value, size: size.value, ...(activeFilter.value ? { changeType: activeFilter.value } : {}) } })
+    if (response.code !== 200) throw new Error(response.msg || 'Request failed')
+    transactions.value = response.data.list
+    total.value = response.data.total
+    currentPage.value = response.data.page
+    size.value = response.data.size
+  } catch {
+    transactions.value = []
+    total.value = 0
+  } finally { loadingTransactions.value = false }
 }
-
-const handleFilterChange = (value: FilterType) => {
-  activeFilter.value = value
-  currentPage.value = 1
-  fetchTransactions()
+const fetchAccount = async () => {
+  loadingAccount.value = true
+  accountError.value = ''
+  try {
+    const response = await $fetch<ApiResult<PointsAccount>>('/points/account', { baseURL: config.public.apiBase as string, headers: headers.value })
+    if (response.code !== 200) throw new Error(response.msg || 'Request failed')
+    pointsData.value = response.data
+    await fetchTransactions()
+  } catch (caught) {
+    accountError.value = caught instanceof Error ? caught.message : 'Request failed.'
+  } finally { loadingAccount.value = false }
 }
-
-const handlePrevPage = () => {
-  if (currentPage.value > 1) {
-    currentPage.value--
-    fetchTransactions()
-  }
-}
-
-const handleNextPage = () => {
-  const totalPages = Math.max(1, Math.ceil(total.value / size.value))
-  if (currentPage.value < totalPages) {
-    currentPage.value++
-    fetchTransactions()
-  }
-}
-
+const handleFilterChange = (value: FilterType) => { activeFilter.value = value; currentPage.value = 1; fetchTransactions() }
+const handlePrevPage = () => { if (currentPage.value > 1) { currentPage.value--; fetchTransactions() } }
+const handleNextPage = () => { if (currentPage.value < Math.ceil(total.value / size.value)) { currentPage.value++; fetchTransactions() } }
 onMounted(async () => {
-  if (!auth.token.value) {
-    await navigateTo('/login/?redirect=/points')
-    return
-  }
-  
-  try {
-    const config = useRuntimeConfig()
-    const token = useCookie<string | null>('token')
-    
-    const [accountResponse] = await Promise.all([
-      $fetch<{ code: number; msg?: string; data: PointsAccount }>(
-        '/points/account',
-        {
-          baseURL: config.public.apiBase as string,
-          headers: {
-            Authorization: `Bearer ${token.value}`
-          }
-        }
-      ),
-      fetchTransactions()
-    ])
-    
-    if (accountResponse.code === 200) {
-      pointsData.value = accountResponse.data
-    }
-  } catch (error) {
-    console.error('Failed to fetch points:', error)
-  }
+  if (!await initializeAccount()) return
+  await fetchAccount()
 })
 </script>
 
 <style scoped>
-.points-container {
-  min-height: 100vh;
-  background: #f5f7f3;
-  display: block;
-}
-
-.mobile-menu-btn {
-  display: none;
-  position: fixed;
-  top: calc(80px + 16px);
-  left: 16px;
-  z-index: 1000;
-  width: 44px;
-  height: 44px;
-  border: none;
-  background: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-  color: #105446;
-  font-size: 20px;
-  align-items: center;
-  justify-content: center;
-}
-
-.sidebar-overlay {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 950;
-}
-
-.points-content {
-  margin-left: 200px;
-  padding: 80px 48px;
-  background: #ffffff;
-  min-height: 100vh;
-}
-
-.content-wrapper {
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-.page-header {
-  margin-bottom: 32px;
-}
-
-.page-title {
-  margin: 0;
-  font-family: 'Poppins', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 28px;
-  font-weight: 600;
-  color: #1a1a1a;
-}
-
-.page-desc {
-  margin: 8px 0 0;
-  font-family: 'Roboto', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 15px;
-  color: #666666;
-}
-
-.loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 0;
-  color: #808080;
-}
-
-.loading-icon {
-  font-size: 32px;
-  color: #105446;
-  margin-bottom: 16px;
-}
-
-.loading-state p {
-  font-family: 'Roboto', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 15px;
-}
-
-@media (max-width: 768px) {
-  .mobile-menu-btn {
-    display: flex;
-  }
-  
-  .sidebar-overlay {
-    display: block;
-  }
-  
-  .points-content {
-    margin-left: 0;
-    padding: 24px;
-    padding-top: 80px;
-  }
-}
+.content-state { min-height: 340px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px; border: 1px solid #dfe5e1; background: #fff; color: #75827c; font-size: 13px; text-align: center; }.content-state strong { color: #2e4137; font-size: 16px; }.content-state button { margin-top: 7px; padding: 9px 13px; border: 1px solid #174d40; background: #174d40; color: #fff; font-weight: 700; cursor: pointer; }.error-state > svg { color: #a33e35; font-size: 24px; }.state-spinner { width: 18px; height: 18px; border: 2px solid #ccd5d0; border-top-color: #174d40; border-radius: 50%; animation: spin .7s linear infinite; }@keyframes spin { to { transform: rotate(360deg); } }
 </style>
