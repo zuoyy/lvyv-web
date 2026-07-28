@@ -6,6 +6,24 @@
   </div>
 </template>
 
+<script setup lang="ts">
+const title = 'Chengdu | Lvyv'
+const description = 'Explore Chengdu with Lvyv and discover local encounters beyond ordinary sightseeing.'
+
+useLvyvSeo({
+  title,
+  description,
+  path: '/cities/chengdu',
+  jsonLd: [
+    webPageJsonLd(title, description, '/cities/chengdu'),
+    breadcrumbJsonLd([
+      { name: 'Home', path: '/' },
+      { name: 'Chengdu', path: '/cities/chengdu' }
+    ])
+  ]
+})
+</script>
+
 <style scoped>
 .blank-page-container {
   display: flex;

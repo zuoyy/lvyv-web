@@ -17,7 +17,10 @@ export default defineNuxtConfig({
     routeRules: {
       '/faq/**': { swr: 60 },
       '/en/faq/**': { swr: 60 },
-      '/zh/faq/**': { swr: 60 }
+      '/zh/faq/**': { swr: 60 },
+      '/sitemap.xml': { swr: 300 },
+      '/sitemaps/**': { swr: 300 },
+      '/robots.txt': { swr: 300 }
     },
     devProxy: {
       '/web-api': {

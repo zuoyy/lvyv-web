@@ -98,6 +98,8 @@
 <script setup lang="ts">
 import AccountPageShell from '~/components/profile/AccountPageShell.vue'
 
+useNoIndex()
+
 interface EnumLabel { code: string; messageKey: string; label: string }
 interface WishItem {
   id: number; wishNo: string; cityCode: string; cityLabel: string; tripDays: number; startDate?: string

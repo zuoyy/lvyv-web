@@ -27,6 +27,8 @@
 <script setup lang="ts">
 import AccountPageShell from '~/components/profile/AccountPageShell.vue'
 
+useNoIndex()
+
 interface Badge { id: string; name: string; description: string; requirement: string; earned: boolean; earnedText?: string; tone: string; icon: string[] }
 const { ready, initializeAccount } = useAccountPage('/badges')
 const badges: Badge[] = [

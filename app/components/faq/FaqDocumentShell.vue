@@ -43,17 +43,23 @@
           <p class="sidebar-caption">{{ copy.caption }}</p>
 
           <nav class="doc-navigation" :aria-label="copy.documentCategories">
-            <section v-for="category in filteredCategories" :key="category.id" class="doc-category">
-              <button class="category-toggle" type="button" @click="toggleCategory(category.id)">
+            <details
+              v-for="category in filteredCategories"
+              :key="category.id"
+              class="doc-category"
+              :open="expandedCategories.has(category.id)"
+              @toggle="syncCategoryExpansion(category.id, $event)"
+            >
+              <summary class="category-toggle">
                 <span>{{ category.name }}</span>
                 <FontAwesomeIcon
                   :icon="faChevronRight"
                   :class="{ 'is-expanded': expandedCategories.has(category.id) }"
                   aria-hidden="true"
                 />
-              </button>
+              </summary>
 
-              <div v-if="expandedCategories.has(category.id)" class="category-articles">
+              <div class="category-articles">
                 <NuxtLink
                   v-for="article in category.articles"
                   :key="article.contentKey"
@@ -65,7 +71,7 @@
                   {{ article.title }}
                 </NuxtLink>
               </div>
-            </section>
+            </details>
 
             <p v-if="searching" class="empty-search">{{ copy.searching }}</p>
             <p v-else-if="searchQuery.trim() && filteredCategories.length === 0" class="empty-search">
@@ -234,10 +240,11 @@ const formatDate = (value?: string) => value
   ? new Date(value).toLocaleDateString(props.locale === 'zh-CN' ? 'zh-CN' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
   : ''
 
-const toggleCategory = (categoryId: number) => {
+const syncCategoryExpansion = (categoryId: number, event: Event) => {
+  const details = event.currentTarget as HTMLDetailsElement
   const next = new Set(expandedCategories.value)
-  if (next.has(categoryId)) next.delete(categoryId)
-  else next.add(categoryId)
+  if (details.open) next.add(categoryId)
+  else next.delete(categoryId)
   expandedCategories.value = next
 }
 
@@ -318,7 +325,8 @@ onBeforeUnmount(() => {
 .doc-navigation { display: flex; flex-direction: column; gap: 7px; }
 .doc-category { border-bottom: 1px solid var(--help-border); padding-bottom: 7px; }
 .category-toggle, .article-link { background: transparent; border: 0; cursor: pointer; font: inherit; text-align: left; width: 100%; }
-.category-toggle { align-items: center; color: var(--help-ink); display: flex; font-size: 13px; font-weight: 700; justify-content: space-between; padding: 9px 0; }
+.category-toggle { align-items: center; color: var(--help-ink); display: flex; font-size: 13px; font-weight: 700; justify-content: space-between; list-style: none; padding: 9px 0; }
+.category-toggle::-webkit-details-marker { display: none; }
 .category-toggle svg { color: #93a09a; font-size: 11px; transition: transform 0.2s ease; }
 .category-toggle svg.is-expanded { transform: rotate(90deg); }
 .category-articles { display: flex; flex-direction: column; gap: 2px; padding: 0 0 5px 10px; }

@@ -84,6 +84,7 @@
 definePageMeta({
   layout: 'auth'
 })
+useNoIndex()
 
 const route = useRoute()
 const auth = useMemberAuth()

@@ -67,6 +67,8 @@ import PersonalInfo from '~/components/profile/PersonalInfo.vue'
 import AccountSecurity from '~/components/profile/AccountSecurity.vue'
 import Settings from '~/components/profile/Settings.vue'
 
+useNoIndex()
+
 type ProfileSection = 'personal-info' | 'account-security' | 'settings'
 
 interface ProfileDraft {

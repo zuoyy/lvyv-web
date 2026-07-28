@@ -70,6 +70,7 @@
 definePageMeta({
   layout: 'auth'
 })
+useNoIndex()
 
 const route = useRoute()
 const email = ref(typeof route.query.account === 'string'

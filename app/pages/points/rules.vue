@@ -150,6 +150,8 @@
 <script setup lang="ts">
 import AccountPageShell from '~/components/profile/AccountPageShell.vue'
 
+useNoIndex()
+
 interface SummaryItem {
   label: string
   value: string

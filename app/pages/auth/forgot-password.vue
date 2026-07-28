@@ -70,6 +70,7 @@
 definePageMeta({
   layout: 'auth'
 })
+useNoIndex()
 
 const email = ref('')
 const emailSent = ref(false)

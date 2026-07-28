@@ -21,6 +21,8 @@ import PointsCard from '~/components/points/PointsCard.vue'
 import TransactionList from '~/components/points/TransactionList.vue'
 import type { PointsAccount, Transaction, TransactionPageResponse, FilterType } from '~/components/points/types'
 
+useNoIndex()
+
 interface ApiResult<T> { code: number; msg?: string; data: T }
 const { auth, ready, initializeAccount } = useAccountPage('/points')
 const config = useRuntimeConfig()

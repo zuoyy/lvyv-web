@@ -416,16 +416,19 @@ import {
   step5Srcset,
 } from '~/utils/homeImages'
 
-// ==========================================
-// SEO Optimization Meta Info
-// ==========================================
-useSeoMeta({
-  title: 'Lvyv 旅遇 - Meet China, Not Just Visit It',
-  description: 'The First Friend in China. Discover real people, hidden stories, and unforgettable journeys through authentic encounters.',
-  ogTitle: 'Lvyv 旅遇 - Meet China, Not Just Visit It',
-  ogDescription: 'The First Friend in China. Discover real people, hidden stories, and unforgettable journeys through authentic encounters.',
-  ogImage: '/images/common/logo.png',
-  twitterCard: 'summary_large_image'
+const homeTitle = 'Lvyv 旅遇 - Meet China, Not Just Visit It'
+const homeDescription = 'The First Friend in China. Discover real people, hidden stories, and unforgettable journeys through authentic encounters.'
+
+useLvyvSeo({
+  title: homeTitle,
+  description: homeDescription,
+  path: '/',
+  image: '/images/common/logo.png',
+  jsonLd: [
+    organizationJsonLd(),
+    websiteJsonLd(),
+    webPageJsonLd(homeTitle, homeDescription, '/')
+  ]
 })
 
 useHead({

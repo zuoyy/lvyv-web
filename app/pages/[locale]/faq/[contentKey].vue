@@ -11,7 +11,6 @@
 
 <script setup lang="ts">
 const route = useRoute()
-const origin = useRequestURL().origin
 const rawLocale = String(route.params.locale).toLowerCase()
 const locale = rawLocale === 'zh' ? 'zh-CN' : rawLocale === 'en' ? 'en-US' : null
 if (!locale) throw createError({ statusCode: 404, statusMessage: 'Locale not found' })
@@ -27,41 +26,61 @@ const [{ data: document }, { data: manifest }, { data: navigation }] = await Pro
 ])
 if (!document.value) throw createError({ statusCode: 404, statusMessage: 'Document not found' })
 
-useSeoMeta({
-  title: () => document.value?.seo?.title || document.value?.title || 'Lvyv',
-  description: () => document.value?.seo?.description || document.value?.summary || '',
-  ogTitle: () => document.value?.seo?.title || document.value?.title || 'Lvyv',
-  ogDescription: () => document.value?.seo?.description || document.value?.summary || ''
-})
-useHead(() => ({
-  link: [
-    { rel: 'canonical' as const, href: `${origin}/${localePath}/faq/${contentKey}` },
-    { rel: 'alternate' as const, hreflang: 'x-default', href: `${origin}/faq/` },
-    ...(document.value?.availableLocales || [])
-      .filter(item => localePaths[item])
-      .map(item => ({
-        rel: 'alternate' as const,
-        hreflang: item,
-        href: `${origin}/${localePaths[item]}/faq/${contentKey}`
-      }))
-  ],
-  script: [{
-    type: 'application/ld+json',
-    innerHTML: JSON.stringify(document.value?.contentType === 'FAQ' ? {
+const doc = document.value
+const path = `/${localePath}/faq/${contentKey}`
+const title = doc.seo?.title || doc.title || 'Lvyv'
+const description = doc.seo?.description || doc.summary || ''
+const breadcrumbItems = [
+  { name: locale === 'zh-CN' ? '首页' : 'Home', path: '/' },
+  { name: locale === 'zh-CN' ? '帮助中心' : 'Help Center', path: `/${localePath}/faq/` },
+  ...(doc.breadcrumbs || []).map(name => ({ name, path: `/${localePath}/faq/` })),
+  { name: doc.title, path }
+]
+const articleJsonLd = doc.contentType === 'FAQ'
+  ? {
       '@context': 'https://schema.org',
       '@type': 'FAQPage',
+      '@id': `${absoluteUrl(path)}#faqpage`,
+      name: doc.title,
+      description,
+      url: absoluteUrl(path),
       mainEntity: [{
         '@type': 'Question',
-        name: document.value?.title,
-        acceptedAnswer: { '@type': 'Answer', text: document.value?.renderedHtml }
+        name: doc.title,
+        acceptedAnswer: { '@type': 'Answer', text: stripHtml(doc.renderedHtml) }
       }]
-    } : {
+    }
+  : {
       '@context': 'https://schema.org',
       '@type': 'TechArticle',
-      headline: document.value?.title,
-      description: document.value?.summary,
-      dateModified: document.value?.updatedAt
-    })
-  }]
-}))
+      '@id': `${absoluteUrl(path)}#article`,
+      headline: doc.title,
+      description,
+      url: absoluteUrl(path),
+      dateModified: doc.updatedAt,
+      author: { '@type': 'Organization', name: 'Lvyv' },
+      publisher: { '@id': absoluteUrl('/#organization') },
+      mainEntityOfPage: { '@id': `${absoluteUrl(path)}#webpage` }
+    }
+
+useLvyvSeo({
+  title,
+  description,
+  path,
+  type: 'article',
+  alternates: [
+    { hreflang: 'x-default', path: '/faq/' },
+    ...(doc.availableLocales || [])
+      .filter(item => localePaths[item])
+      .map(item => ({
+        hreflang: item,
+        path: `/${localePaths[item]}/faq/${contentKey}`
+      }))
+  ],
+  jsonLd: [
+    webPageJsonLd(title, description, path),
+    breadcrumbJsonLd(breadcrumbItems),
+    articleJsonLd
+  ]
+})
 </script>

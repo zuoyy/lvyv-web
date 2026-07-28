@@ -101,22 +101,28 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-useHead({
-  title: "About Us — Don't travel. Encounter | LVYV",
-  meta: [
-    {
-      name: 'description',
-      content: "Don't travel. Encounter. This is the belief behind LVYV — a platform that doesn't sell tours, but creates encounters.",
-    },
-  ],
-});
-
 interface TeamMember {
   name: string;
   role: string;
   bio: string;
   avatar: string;
 }
+
+const aboutTitle = "About Us — Don't travel. Encounter | LVYV"
+const aboutDescription = "Don't travel. Encounter. This is the belief behind LVYV — a platform that doesn't sell tours, but creates encounters."
+
+useLvyvSeo({
+  title: aboutTitle,
+  description: aboutDescription,
+  path: '/about',
+  jsonLd: [
+    webPageJsonLd(aboutTitle, aboutDescription, '/about'),
+    breadcrumbJsonLd([
+      { name: 'Home', path: '/' },
+      { name: 'About', path: '/about' }
+    ])
+  ]
+})
 
 // 团队成员列表数据 (初始为空以触发规范中要求的“照片筹备中”空状态，或可配置真实数据)
 const teamMembers = ref<TeamMember[]>([]);
