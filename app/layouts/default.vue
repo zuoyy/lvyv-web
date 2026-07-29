@@ -243,7 +243,8 @@ import businessLicenseIconUrl from '~/assets/generated/common/yyzz-48.png'
 
 const route = useRoute()
 const activeSection = ref('hero')
-const isScrolled = ref(import.meta.client ? window.scrollY > 20 : false)
+// Keep the first client render identical to SSR; sync scroll state after mount.
+const isScrolled = ref(false)
 const { token: memberToken, member, loadMember, clearSession, logout: logoutMember } = useMemberAuth()
 const accountOpen = ref(false)
 const accountMenu = ref(null)
@@ -328,10 +329,6 @@ const handleDocumentClick = (event) => {
 
 onMounted(() => {
   handleScroll()
-  if (typeof window.__lvyvNavbarScrollCleanup === 'function') {
-    window.__lvyvNavbarScrollCleanup()
-    delete window.__lvyvNavbarScrollCleanup
-  }
   window.addEventListener('scroll', handleScroll, { passive: true })
   document.addEventListener('click', handleDocumentClick)
   if (memberToken.value && !member.value) loadMember().catch(clearSession)
