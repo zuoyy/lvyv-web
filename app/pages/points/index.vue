@@ -10,7 +10,7 @@
     <div v-else-if="accountError" class="content-state error-state"><font-awesome-icon :icon="['fas', 'circle-exclamation']" /><strong>We could not load your points.</strong><span>{{ accountError }}</span><button type="button" @click="fetchAccount">Try again</button></div>
     <template v-else-if="pointsData">
       <PointsCard :points="pointsData" />
-      <TransactionList :transactions="transactions" :loading="loadingTransactions" :current-page="currentPage" :size="size" :total="total" :active-filter="activeFilter" @filter-change="handleFilterChange" @prev-page="handlePrevPage" @next-page="handleNextPage" />
+      <TransactionList :transactions="transactions" :loading="loadingTransactions" :current-page="currentPage" :size="size" :total="total" :active-filter="activeFilter" :locale="memberLocale" @filter-change="handleFilterChange" @prev-page="handlePrevPage" @next-page="handleNextPage" />
     </template>
   </AccountPageShell>
 </template>
@@ -35,7 +35,8 @@ const loadingTransactions = ref(false)
 const currentPage = ref(1)
 const size = ref(20)
 const total = ref(0)
-const headers = computed(() => ({ Authorization: `Bearer ${auth.token.value}`, 'X-Time-Zone': auth.member.value?.timezone || detectMemberTimeZone() }))
+const memberLocale = computed(() => auth.member.value?.locale || 'en-US')
+const headers = computed(() => ({ Authorization: `Bearer ${auth.token.value}`, 'Accept-Language': memberLocale.value, 'X-Time-Zone': auth.member.value?.timezone || detectMemberTimeZone() }))
 
 const fetchTransactions = async () => {
   loadingTransactions.value = true

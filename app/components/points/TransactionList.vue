@@ -8,7 +8,7 @@
     <div v-else-if="transactions.length" class="transaction-list">
       <article v-for="transaction in transactions" :key="transaction.transactionNo" class="transaction-row">
         <div class="transaction-mark" :class="transaction.availableDelta >= 0 ? 'positive' : 'negative'">{{ transaction.availableDelta >= 0 ? '+' : '−' }}</div>
-        <div class="transaction-copy"><strong>{{ transaction.remark || transactionTitle(transaction) }}</strong><span>{{ formatMemberDateTime(transaction.occurredTime) }} · {{ transaction.transactionNo }}</span></div>
+        <div class="transaction-copy"><strong>{{ transactionDescription(transaction) }}</strong><span>{{ formatMemberDateTime(transaction.occurredTime) }} · {{ transaction.transactionNo }}</span></div>
         <div class="transaction-value" :class="transaction.availableDelta >= 0 ? 'positive' : 'negative'">{{ transaction.availableDelta > 0 ? '+' : '' }}{{ transaction.availableDelta.toLocaleString() }}<span>pts</span></div>
       </article>
     </div>
@@ -19,11 +19,21 @@
 
 <script setup lang="ts">
 import type { Transaction, FilterType } from './types'
-const props = defineProps<{ transactions: Transaction[]; loading: boolean; currentPage: number; size: number; total: number; activeFilter: FilterType }>()
+const props = defineProps<{ transactions: Transaction[]; loading: boolean; currentPage: number; size: number; total: number; activeFilter: FilterType; locale: string }>()
 defineEmits<{ 'filter-change': [value: FilterType]; 'prev-page': []; 'next-page': [] }>()
 const filterTabs = [{ label: 'All', value: 0 as FilterType }, { label: 'Earned', value: 1 as FilterType }, { label: 'Used', value: 2 as FilterType }]
 const totalPages = computed(() => Math.max(1, Math.ceil(props.total / props.size)))
 const transactionTitle = (transaction: Transaction) => transaction.changeType === 1 ? 'Points earned' : transaction.changeType === 2 ? 'Points used' : 'Points adjustment'
+const rewardDescriptions: Record<string, { 'en-US': string; 'zh-CN': string }> = {
+  DAILY_LOGIN: { 'en-US': 'Points reward: Daily login', 'zh-CN': '积分奖励：每日登录' },
+  REGISTER_SUCCESS: { 'en-US': 'Points reward: Registration completed', 'zh-CN': '积分奖励：完成注册' },
+  WISH_SUBMITTED: { 'en-US': 'Points reward: Wish submitted', 'zh-CN': '积分奖励：提交愿望' },
+}
+const transactionDescription = (transaction: Transaction) => {
+  const localizedReward = rewardDescriptions[transaction.ruleCode]
+  if (localizedReward) return props.locale === 'zh-CN' ? localizedReward['zh-CN'] : localizedReward['en-US']
+  return transaction.remark || transactionTitle(transaction)
+}
 </script>
 
 <style scoped>
