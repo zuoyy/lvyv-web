@@ -168,7 +168,7 @@
       </div>
     </section>
 
-    <section class="newsletter-section">
+    <section id="start-journey" class="newsletter-section">
       <div class="container newsletter-grid">
         <div class="newsletter-signup">
           <h3>Start your journey<br>with LVYV</h3>
@@ -452,6 +452,33 @@ html.home-scroll-snap .newsletter-section {
 html.home-scroll-snap .footer {
   scroll-snap-align: end;
   scroll-snap-stop: always;
+}
+
+@media (min-width: 768px) {
+  html.home-scroll-snap {
+    scroll-padding-top: 0;
+  }
+
+  html.home-scroll-snap .home-v2 > section,
+  html.home-scroll-snap .footer {
+    scroll-margin-top: 0;
+  }
+}
+
+@media (max-width: 767px) {
+  html.home-scroll-snap {
+    scroll-snap-type: none;
+  }
+
+  html.home-scroll-snap body {
+    overscroll-behavior-y: auto;
+  }
+
+  html.home-scroll-snap .home-v2 > section,
+  html.home-scroll-snap .footer {
+    scroll-snap-align: none;
+    scroll-snap-stop: normal;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

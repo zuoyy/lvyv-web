@@ -1380,22 +1380,197 @@ a {
   }
 
   .newsletter-section {
-    background: #152723;
+    height: auto !important;
+    padding: 48px 0 !important;
+    overflow: visible !important;
+    background: #152723 !important;
   }
 
-  .newsletter-signup h3,
-  .newsletter-signup p,
-  .slogan-text {
-    color: #fff;
+  .newsletter-grid {
+    width: calc(100% - 40px) !important;
+    height: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 24px !important;
+    position: relative !important;
+    margin: 0 auto !important;
+  }
+
+  .newsletter-signup {
+    position: relative !important;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+
+  .newsletter-signup h3 {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    width: 100% !important;
+    margin: 0 0 12px 0 !important;
+    font-size: 26px !important;
+    line-height: 34px !important;
+    color: #fff !important;
+    text-align: center !important;
+  }
+
+  .newsletter-signup p {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    margin: 0 0 20px 0 !important;
+    font-size: 14px !important;
+    line-height: 22px !important;
+    color: rgba(255, 255, 255, 0.8) !important;
+    text-align: center !important;
+  }
+
+  .signup-capsule {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    width: 100% !important;
+    max-width: 420px !important;
+    height: 52px !important;
+    margin: 0 auto !important;
+    background: #fff !important;
+    border: none !important;
+    border-radius: 999px !important;
+    overflow: hidden !important;
+  }
+
+  .signup-form-inline {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 0 !important;
+    height: 100% !important;
+    width: 100% !important;
+  }
+
+  .input-email-capsule {
+    min-width: 0 !important;
+    height: 100% !important;
+    padding: 0 18px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    font-size: 15px !important;
+    text-align: left !important;
+    background: #fff !important;
+    color: #152723 !important;
+  }
+
+  .input-email-capsule::placeholder {
+    color: rgba(21, 39, 35, 0.55) !important;
+  }
+
+  .btn-subscribe-capsule {
+    width: 120px !important;
+    height: 100% !important;
+    padding: 0 !important;
+    border-radius: 999px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    background: #cff380 !important;
+    color: #105446 !important;
+  }
+
+  .slogan-visual {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
   }
 
   .slogan-text {
-    width: min(100%, 382px);
-    height: auto;
+    position: relative !important;
+    top: auto !important;
+    width: min(100%, 280px) !important;
+    height: auto !important;
+    margin-bottom: 16px !important;
+  }
+
+  .social-links {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    display: flex !important;
+    justify-content: center !important;
+    gap: 20px !important;
   }
 
   .footer {
+    background: #152723 !important;
     border-top: 1px solid rgba(255,255,255,.14);
+  }
+}
+
+@media (max-width: 767px) {
+  .footer {
+    padding: 42px 0 32px !important;
+  }
+
+  .footer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 24px !important;
+  }
+
+  .footer-brand-info {
+    display: contents;
+  }
+
+  .footer-logo {
+    order: 1;
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .brand-subtext {
+    order: 2;
+    grid-column: 1 / -1;
+    margin-top: 0;
+  }
+
+  .footer-links-column {
+    order: 3;
+  }
+
+  .copyright {
+    order: 4;
+    grid-column: 1 / -1;
+    margin-top: 0;
+    text-align: center;
+  }
+
+  .footer-records {
+    order: 5;
+    grid-column: 1 / -1;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    line-height: 20px;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .footer-links-column h4 {
+    margin-bottom: 10px;
+  }
+
+  .footer-links-column ul {
+    gap: 8px;
+  }
+
+  .footer-bottom {
+    margin-top: 28px;
+    padding-top: 20px;
   }
 }
 

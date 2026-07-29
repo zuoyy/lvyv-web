@@ -48,11 +48,108 @@
               </div>
             </Transition>
           </div>
-          <a v-else href="/login/" class="nav-login">Login</a>
+          <a v-else href="/login/" class="nav-login">
+            <AuthGlobeIcon :icon="faUser" class="nav-login-icon" aria-hidden="true" />
+            <span>Login</span>
+          </a>
           <NuxtLink to="/wish" class="nav-start-planning">Start Planning</NuxtLink>
+
+          <!-- Mobile Nav Toggle Button -->
+          <button
+            class="mobile-nav-toggle"
+            type="button"
+            :class="{ 'open': mobileMenuOpen }"
+            :aria-expanded="mobileMenuOpen"
+            aria-label="Toggle Navigation"
+            @click="mobileMenuOpen = !mobileMenuOpen"
+          >
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+          </button>
         </div>
       </div>
     </header>
+
+    <!-- Mobile Drawer Backdrop Overlay -->
+    <Transition name="fade">
+      <div
+        v-if="mobileMenuOpen"
+        class="mobile-menu-backdrop"
+        @click="mobileMenuOpen = false"
+        @touchmove.prevent
+      />
+    </Transition>
+
+    <!-- Mobile Navigation Drawer -->
+    <Transition name="slide-drawer">
+      <div v-if="mobileMenuOpen" class="mobile-menu-drawer">
+        <div class="mobile-drawer-header">
+          <NuxtLink to="/" class="brand" @click="mobileMenuOpen = false">
+            <img src="/images/common/logo-header.svg" alt="Lvyv Logo" class="brand-logo">
+          </NuxtLink>
+          <button class="mobile-drawer-close" type="button" aria-label="Close menu" @click="mobileMenuOpen = false">
+            <AuthGlobeIcon :icon="faTimes" aria-hidden="true" />
+          </button>
+        </div>
+
+        <div class="mobile-drawer-body">
+          <nav class="mobile-nav-links">
+            <NuxtLink to="/#hero" class="mobile-nav-item" :class="{ active: $route && $route.path === '/' && activeSection === 'hero' }" @click="handleNavClick('/#hero')">Home</NuxtLink>
+            <NuxtLink to="/wish" class="mobile-nav-item" :class="{ active: $route && $route.path === '/wish' }" @click="handleNavClick('/wish')">Wish</NuxtLink>
+
+            <!-- Submenu: Cities -->
+            <div class="mobile-nav-item-accordion">
+              <button class="mobile-accordion-trigger" type="button" @click="mobileCitiesOpen = !mobileCitiesOpen">
+                <span>Cities</span>
+                <AuthGlobeIcon :icon="faChevronDown" class="accordion-chevron" :class="{ 'rotated': mobileCitiesOpen }" aria-hidden="true" />
+              </button>
+              <Transition name="accordion">
+                <div v-if="mobileCitiesOpen" class="mobile-accordion-content">
+                  <NuxtLink to="/cities/xian" class="mobile-subnav-item" :class="{ active: $route && $route.path === '/cities/xian' }" @click="handleNavClick('/cities/xian')">
+                    <span class="city-en">Xi'an</span>
+                    <span class="city-zh">西安</span>
+                  </NuxtLink>
+                  <NuxtLink to="/cities/chengdu" class="mobile-subnav-item" :class="{ active: $route && $route.path === '/cities/chengdu' }" @click="handleNavClick('/cities/chengdu')">
+                    <span class="city-en">Chengdu</span>
+                    <span class="city-zh">成都</span>
+                  </NuxtLink>
+                </div>
+              </Transition>
+            </div>
+
+            <NuxtLink to="/stories" class="mobile-nav-item" :class="{ active: $route && $route.path === '/stories' }" @click="handleNavClick('/stories')">Stories</NuxtLink>
+            <NuxtLink to="/about" class="mobile-nav-item" :class="{ active: $route && $route.path === '/about' }" @click="handleNavClick('/about')">About</NuxtLink>
+            <NuxtLink to="/en/faq/" class="mobile-nav-item" :class="{ active: $route && $route.path.includes('/faq') }" @click="handleNavClick('/en/faq/')">FAQ</NuxtLink>
+          </nav>
+        </div>
+
+        <div class="mobile-drawer-footer">
+          <!-- Member Auth Status in Drawer -->
+          <div v-if="memberToken" class="mobile-drawer-user">
+            <div class="mobile-user-info">
+              <img v-if="member?.avatar && !avatarFailed" :src="member.avatar" alt="" class="member-avatar" @error="avatarFailed = true">
+              <span v-else class="member-avatar member-avatar-default"><font-awesome-icon :icon="['fas', 'user']" aria-hidden="true" /></span>
+              <span class="mobile-user-name">{{ memberDisplayName }}</span>
+            </div>
+            <div class="mobile-user-actions">
+              <NuxtLink to="/profile" class="mobile-user-link" @click="mobileMenuOpen = false">My Profile</NuxtLink>
+              <button type="button" class="mobile-logout-btn" @click="logout">Log out</button>
+            </div>
+          </div>
+          <div v-else class="mobile-drawer-auth">
+            <a href="/login/" class="mobile-drawer-login-btn" @click="mobileMenuOpen = false">
+              <AuthGlobeIcon :icon="faUser" aria-hidden="true" />
+              <span>Login / Sign Up</span>
+            </a>
+          </div>
+
+          <NuxtLink to="/wish" class="mobile-start-planning-btn" @click="mobileMenuOpen = false">
+            Start Planning
+          </NuxtLink>
+        </div>
+      </div>
+    </Transition>
 
     <!-- Main Content Page Slot -->
     <slot />
@@ -139,17 +236,62 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, watch, computed, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { FontAwesomeIcon as AuthGlobeIcon } from '@fortawesome/vue-fontawesome'
-import { faGlobe } from '@fortawesome/free-solid-svg-icons'
+import { faGlobe, faTimes, faChevronDown, faUser } from '@fortawesome/free-solid-svg-icons'
 import businessLicenseIconUrl from '~/assets/generated/common/yyzz-48.png'
 
+const route = useRoute()
 const activeSection = ref('hero')
 const isScrolled = ref(import.meta.client ? window.scrollY > 20 : false)
 const { token: memberToken, member, loadMember, clearSession, logout: logoutMember } = useMemberAuth()
 const accountOpen = ref(false)
 const accountMenu = ref(null)
 const avatarFailed = ref(false)
+
+const mobileMenuOpen = ref(false)
+const mobileCitiesOpen = ref(false)
+
+const handleNavClick = async (toPath) => {
+  mobileMenuOpen.value = false
+  if (import.meta.client) {
+    document.documentElement.classList.remove('scroll-locked')
+    document.body.classList.remove('scroll-locked')
+
+    if (toPath && toPath.includes('#')) {
+      const parts = toPath.split('#')
+      const targetPath = parts[0] || '/'
+      const targetId = parts[1]
+
+      if (route.path === targetPath || (targetPath === '/' && route.path === '/')) {
+        await nextTick()
+        setTimeout(() => {
+          const el = document.getElementById(targetId)
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth' })
+          }
+        }, 60)
+      }
+    }
+  }
+}
+
+watch(() => route.path, () => {
+  mobileMenuOpen.value = false
+})
+
+watch(mobileMenuOpen, (isOpen) => {
+  if (import.meta.client) {
+    if (isOpen) {
+      document.documentElement.classList.add('scroll-locked')
+      document.body.classList.add('scroll-locked')
+    } else {
+      document.documentElement.classList.remove('scroll-locked')
+      document.body.classList.remove('scroll-locked')
+    }
+  }
+})
+
 const tokenDisplayName = computed(() => {
   if (!memberToken.value) return ''
   try {
@@ -198,5 +340,9 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', handleScroll)
   document.removeEventListener('click', handleDocumentClick)
+  if (import.meta.client) {
+    document.documentElement.classList.remove('scroll-locked')
+    document.body.classList.remove('scroll-locked')
+  }
 })
 </script>
