@@ -55,6 +55,8 @@ import {
   faGoogle,
   faInstagram,
   faPinterest,
+  faReddit,
+  faTiktok,
   faTwitter
 } from '@fortawesome/free-brands-svg-icons'
 
@@ -101,11 +103,13 @@ library.add(
   faPlay,
   faPlus,
   faPenToSquare,
+  faReddit,
   faRoute,
   faScaleBalanced,
   faShieldHalved,
   faTrashCan,
   faTicketSimple,
+  faTiktok,
   faTriangleExclamation,
   faUtensils,
   faTwitter,

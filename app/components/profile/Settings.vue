@@ -67,11 +67,11 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 
-type NotificationKey = 'ENGAGEMENT' | 'POINTS' | 'COMMENTS' | 'MARKETING'
+type NotificationKey = 'POINTS' | 'MARKETING'
 
 const auth = useMemberAuth()
 const selectedLanguage = ref('en-US')
-const emailNotifications = reactive<Record<NotificationKey, boolean>>({ ENGAGEMENT: true, POINTS: true, COMMENTS: true, MARKETING: false })
+const emailNotifications = reactive<Record<NotificationKey, boolean>>({ POINTS: true, MARKETING: false })
 const tripVisibility = ref(true)
 const loading = ref(true)
 const saving = ref(false)
@@ -80,9 +80,7 @@ const error = ref(false)
 const originalSettings = reactive({ selectedLanguage: 'en-US', notifications: { ...emailNotifications }, tripVisibility: true })
 
 const notificationOptions: { key: NotificationKey; title: string; description: string }[] = [
-  { key: 'ENGAGEMENT', title: 'Journey updates', description: 'Planning reminders and important trip changes.' },
   { key: 'POINTS', title: 'Points & rewards', description: 'Point balance changes and new reward levels.' },
-  { key: 'COMMENTS', title: 'Community activity', description: 'Replies and interactions from other travellers.' },
   { key: 'MARKETING', title: 'Newsletter', description: 'Selected stories, travel ideas and Lvyv news.' },
 ]
 

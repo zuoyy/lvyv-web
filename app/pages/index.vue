@@ -175,19 +175,48 @@
           <p>Subscribe for travel inspiration,<br>updates, and special offers.</p>
           <div class="signup-capsule">
             <form id="newsletterForm" class="signup-form-inline" @submit.prevent="handleSubscribe">
-              <input v-model="newsletterEmail" type="email" placeholder="Enter your email" required class="input-email-capsule">
-              <button type="submit" class="btn-subscribe-capsule">Subscribe</button>
+              <input
+                v-model="newsletterEmail"
+                type="email"
+                placeholder="Enter your email"
+                autocomplete="email"
+                maxlength="254"
+                required
+                class="input-email-capsule"
+                :aria-describedby="newsletterMessage ? 'newsletter-feedback' : undefined"
+                :aria-invalid="newsletterState === 'error'"
+                @input="resetNewsletterFeedback"
+              >
+              <button
+                type="submit"
+                class="btn-subscribe-capsule"
+                :disabled="newsletterSubmitting || newsletterResolved"
+              >
+                {{ newsletterButtonLabel }}
+              </button>
             </form>
+          </div>
+          <div
+            v-if="newsletterMessage"
+            id="newsletter-feedback"
+            class="newsletter-feedback"
+            :class="{ error: newsletterState === 'error' }"
+            role="status"
+          >
+            <font-awesome-icon :icon="['fas', newsletterState === 'error' ? 'circle-exclamation' : 'circle-check']" aria-hidden="true" />
+            <span>{{ newsletterMessage }}</span>
           </div>
         </div>
 
         <div class="slogan-visual">
           <img src="/images/common/footer-slogan.svg" alt="Go, meet someone." class="slogan-text">
           <div class="social-links">
-            <a href="#" aria-label="Facebook"><font-awesome-icon :icon="['fab', 'facebook']" aria-hidden="true" /></a>
-            <a href="#" aria-label="Pinterest"><font-awesome-icon :icon="['fab', 'pinterest']" aria-hidden="true" /></a>
-            <a href="#" aria-label="Instagram"><font-awesome-icon :icon="['fab', 'instagram']" aria-hidden="true" /></a>
-            <a href="#" aria-label="Twitter"><font-awesome-icon :icon="['fab', 'twitter']" aria-hidden="true" /></a>
+            <a href="https://www.facebook.com/share/1GL3GD5YAS" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><font-awesome-icon :icon="['fab', 'facebook']" aria-hidden="true" /></a>
+            <a href="https://pin.it/3S1tpsiOy" target="_blank" rel="noopener noreferrer" aria-label="Pinterest"><font-awesome-icon :icon="['fab', 'pinterest']" aria-hidden="true" /></a>
+            <a href="https://www.instagram.com/lvyvofficial" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><font-awesome-icon :icon="['fab', 'instagram']" aria-hidden="true" /></a>
+            <a href="https://x.com/lvyvofficial" target="_blank" rel="noopener noreferrer" aria-label="X"><font-awesome-icon :icon="['fab', 'twitter']" aria-hidden="true" /></a>
+            <a href="https://www.tiktok.com/@lvyvofficial" target="_blank" rel="noopener noreferrer" aria-label="TikTok"><font-awesome-icon :icon="['fab', 'tiktok']" aria-hidden="true" /></a>
+            <a href="https://www.reddit.com/user/LvyvOfficial/" target="_blank" rel="noopener noreferrer" aria-label="Reddit"><font-awesome-icon :icon="['fab', 'reddit']" aria-hidden="true" /></a>
           </div>
         </div>
       </div>
@@ -322,11 +351,36 @@ const stories = [
 ] as const
 
 const newsletterEmail = ref('')
+const newsletterState = ref<'idle' | 'submitting' | 'confirmation_sent' | 'already_subscribed' | 'error'>('idle')
+const newsletter = useNewsletterSubscription()
+const newsletterSubmitting = computed(() => newsletterState.value === 'submitting')
+const newsletterResolved = computed(() => ['confirmation_sent', 'already_subscribed'].includes(newsletterState.value))
+const newsletterButtonLabel = computed(() => {
+  if (newsletterState.value === 'submitting') return 'Sending...'
+  if (newsletterState.value === 'confirmation_sent') return 'Email sent'
+  if (newsletterState.value === 'already_subscribed') return 'Subscribed'
+  return 'Subscribe'
+})
+const newsletterMessage = computed(() => {
+  if (newsletterState.value === 'confirmation_sent') return 'If confirmation is needed, check your inbox within 24 hours.'
+  if (newsletterState.value === 'already_subscribed') return 'This email is already subscribed.'
+  if (newsletterState.value === 'error') return 'We could not start your subscription. Please try again.'
+  return ''
+})
 
-const handleSubscribe = () => {
-  if (!newsletterEmail.value) return
-  window.alert(`Thank you for subscribing, ${newsletterEmail.value}!`)
-  newsletterEmail.value = ''
+const resetNewsletterFeedback = () => {
+  if (newsletterState.value !== 'submitting') newsletterState.value = 'idle'
+}
+
+const handleSubscribe = async () => {
+  if (!newsletterEmail.value.trim() || newsletterSubmitting.value) return
+  newsletterState.value = 'submitting'
+  try {
+    const result = await newsletter.subscribe(newsletterEmail.value.trim())
+    newsletterState.value = result.status === 'ALREADY_SUBSCRIBED' ? 'already_subscribed' : 'confirmation_sent'
+  } catch {
+    newsletterState.value = 'error'
+  }
 }
 
 const activeBg = ref(0)
@@ -497,6 +551,32 @@ html.home-scroll-snap .footer {
   background: #fff;
   color: var(--home-ink);
   overflow-x: clip;
+}
+
+.btn-subscribe-capsule:disabled {
+  cursor: default;
+  opacity: .72;
+}
+
+.newsletter-feedback {
+  position: absolute;
+  top: 166px;
+  left: 316px;
+  display: flex;
+  width: 410px;
+  align-items: center;
+  gap: 8px;
+  color: #cff380;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.newsletter-feedback.error {
+  color: #ffb7b7;
+}
+
+.newsletter-feedback svg {
+  flex: 0 0 auto;
 }
 
 .home-shell {
@@ -1390,6 +1470,15 @@ html.home-scroll-snap .footer {
 
   .stories-section__more {
     margin-top: 18px;
+  }
+
+  .newsletter-feedback {
+    position: static;
+    width: min(100%, 420px);
+    justify-content: center;
+    margin-top: 12px;
+    padding: 0 8px;
+    font-size: 12px;
   }
 
 }

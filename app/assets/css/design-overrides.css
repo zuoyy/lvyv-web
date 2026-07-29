@@ -1021,6 +1021,7 @@ a {
     max-width: 1280px;
     height: 303px;
     display: block;
+    container-type: inline-size;
   }
 
   .newsletter-signup h3 {
@@ -1099,9 +1100,11 @@ a {
   .social-links {
     position: absolute;
     top: 125px;
-    left: -501px;
+    left: calc(658px - 100cqw);
+    width: 489px;
     gap: 24px;
     align-items: center;
+    justify-content: center;
     z-index: 2;
   }
 
@@ -1500,7 +1503,9 @@ a {
   .social-links {
     position: relative !important;
     top: auto !important;
+    left: auto !important;
     right: auto !important;
+    width: auto !important;
     display: flex !important;
     justify-content: center !important;
     gap: 20px !important;
@@ -1575,6 +1580,10 @@ a {
 }
 
 @media (max-width: 560px) {
+  .social-links {
+    gap: 14px !important;
+  }
+
   .hero-section {
     min-height: 680px;
   }
