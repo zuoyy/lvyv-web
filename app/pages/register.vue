@@ -1,5 +1,6 @@
 <template>
   <main class="modern-auth-page">
+    <AuthMobileHeader />
     <section class="modern-auth-panel modern-auth-panel-register">
       <div class="modern-auth-content">
         <h1>Get Started Now</h1>

@@ -1,4 +1,5 @@
 .modern-auth-page {
+  position: relative;
   display: grid;
   grid-template-columns: 674px 766px;
   width: 100%;
@@ -7,6 +8,10 @@
   margin: 0 auto;
   overflow: hidden;
   background: #ffffff;
+}
+
+.modern-auth-mobile-header {
+  display: none;
 }
 
 .modern-auth-panel {
@@ -695,9 +700,29 @@
     overflow: visible;
   }
 
+  .modern-auth-mobile-header {
+    position: absolute;
+    z-index: 3;
+    top: 24px;
+    left: 24px;
+    display: block;
+  }
+
+  .modern-auth-mobile-header a {
+    display: block;
+    width: 120px;
+    height: 41px;
+  }
+
+  .modern-auth-mobile-header img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
   .modern-auth-panel {
     min-height: 100vh;
-    padding: 48px 24px 64px;
+    padding: 104px 24px 64px;
   }
 
   .modern-auth-content {
@@ -715,8 +740,18 @@
 }
 
 @media (max-width: 520px) {
+  .modern-auth-mobile-header {
+    top: 20px;
+    left: 20px;
+  }
+
+  .modern-auth-mobile-header a {
+    width: 104px;
+    height: auto;
+  }
+
   .modern-auth-panel {
-    padding: 36px 20px 52px;
+    padding: 88px 20px 52px;
   }
 
   .modern-auth-content h1 {
