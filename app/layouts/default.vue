@@ -52,7 +52,7 @@
             <AuthGlobeIcon :icon="faUser" class="nav-login-icon" aria-hidden="true" />
             <span>Login</span>
           </a>
-          <NuxtLink to="/wish" class="nav-start-planning">Start Planning</NuxtLink>
+          <NuxtLink to="/wish" class="nav-start-planning">Start Your Wish</NuxtLink>
 
           <!-- Mobile Nav Toggle Button -->
           <button
@@ -145,7 +145,7 @@
           </div>
 
           <NuxtLink to="/wish" class="mobile-start-planning-btn" @click="mobileMenuOpen = false">
-            Start Planning
+            Start Your Wish
           </NuxtLink>
         </div>
       </div>

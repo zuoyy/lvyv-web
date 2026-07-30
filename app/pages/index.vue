@@ -31,10 +31,10 @@
         <h1 id="home-title" class="sr-only">Go, meet someone.</h1>
         <img
           class="hero-v2__title"
-          src="/images/home-v2/hero-title.svg"
+          src="/images/home-v2/banner-text.svg"
           alt="Go, meet someone."
-          width="572"
-          height="173"
+          width="723"
+          height="171"
         >
         <p>"Your handcrafted China encounter starts here"</p>
 
@@ -245,7 +245,7 @@ const homeHeroSlides: HomeHeroSlide[] = [
     index: 0,
     fallback: '/images/home-v2/banner-1-1440.webp',
     width: 1440,
-    height: 780,
+    height: 810,
     mobileWebpSrcset: '/images/home-v2/banner-1-768.webp 768w',
     webpSrcset: '/images/home-v2/banner-1-768.webp 768w, /images/home-v2/banner-1-1440.webp 1440w',
     wideWebpSrcset: '/images/home-v2/banner-1-1440.webp 1440w',
@@ -609,7 +609,7 @@ html.home-scroll-snap .footer {
 
 .hero-v2 {
   position: relative;
-  height: 100svh;
+  height: clamp(540px, 54.16vw, 780px);
   padding: 0 !important;
   overflow: hidden;
   background: #1e2e28;
@@ -636,13 +636,13 @@ html.home-scroll-snap .footer {
 
 .hero-v2__slide img {
   object-fit: cover;
-  object-position: center;
+  object-position: center top;
 }
 
 .hero-v2__shade {
   position: absolute;
   inset: 80px 0 0;
-  background: linear-gradient(180deg, rgba(0, 0, 0, .08), rgba(0, 0, 0, .28));
+  background: rgba(0, 0, 0, .4);
 }
 
 .hero-v2__content {
@@ -653,28 +653,30 @@ html.home-scroll-snap .footer {
   align-items: center;
   flex-direction: column;
   justify-content: flex-start;
-  padding-top: 41svh;
+  padding-top: calc(268px + max(0px, (100svh - 780px) / 2));
   text-align: center;
 }
 
 .hero-v2__title {
-  width: min(572px, 76vw);
+  width: min(723px, 50.208vw);
   height: auto;
 }
 
 .hero-v2__content > p {
-  margin-top: 28px;
+  width: min(726px, calc(100vw - 40px));
+  height: 41px;
+  margin-top: 0;
   color: #fff;
   font-family: var(--font-body);
-  font-size: 18px;
-  font-weight: 600;
-  line-height: 1.45;
+  font-size: clamp(20px, 1.806vw, 26px);
+  font-weight: 400;
+  line-height: 20.8px;
 }
 
 .hero-v2__actions {
   display: flex;
-  gap: 20px;
-  margin-top: 34px;
+  gap: clamp(16px, 1.389vw, 20px);
+  margin-top: clamp(16px, 1.389vw, 20px);
 }
 
 .home-button {
@@ -720,15 +722,15 @@ html.home-scroll-snap .footer {
 }
 
 .hero-v2__actions .home-button--primary {
-  width: auto;
+  width: 220px;
   min-width: 220px;
-  padding: 0 26px;
+  padding: 0;
 }
 
 .hero-v2__actions .home-button--outline {
-  width: auto;
-  min-width: 195px;
-  padding: 0 24px;
+  width: 170px;
+  min-width: 170px;
+  padding: 0;
 }
 
 .hero-v2__dots {
@@ -1324,13 +1326,9 @@ html.home-scroll-snap .footer {
     height: 100svh;
   }
 
-  .hero-v2__slide:first-child img {
-    object-position: 67% center;
-  }
-
   .hero-v2__shade {
     inset: 64px 0 0;
-    background: linear-gradient(180deg, rgba(0, 0, 0, .1), rgba(0, 0, 0, .42));
+    background: rgba(0, 0, 0, .4);
   }
 
   .hero-v2__content {
@@ -1340,6 +1338,7 @@ html.home-scroll-snap .footer {
 
   .hero-v2__title {
     width: min(92vw, 520px);
+    height: auto;
   }
 
   .hero-v2__content > p {
