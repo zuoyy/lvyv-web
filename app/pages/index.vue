@@ -226,7 +226,6 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
-import { heroSlides as legacyHeroSlides } from '~/utils/homeImages'
 
 type HomeHeroSlide = {
   id: string
@@ -242,22 +241,38 @@ type HomeHeroSlide = {
 
 const homeHeroSlides: HomeHeroSlide[] = [
   {
-    id: 'hero-new',
+    id: 'xian-friends',
     index: 0,
-    fallback: '/images/home-v2/hero-1672.webp',
-    width: 1672,
-    height: 941,
-    mobileWebpSrcset: '/images/home-v2/hero-768.webp 768w',
-    webpSrcset: '/images/home-v2/hero-768.webp 768w, /images/home-v2/hero-1672.webp 1672w',
-    wideWebpSrcset: '/images/home-v2/hero-1672.webp 1672w',
-    alt: "Two travelers cycling together on Xi'an city wall at sunset"
+    fallback: '/images/home-v2/banner-1-1440.webp',
+    width: 1440,
+    height: 780,
+    mobileWebpSrcset: '/images/home-v2/banner-1-768.webp 768w',
+    webpSrcset: '/images/home-v2/banner-1-768.webp 768w, /images/home-v2/banner-1-1440.webp 1440w',
+    wideWebpSrcset: '/images/home-v2/banner-1-1440.webp 1440w',
+    alt: "Four friends with bicycles on Xi'an city wall"
   },
-  ...legacyHeroSlides.map((slide, index) => ({
-    ...slide,
-    id: `legacy-${slide.id}`,
-    index: index + 1,
-    alt: ''
-  }))
+  {
+    id: 'xian-cyclists',
+    index: 1,
+    fallback: '/images/home-v2/banner-2-1440.webp',
+    width: 1440,
+    height: 780,
+    mobileWebpSrcset: '/images/home-v2/banner-2-768.webp 768w',
+    webpSrcset: '/images/home-v2/banner-2-768.webp 768w, /images/home-v2/banner-2-1440.webp 1440w',
+    wideWebpSrcset: '/images/home-v2/banner-2-1440.webp 1440w',
+    alt: "Travelers cycling together on Xi'an city wall"
+  },
+  {
+    id: 'chengdu-opera',
+    index: 2,
+    fallback: '/images/home-v2/banner-3-1440.webp',
+    width: 1440,
+    height: 780,
+    mobileWebpSrcset: '/images/home-v2/banner-3-768.webp 768w',
+    webpSrcset: '/images/home-v2/banner-3-768.webp 768w, /images/home-v2/banner-3-1440.webp 1440w',
+    wideWebpSrcset: '/images/home-v2/banner-3-1440.webp 1440w',
+    alt: 'A traveler greeting a Sichuan opera performer in Chengdu'
+  }
 ]
 
 const homeTitle = 'Lvyv Travel - Go, Meet Someone'
@@ -267,7 +282,7 @@ useLvyvSeo({
   title: homeTitle,
   description: homeDescription,
   path: '/',
-  image: '/images/home-v2/hero-1672.webp',
+  image: '/images/home-v2/banner-1-1440.webp',
   jsonLd: [
     organizationJsonLd(),
     websiteJsonLd(),
@@ -283,8 +298,8 @@ useHead({
     rel: 'preload',
     as: 'image',
     type: 'image/webp',
-    href: '/images/home-v2/hero-1672.webp',
-    imagesrcset: '/images/home-v2/hero-768.webp 768w, /images/home-v2/hero-1672.webp 1672w',
+    href: '/images/home-v2/banner-1-1440.webp',
+    imagesrcset: '/images/home-v2/banner-1-768.webp 768w, /images/home-v2/banner-1-1440.webp 1440w',
     imagesizes: '100vw',
     fetchpriority: 'high'
   }]
