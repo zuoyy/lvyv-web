@@ -1763,21 +1763,25 @@ a {
 }
 
 /* Active state for dropdown sub item - no background, just the indicator dot and highlighted text */
-.nav-links .dropdown-item.active {
+.nav-links .dropdown-item.active,
+.nav-links .dropdown-item.router-link-exact-active {
   background-color: transparent;
 }
 
-.nav-links .dropdown-item.active::before {
+.nav-links .dropdown-item.active::before,
+.nav-links .dropdown-item.router-link-exact-active::before {
   opacity: 1;
   transform: translateY(-50%) scale(1);
 }
 
-.nav-links .dropdown-item.active .city-en {
+.nav-links .dropdown-item.active .city-en,
+.nav-links .dropdown-item.router-link-exact-active .city-en {
   color: #105446;
   font-weight: 600;
 }
 
-.nav-links .dropdown-item.active .city-zh {
+.nav-links .dropdown-item.active .city-zh,
+.nav-links .dropdown-item.router-link-exact-active .city-zh {
   color: #556a5c;
   font-weight: 500;
 }

@@ -2194,7 +2194,8 @@ h2 {
 }
 
 .mobile-subnav-item:hover,
-.mobile-subnav-item.active {
+.mobile-subnav-item.active,
+.mobile-subnav-item.router-link-exact-active {
   background: #e8f3f0;
   color: #105446;
 }
