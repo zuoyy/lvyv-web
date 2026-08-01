@@ -671,7 +671,10 @@ onUnmounted(() => {
 
 .hero-v2 {
   position: relative;
-  height: clamp(540px, 54.16vw, 780px);
+  width: 100%;
+  height: 100vh;
+  height: 100svh;
+  min-height: 600px;
   padding: 0 !important;
   overflow: hidden;
   background: #1e2e28;
@@ -1085,11 +1088,11 @@ onUnmounted(() => {
 .curated-section {
   position: relative;
   width: 100%;
-  height: calc(780 * (100vw / 1440));
+  height: calc(760 * (100vw / 1440));
   min-height: 500px;
   padding: 0 !important;
   overflow: hidden;
-  background: #ffffff;
+  background: #eaefeb;
   display: flex;
   justify-content: center;
 }
@@ -1097,7 +1100,7 @@ onUnmounted(() => {
 .curated-section__stage {
   position: relative;
   width: 1440px;
-  height: 780px;
+  height: 760px;
   flex-shrink: 0;
   transform-origin: top center;
   transform: scale(calc(100vw / 1440));
@@ -1172,7 +1175,7 @@ onUnmounted(() => {
 /* 1. BEIJING 卡片原图 (Figma Node #582:3678) */
 .encounter-card--beijing {
   z-index: 1;
-  top: 250px;
+  top: 280px;
   left: 430px;
   transform: rotate(-12.89deg);
   transform-origin: center center;
@@ -1190,7 +1193,7 @@ onUnmounted(() => {
 /* 2. CHENGDU 卡片原图 (Figma Node #582:3685) */
 .encounter-card--chengdu {
   z-index: 2;
-  top: 250px;
+  top: 280px;
   left: 565px;
   transform: rotate(0deg);
   transform-origin: center center;
@@ -1208,7 +1211,7 @@ onUnmounted(() => {
 /* 3. XI'AN 卡片原图 (Figma Node #582:3692) */
 .encounter-card--xian {
   z-index: 3;
-  top: 262px;
+  top: 292px;
   left: 725px;
   transform: rotate(10.87deg);
   transform-origin: center center;
