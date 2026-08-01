@@ -1106,6 +1106,16 @@ onUnmounted(() => {
   transform: scale(calc(100vw / 1440));
 }
 
+@media (min-width: 1440px) {
+  .curated-section {
+    height: 760px;
+  }
+
+  .curated-section__stage {
+    transform: none;
+  }
+}
+
 .curated-section__header {
   position: absolute;
   top: 80px;
