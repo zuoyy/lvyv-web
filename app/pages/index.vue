@@ -132,6 +132,98 @@
       </NuxtLink>
     </section>
 
+    <section
+      id="curated-encounters"
+      class="curated-section"
+      :class="{ 'is-in-view': isEncountersInView }"
+      aria-labelledby="curated-title"
+    >
+      <div class="curated-section__stage">
+        <header class="curated-section__header">
+          <h2 id="curated-title">Curated Encounters</h2>
+          <p>Don't know where to start? Pick an encounter.</p>
+        </header>
+
+        <div class="encounter-deck">
+          <NuxtLink
+            to="/wish?city=beijing"
+            class="encounter-card encounter-card--beijing"
+            aria-label="Explore BEIJING"
+          >
+            <img
+              src="/images/home-v2/encounter-beijing-582.png"
+              alt="BEIJING 北京"
+              width="278"
+              height="389"
+              loading="lazy"
+              decoding="async"
+            >
+          </NuxtLink>
+
+          <NuxtLink
+            to="/cities/chengdu"
+            class="encounter-card encounter-card--chengdu"
+            aria-label="Explore CHENGDU"
+          >
+            <img
+              src="/images/home-v2/encounter-chengdu-582.png"
+              alt="CHENGDU 成都"
+              width="278"
+              height="389"
+              loading="lazy"
+              decoding="async"
+            >
+          </NuxtLink>
+
+          <NuxtLink
+            to="/cities/xian"
+            class="encounter-card encounter-card--xian"
+            aria-label="Explore XI'AN"
+          >
+            <img
+              src="/images/home-v2/encounter-xian-582.png"
+              alt="XI'AN 西安"
+              width="278"
+              height="389"
+              loading="lazy"
+              decoding="async"
+            >
+          </NuxtLink>
+        </div>
+      </div>
+    </section>
+
+    <section id="wish-pool" class="home-wish-section" aria-labelledby="wish-pool-title">
+      <div class="home-wish-section__stage">
+        <header class="home-wish-section__header">
+          <h2 id="wish-pool-title" class="sr-only">Wish Pool</h2>
+          <div class="home-wish-section__ellipse" aria-hidden="true" />
+          <p class="home-wish-section__title" aria-hidden="true">Wish Pool</p>
+          <p class="home-wish-section__subtitle" aria-hidden="true">What do you wish to experience in China?</p>
+          <img class="home-wish-section__spark" src="/images/home/wish-icon-corner.svg" alt="" width="35" height="39" aria-hidden="true">
+          <img class="home-wish-section__globe" src="/images/home/wish-icon-globe.svg" alt="" width="53" height="53" aria-hidden="true">
+        </header>
+
+        <div class="home-wish-cloud" aria-label="Wishes shared by travelers">
+          <div v-for="(row, rowIndex) in wishRows" :key="rowIndex" class="home-wish-row" :class="`home-wish-row--${rowIndex === 0 ? 'left' : 'right'}`">
+            <div class="home-wish-row__track">
+              <div v-for="copy in 2" :key="copy" class="home-wish-row__group" :aria-hidden="copy === 2 ? 'true' : undefined">
+                <article v-for="wish in row" :key="`${copy}-${wish.text}`" class="home-wish-bubble" :class="`home-wish-bubble--${wish.style}`">
+                  <p>{{ wish.text }}</p>
+                  <span>{{ wish.passenger }}</span>
+                </article>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <NuxtLink to="/wish" class="home-wish-action">
+          <span>Make a Wish</span>
+          <img src="/images/home/cursor-wish.svg" alt="" width="32" height="32" aria-hidden="true">
+        </NuxtLink>
+      </div>
+    </section>
+
     <section class="stories-section" aria-labelledby="stories-title">
       <div class="home-shell">
         <header class="stories-section__header">
@@ -291,9 +383,6 @@ useLvyvSeo({
 })
 
 useHead({
-  htmlAttrs: {
-    class: 'home-scroll-snap'
-  },
   link: [{
     rel: 'preload',
     as: 'image',
@@ -342,6 +431,20 @@ const journeySteps = [
     description: 'Explore with city missions. Meet someone along the way',
     to: '/cities/xian'
   }
+] as const
+
+const wishRows = [
+  [
+    { text: 'I wish to learn traditional Chinese calligraphy.', passenger: 'Sophie · Germany', style: 'grass' },
+    { text: 'I wish someone could show me their favorite cafe.', passenger: 'Lucas · France', style: 'forest' },
+    { text: 'I wish to cook with a local family.', passenger: 'Noah · Australia', style: 'outline' }
+  ],
+  [
+    { text: 'I wish to learn Tai Chi in a local park at sunrise.', passenger: 'Mark · USA', style: 'forest' },
+    { text: 'I wish to celebrate Mid-Autumn Festival with locals.', passenger: 'Mia · Canada', style: 'outline' },
+    { text: 'I wish to learn Chinese calligraphy from a master.', passenger: 'Emma · UK', style: 'teal' },
+    { text: 'I wish to find a tea house hidden in an old street.', passenger: 'Lena · Sweden', style: 'grass' }
+  ]
 ] as const
 
 const stories = [
@@ -482,10 +585,28 @@ const setBg = (index: number) => {
   requestHero(index)
 }
 
+const isEncountersInView = ref(false)
+let encountersObserver: IntersectionObserver | null = null
+
 onMounted(async () => {
   await nextTick()
   const firstImage = heroImageElements[0]
   if (firstImage?.complete && firstImage.naturalWidth > 0) handleHeroLoad(0)
+
+  const encountersSection = document.getElementById('curated-encounters')
+  if (encountersSection && 'IntersectionObserver' in window) {
+    encountersObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          isEncountersInView.value = true
+          encountersObserver?.disconnect()
+        }
+      })
+    }, { threshold: 0.15 })
+    encountersObserver.observe(encountersSection)
+  } else {
+    isEncountersInView.value = true
+  }
 })
 
 onUnmounted(() => {
@@ -494,68 +615,9 @@ onUnmounted(() => {
     if ('cancelIdleCallback' in window) window.cancelIdleCallback(heroIdleHandle)
     else clearTimeout(heroIdleHandle)
   }
+  if (encountersObserver) encountersObserver.disconnect()
 })
 </script>
-
-<style>
-html.home-scroll-snap {
-  scroll-behavior: smooth;
-  scroll-snap-type: y mandatory;
-}
-
-html.home-scroll-snap body {
-  overscroll-behavior-y: none;
-}
-
-html.home-scroll-snap .home-v2 > section:not(.newsletter-section) {
-  min-height: 100svh;
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
-}
-
-html.home-scroll-snap .newsletter-section {
-  scroll-snap-align: none;
-  scroll-snap-stop: normal;
-}
-
-html.home-scroll-snap .footer {
-  scroll-snap-align: end;
-  scroll-snap-stop: always;
-}
-
-@media (min-width: 768px) {
-  html.home-scroll-snap {
-    scroll-padding-top: 0;
-  }
-
-  html.home-scroll-snap .home-v2 > section,
-  html.home-scroll-snap .footer {
-    scroll-margin-top: 0;
-  }
-}
-
-@media (max-width: 767px) {
-  html.home-scroll-snap {
-    scroll-snap-type: none;
-  }
-
-  html.home-scroll-snap body {
-    overscroll-behavior-y: auto;
-  }
-
-  html.home-scroll-snap .home-v2 > section,
-  html.home-scroll-snap .footer {
-    scroll-snap-align: none;
-    scroll-snap-stop: normal;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html.home-scroll-snap {
-    scroll-behavior: auto;
-  }
-}
-</style>
 
 <style scoped>
 .home-v2 {
@@ -1020,9 +1082,375 @@ html.home-scroll-snap .footer {
   height: 30px;
 }
 
+.curated-section {
+  position: relative;
+  width: 100%;
+  height: calc(780 * (100vw / 1440));
+  min-height: 500px;
+  padding: 0 !important;
+  overflow: hidden;
+  background: #ffffff;
+  display: flex;
+  justify-content: center;
+}
+
+.curated-section__stage {
+  position: relative;
+  width: 1440px;
+  height: 780px;
+  flex-shrink: 0;
+  transform-origin: top center;
+  transform: scale(calc(100vw / 1440));
+}
+
+.curated-section__header {
+  position: absolute;
+  top: 80px;
+  left: 80px;
+  width: 1280px;
+  height: 120px;
+  color: #203d33;
+  text-align: center;
+}
+
+.curated-section__header h2 {
+  font-family: Didot, 'Times New Roman', serif;
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 40px;
+  margin: 0;
+  letter-spacing: -0.01em;
+  color: #203d33;
+}
+
+.curated-section__header p {
+  margin-top: 0;
+  font-family: Didot, 'Times New Roman', serif;
+  font-size: 36px;
+  font-weight: 400;
+  line-height: 40px;
+  color: #203d33;
+}
+
+.encounter-deck {
+  position: absolute;
+  inset: 0;
+  perspective: 1000px;
+}
+
+.encounter-card {
+  position: absolute;
+  display: block;
+  width: 278px;
+  height: 389px;
+  border-radius: 20px;
+  text-decoration: none;
+  /* 炫酷贝塞尔弹性发牌曲线 */
+  transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+  will-change: transform, opacity;
+}
+
+.encounter-card img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 20px;
+  pointer-events: none;
+  filter: drop-shadow(0 10px 25px rgba(0, 0, 0, 0.12));
+  transition: filter 0.4s ease, transform 0.4s ease;
+}
+
+/* 初始叠牌状态: 3张牌聚在中央偏下 */
+.curated-section:not(.is-in-view) .encounter-card {
+  left: 565px !important;
+  top: 290px !important;
+  transform: rotate(0deg) scale(0.65) translateY(120px) !important;
+  opacity: 0 !important;
+}
+
+/* 1. BEIJING 卡片原图 (Figma Node #582:3678) */
+.encounter-card--beijing {
+  z-index: 1;
+  top: 250px;
+  left: 430px;
+  transform: rotate(-12.89deg);
+  transform-origin: center center;
+}
+
+.curated-section.is-in-view .encounter-card--beijing {
+  transition-delay: 0.1s;
+}
+
+.encounter-card--beijing:hover {
+  z-index: 10;
+  transform: rotate(-12.89deg) translateY(-14px) scale(1.04);
+}
+
+/* 2. CHENGDU 卡片原图 (Figma Node #582:3685) */
+.encounter-card--chengdu {
+  z-index: 2;
+  top: 250px;
+  left: 565px;
+  transform: rotate(0deg);
+  transform-origin: center center;
+}
+
+.curated-section.is-in-view .encounter-card--chengdu {
+  transition-delay: 0.25s;
+}
+
+.encounter-card--chengdu:hover {
+  z-index: 10;
+  transform: translateY(-14px) scale(1.04);
+}
+
+/* 3. XI'AN 卡片原图 (Figma Node #582:3692) */
+.encounter-card--xian {
+  z-index: 3;
+  top: 262px;
+  left: 725px;
+  transform: rotate(10.87deg);
+  transform-origin: center center;
+}
+
+.curated-section.is-in-view .encounter-card--xian {
+  transition-delay: 0.4s;
+}
+
+.encounter-card--xian:hover {
+  z-index: 10;
+  transform: rotate(10.87deg) translateY(-14px) scale(1.04);
+}
+
+.encounter-card:hover img {
+  filter: drop-shadow(0 24px 40px rgba(0, 0, 0, 0.24));
+}
+
+.home-wish-section {
+  position: relative;
+  height: max(905px, 100svh);
+  min-height: max(905px, 100svh);
+  padding: 0 !important;
+  overflow: hidden;
+  background: #fdfff3;
+}
+
+.home-wish-section__stage {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 905px;
+  transform: translateY(-50%);
+}
+
+.home-wish-section__header {
+  position: absolute;
+  top: 36px;
+  left: 50%;
+  width: 597px;
+  height: 255px;
+  transform: translateX(-50%);
+}
+
+.home-wish-section__ellipse {
+  position: absolute;
+  top: 48px;
+  left: 108px;
+  width: 420px;
+  height: 132px;
+  border: 1px dashed var(--home-ink);
+  border-radius: 50%;
+  transform: rotate(-18deg);
+}
+
+.home-wish-section__title,
+.home-wish-section__subtitle {
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  width: 597px;
+  margin: 0;
+  color: var(--home-ink);
+  text-align: center;
+}
+
+.home-wish-section__title {
+  top: 100px;
+  font-family: 'Khula', var(--font-body);
+  font-size: 60px;
+  font-weight: 700;
+  line-height: 50px;
+  text-transform: uppercase;
+}
+
+.home-wish-section__subtitle {
+  top: 161px;
+  font-family: var(--font-body);
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 44px;
+}
+
+.home-wish-section__spark {
+  position: absolute;
+  z-index: 2;
+  top: 43px;
+  left: 509px;
+  width: 35px;
+  height: 39px;
+}
+
+.home-wish-section__globe {
+  position: absolute;
+  top: 38px;
+  left: 220px;
+  width: 53px;
+  height: 53px;
+  border-radius: 50%;
+  background: #fdfff3;
+  box-shadow: 0 0 0 7px #fdfff3;
+}
+
+.home-wish-cloud {
+  position: absolute;
+  top: 327px;
+  left: 0;
+  display: flex;
+  width: 100%;
+  height: 348px;
+  flex-direction: column;
+  gap: 29px;
+  overflow: hidden;
+}
+
+.home-wish-row {
+  width: 100%;
+  height: 159px;
+  overflow: hidden;
+}
+
+.home-wish-row__track,
+.home-wish-row__group {
+  display: flex;
+  width: max-content;
+  gap: 24px;
+}
+
+.home-wish-row__track {
+  will-change: transform;
+}
+
+.home-wish-row--left .home-wish-row__track {
+  animation: homeWishLeft 38s linear infinite;
+}
+
+.home-wish-row--right .home-wish-row__track {
+  animation: homeWishRight 44s linear infinite;
+}
+
+.home-wish-row__track:hover {
+  animation-play-state: paused;
+}
+
+.home-wish-bubble {
+  display: flex;
+  width: 490px;
+  height: 159px;
+  flex: 0 0 490px;
+  flex-direction: column;
+  justify-content: center;
+  padding: 18px 44px;
+  border: 1px solid transparent;
+  border-radius: 80px;
+  font-family: var(--font-cursive);
+}
+
+.home-wish-bubble p {
+  font-family: inherit;
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1.18;
+}
+
+.home-wish-bubble span {
+  align-self: flex-end;
+  margin-top: 4px;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.home-wish-bubble--grass {
+  background: #698e4e;
+  color: #fff;
+}
+
+.home-wish-bubble--forest {
+  background: #1a4536;
+  color: #fff;
+}
+
+.home-wish-bubble--outline {
+  border-color: rgba(0, 0, 0, .1);
+  background: #fff;
+  color: var(--home-ink);
+}
+
+.home-wish-bubble--teal {
+  background: #1c846f;
+  color: #fff;
+}
+
+.home-wish-action {
+  position: absolute;
+  top: 755px;
+  left: 50%;
+  display: flex;
+  width: min(500px, calc(100% - 32px));
+  height: 100px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 52px;
+  background: var(--home-lime);
+  color: #080503;
+  font-family: var(--font-body);
+  font-size: 28px;
+  font-weight: 500;
+  transform: translateX(-50%);
+  transition: background-color .2s ease, transform .2s ease;
+}
+
+.home-wish-action:hover {
+  background: #c4ed6d;
+  transform: translate(-50%, -3px);
+}
+
+.home-wish-action img {
+  width: 32px;
+  height: 32px;
+  transition: transform .2s ease;
+}
+
+.home-wish-action:hover img {
+  transform: translate(4px, -4px);
+}
+
+@keyframes homeWishLeft {
+  from { transform: translateX(0); }
+  to { transform: translateX(calc(-50% - 12px)); }
+}
+
+@keyframes homeWishRight {
+  from { transform: translateX(calc(-50% - 12px)); }
+  to { transform: translateX(0); }
+}
+
 .stories-section {
   padding: 128px 0 14px !important;
-  background: #fdfff3;
+  background: #ffffff;
 }
 
 .stories-section__header {
@@ -1454,6 +1882,144 @@ html.home-scroll-snap .footer {
     bottom: 60px;
   }
 
+  .curated-section {
+    height: auto;
+    min-height: 620px;
+    padding: 68px 0 42px !important;
+  }
+
+  .curated-section__stage {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+    height: 510px;
+    transform: none;
+  }
+
+  .curated-section__header {
+    top: 0;
+    right: 16px;
+    left: 16px;
+    width: auto;
+  }
+
+  .curated-section__header h2 {
+    font-size: 34px;
+    line-height: 38px;
+  }
+
+  .curated-section__header p {
+    max-width: 420px;
+    margin: 4px auto 0;
+    font-size: 24px;
+    line-height: 29px;
+  }
+
+  .encounter-deck {
+    inset: auto;
+    top: 82px;
+    left: 50%;
+    width: 1280px;
+    height: 760px;
+    transform: translateX(-50%) scale(0.62);
+    transform-origin: top center;
+  }
+
+  .encounter-card {
+    border-radius: 20px;
+  }
+
+  .home-wish-section {
+    height: auto;
+    min-height: 760px;
+  }
+
+  .home-wish-section__stage {
+    position: relative;
+    top: auto;
+    height: 760px;
+    transform: none;
+  }
+
+  .home-wish-section__header {
+    top: 30px;
+    width: min(597px, calc(100% - 24px));
+    height: auto;
+    aspect-ratio: 597 / 255;
+  }
+
+  .home-wish-section__ellipse {
+    top: 19%;
+    left: 18%;
+    width: 70%;
+    height: 52%;
+  }
+
+  .home-wish-section__title,
+  .home-wish-section__subtitle {
+    width: 100%;
+  }
+
+  .home-wish-section__title {
+    top: 39%;
+    font-size: clamp(34px, 10vw, 60px);
+    line-height: 1;
+  }
+
+  .home-wish-section__subtitle {
+    top: 63%;
+    font-size: clamp(14px, 4vw, 24px);
+    line-height: 1.25;
+  }
+
+  .home-wish-section__spark {
+    top: 17%;
+    left: 84%;
+    width: 6%;
+    height: auto;
+  }
+
+  .home-wish-section__globe {
+    top: 15%;
+    left: 37%;
+    width: 9%;
+    height: auto;
+    aspect-ratio: 1;
+  }
+
+  .home-wish-cloud {
+    top: 230px;
+    height: 290px;
+    gap: 18px;
+  }
+
+  .home-wish-row,
+  .home-wish-bubble {
+    height: 136px;
+  }
+
+  .home-wish-bubble {
+    width: 360px;
+    flex-basis: 360px;
+    padding: 16px 30px;
+    border-radius: 68px;
+  }
+
+  .home-wish-bubble p {
+    font-size: 24px;
+  }
+
+  .home-wish-bubble span {
+    font-size: 14px;
+  }
+
+  .home-wish-action {
+    top: 610px;
+    height: 76px;
+    font-size: 22px;
+  }
+
   .stories-section {
     padding: 112px 0 8px !important;
   }
@@ -1498,6 +2064,10 @@ html.home-scroll-snap .footer {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .home-wish-row__track {
+    animation-play-state: paused;
+  }
+
   .home-v2 *,
   .home-v2 *::before,
   .home-v2 *::after {
