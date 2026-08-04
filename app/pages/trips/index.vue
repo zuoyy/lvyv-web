@@ -43,7 +43,10 @@
           </div>
         </div>
         <div class="trip-footer">
-          <span>{{ trip.designerMessage ? 'Designed for you' : `Wish ${trip.wishNo}` }}</span>
+          <span>{{ trip.designerMessage ? 'Designed for you' : trip.wishNo ? `Wish ${trip.wishNo}` : 'Your itinerary' }}</span>
+          <button v-if="canConfirmTrip(trip)" type="button" :disabled="confirmingWishId === trip.wishId" @click="confirmTrip(trip)">
+            {{ confirmingWishId === trip.wishId ? 'Confirming' : 'Confirm' }}
+          </button>
           <button type="button" @click="selectedTrip = trip">View plan <font-awesome-icon :icon="['fas', 'arrow-right']" /></button>
         </div>
       </article>
@@ -73,7 +76,12 @@
             </section>
           </div>
           <div v-else class="no-days">The detailed day plan is being prepared.</div>
-          <footer><button type="button" @click="selectedTrip = null">Close</button></footer>
+          <footer>
+            <button v-if="canConfirmTrip(selectedTrip)" type="button" :disabled="confirmingWishId === selectedTrip.wishId" @click="confirmTrip(selectedTrip)">
+              {{ confirmingWishId === selectedTrip.wishId ? 'Confirming' : 'Confirm completion' }}
+            </button>
+            <button type="button" @click="selectedTrip = null">Close</button>
+          </footer>
         </section>
       </div>
     </Teleport>
@@ -88,7 +96,7 @@ useNoIndex()
 interface TripItemDetail { id: number; projectTypeLabel?: string; title: string; subtitle?: string; address?: string }
 interface TripDay { id: number; dayNo: number; title: string; summary?: string; items: TripItemDetail[] }
 interface Trip {
-  id: number; wishId?: number; wishNo?: string; wishStatus: string; wishStatusLabel: string; versionNo: number
+  id: number; wishId?: number; wishNo?: string; orderNo?: string; wishStatus: string; wishStatusLabel: string; versionNo: number
   itineraryTypeLabel?: string; title: string; cityLabel: string; coverImageUrl?: string; dateText?: string
   summary?: string; designerMessage?: string; days: TripDay[]
 }
@@ -100,6 +108,7 @@ const trips = ref<Trip[]>([])
 const loading = ref(false)
 const loadError = ref('')
 const selectedTrip = ref<Trip | null>(null)
+const confirmingWishId = ref<number | null>(null)
 const activeFilter = ref<'all' | 'ready' | 'revision' | 'closed'>('all')
 const filters = [{ value: 'all' as const, label: 'All' }, { value: 'ready' as const, label: 'Ready' }, { value: 'revision' as const, label: 'In revision' }, { value: 'closed' as const, label: 'Past' }]
 const filteredTrips = computed(() => trips.value.filter((trip) => {
@@ -112,16 +121,25 @@ const fetchTrips = async () => {
   loading.value = true
   loadError.value = ''
   try {
-    const [entitlements, customItineraries] = await Promise.all([
+    const [entitlements, customItineraries, orders] = await Promise.all([
       commerce.listEntitlements(),
-      commerce.listCustomItineraries()
+      commerce.listCustomItineraries(),
+      commerce.listOrders()
     ])
+    const customOrderByWishId = new Map<number, string>()
+    for (const order of orders) {
+      for (const { item } of order.items) {
+        if (item.itemType === 'CUSTOM_SERVICE' && item.wishId != null) customOrderByWishId.set(item.wishId, order.order.orderNo)
+      }
+    }
     const customTrips = customItineraries.map((view): Trip | null => {
       if (!view.content) return null
       const { content, days, items } = view.content
       return {
         id: view.itinerary.id,
         wishId: view.itinerary.wishId,
+        wishNo: view.wishNo,
+        orderNo: customOrderByWishId.get(view.itinerary.wishId),
         wishStatus: view.wishStatus || view.itinerary.status,
         wishStatusLabel: view.wishStatusLabel || view.customItineraryStatusLabel || view.itinerary.status,
         versionNo: view.version?.versionNo || 1,
@@ -175,6 +193,22 @@ const fetchTrips = async () => {
   }
 }
 
+const canConfirmTrip = (trip: Trip) => trip.wishStatus === 'WAITING_CONFIRMATION' && !!trip.orderNo
+const confirmTrip = async (trip: Trip) => {
+  if (!trip.orderNo || trip.wishId == null) return
+  confirmingWishId.value = trip.wishId
+  loadError.value = ''
+  try {
+    await commerce.confirmOrderCompletion(trip.orderNo)
+    selectedTrip.value = null
+    await fetchTrips()
+  } catch (caught) {
+    loadError.value = caught instanceof Error ? caught.message : 'Could not confirm completion.'
+  } finally {
+    confirmingWishId.value = null
+  }
+}
+
 const tripStatusClass = (status: string) => ['WAITING_CONFIRMATION', 'DELIVERED'].includes(status) ? 'ready'
   : ['CLOSED', 'CANCELLED'].includes(status) ? 'past'
     : ['REVISION_REQUESTED', 'REVISING'].includes(status) ? 'revision' : 'working'
@@ -207,7 +241,8 @@ onMounted(async () => {
 .trip-facts { display: flex; flex-wrap: wrap; gap: 13px; padding-top: 14px; border-top: 1px solid #edf1ee; }
 .trip-facts span { display: flex; align-items: center; gap: 6px; color: #65736c; font-size: 10px; }
 .trip-facts svg { color: #789486; }
-.trip-footer { min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 21px; background: #f7f9f6; color: #89958f; font-size: 10px; }
+.trip-footer { min-height: 48px; display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding: 0 21px; background: #f7f9f6; color: #89958f; font-size: 10px; }
+.trip-footer > span { margin-right: auto; }
 .trip-footer button { padding: 0; border: 0; background: transparent; color: #174d40; font: 700 11px/1 'Inter', sans-serif; cursor: pointer; }
 .trip-footer button svg { margin-left: 4px; }
 .content-state { min-height: 340px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px; border: 1px solid #dfe5e1; background: #fff; color: #75827c; font-size: 13px; text-align: center; }
@@ -226,7 +261,7 @@ onMounted(async () => {
 .day-number { color: #174d40; font-size: 11px; font-weight: 800; text-transform: uppercase; }.day-content h3 { margin: 0; color: #2a3c33; font-size: 16px; }.day-content > p { margin: 6px 0 0; color: #7a8780; font-size: 12px; }
 .day-content ol { display: grid; gap: 13px; margin: 18px 0 0; padding: 0; list-style: none; }.day-content li { position: relative; display: flex; flex-direction: column; gap: 3px; padding-left: 16px; }.day-content li::before { position: absolute; top: 5px; left: 0; width: 6px; height: 6px; border-radius: 50%; background: #bfdc72; content: ''; }
 .day-content li span { color: #829088; font-size: 9px; font-weight: 800; text-transform: uppercase; }.day-content li strong { color: #35473e; font-size: 13px; }.day-content li p { margin: 0; color: #7e8b84; font-size: 11px; }
-.no-days { padding: 50px 0; color: #7b8881; text-align: center; font-size: 13px; }.trip-modal footer { display: flex; justify-content: flex-end; padding-top: 20px; }.trip-modal footer button { min-height: 42px; padding: 0 18px; border: 1px solid #174d40; background: #174d40; color: #fff; font-weight: 700; cursor: pointer; }
+.no-days { padding: 50px 0; color: #7b8881; text-align: center; font-size: 13px; }.trip-modal footer { display: flex; justify-content: flex-end; gap: 8px; padding-top: 20px; }.trip-modal footer button { min-height: 42px; padding: 0 18px; border: 1px solid #174d40; background: #174d40; color: #fff; font-weight: 700; cursor: pointer; }.trip-modal footer button:last-child { background: #fff; color: #174d40; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (max-width: 700px) { .trip-grid { grid-template-columns: 1fr; } .trip-toolbar { align-items: flex-start; flex-direction: column; } .filter-tabs { width: 100%; overflow-x: auto; } .filter-tabs button { flex: 1 0 auto; } .trip-modal { padding: 23px 18px; } .day-section { grid-template-columns: 1fr; gap: 8px; } }
 </style>

@@ -78,6 +78,7 @@ export interface CustomItineraryView {
   itinerary: { id: number; wishId: number; memberId: number; status: string; deliveredTime?: string }
   version?: { id: number; versionNo: number; status: string; deliveredTime?: string }
   content?: ContentView
+  wishNo?: string
   wishStatus?: string
   wishStatusLabel?: string
   customItineraryStatusLabel?: string
