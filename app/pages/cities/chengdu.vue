@@ -2,7 +2,7 @@
   <main class="city-chengdu">
     <section class="city-chengdu__hero" aria-labelledby="chengdu-title">
       <picture>
-        <img class="city-chengdu__hero-image" src="/images/cities/chengdu/hero.png" alt="A giant panda in a bamboo forest">
+        <img class="city-chengdu__hero-image" src="/images/cities/chengdu/hero.webp" alt="A giant panda in a bamboo forest">
       </picture>
       <div class="city-chengdu__hero-shade" />
       <div class="city-chengdu__hero-copy">
@@ -63,7 +63,7 @@
     </section>
 
     <section class="city-chengdu__cta" aria-labelledby="cta-title">
-      <img class="city-chengdu__skyline" src="/images/cities/chengdu/skyline.png" alt="" aria-hidden="true">
+      <img class="city-chengdu__skyline" src="/images/cities/chengdu/skyline.webp" alt="" aria-hidden="true">
       <div class="city-chengdu__cta-word" aria-hidden="true">CHENG'DU</div>
       <div class="city-chengdu__cta-content">
         <h2 id="cta-title">Ready for your<br>Cheng'du encounter?</h2>
@@ -81,17 +81,17 @@ const encounters = [
   {
     title: 'Intimate contact with giant pandas',
     description: 'Personally experiencing the adorable innocence of giant pandas',
-    image: '/images/cities/chengdu/panda.png'
+    image: '/images/cities/chengdu/panda.webp'
   },
   {
     title: 'Chengdu Hotpot',
     description: 'Let your taste buds experience it <span class="chengdu-script">“ 麻” “ 辣” “ 鲜” “ 香”</span>',
-    image: '/images/cities/chengdu/hotpot.png'
+    image: '/images/cities/chengdu/hotpot.webp'
   },
   {
     title: 'Chengdu Face Changing',
     description: 'The ever-changing faces of Chengdu and the elegant charm of Shu style',
-    image: '/images/cities/chengdu/opera.png'
+    image: '/images/cities/chengdu/opera.webp'
   }
 ]
 

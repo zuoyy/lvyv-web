@@ -1,7 +1,7 @@
 <template>
   <main class="city-xian">
     <section class="city-xian__hero" aria-labelledby="xian-title">
-      <img class="city-xian__hero-image" src="/images/cities/xian/hero.png" alt="Friends at Xi'an's ancient city gate">
+      <img class="city-xian__hero-image" src="/images/cities/xian/hero.webp" alt="Friends at Xi'an's ancient city gate">
       <div class="city-xian__hero-shade" />
       <div class="city-xian__hero-copy">
         <h1 id="xian-title">Xi'an</h1>
@@ -81,15 +81,15 @@
 
 <script setup lang="ts">
 const encounters = [
-  { title: 'Cycle on Ancient Walls', description: 'Ride where empires once stood, at sunset.', image: '/images/cities/xian/cycle.png' },
-  { title: 'Midnight Food Quest', description: 'Follow the sizzling sounds into the Muslim Quarter.', image: '/images/cities/xian/food.jpeg' },
-  { title: 'Midnight Food Quest', description: "Hear the roar of China's oldest opera in a hidden theater.", image: '/images/cities/xian/opera.jpeg' }
+  { title: 'Cycle on Ancient Walls', description: 'Ride where empires once stood, at sunset.', image: '/images/cities/xian/cycle.webp' },
+  { title: 'Midnight Food Quest', description: 'Follow the sizzling sounds into the Muslim Quarter.', image: '/images/cities/xian/food.webp' },
+  { title: 'Midnight Food Quest', description: "Hear the roar of China's oldest opera in a hidden theater.", image: '/images/cities/xian/opera.webp' }
 ]
 
 const missions = [
-  { title: 'Start selling', description: 'Are you a restaurant owner looking to grow your business? Reach new customers when you join our network.', image: '/images/cities/xian/mission-sell.png', icon: '/images/cities/xian/icons/mission-sell.svg' },
-  { title: 'Deliver happiness', description: 'Join our elite league of delivery riders delivering happiness to customers and earn to achieve your dreams while at it.', image: '/images/cities/xian/mission-deliver.png', icon: '/images/cities/xian/icons/mission-deliver.svg' },
-  { title: 'Behind the scenes', description: 'If you are passionate about helping us achieve our goal to deliver meals seamlessly, come join the team.', image: '/images/cities/xian/mission-scenes.png', icon: '/images/cities/xian/icons/mission-scenes.svg' }
+  { title: 'Start selling', description: 'Are you a restaurant owner looking to grow your business? Reach new customers when you join our network.', image: '/images/cities/xian/mission-sell.webp', icon: '/images/cities/xian/icons/mission-sell.svg' },
+  { title: 'Deliver happiness', description: 'Join our elite league of delivery riders delivering happiness to customers and earn to achieve your dreams while at it.', image: '/images/cities/xian/mission-deliver.webp', icon: '/images/cities/xian/icons/mission-deliver.svg' },
+  { title: 'Behind the scenes', description: 'If you are passionate about helping us achieve our goal to deliver meals seamlessly, come join the team.', image: '/images/cities/xian/mission-scenes.webp', icon: '/images/cities/xian/icons/mission-scenes.svg' }
 ]
 
 const title = "Xi'an | Lvyv"
