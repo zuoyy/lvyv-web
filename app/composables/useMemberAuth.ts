@@ -90,6 +90,7 @@ export const useMemberAuth = () => {
   }
 
   return {
+    request,
     token,
     member,
     login,

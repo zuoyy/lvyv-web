@@ -63,7 +63,10 @@
     </section>
 
     <section class="city-xian__cta" aria-labelledby="cta-title">
-      <img class="city-xian__skyline" src="/images/cities/xian/skyline.png" alt="" aria-hidden="true">
+      <picture>
+        <source type="image/webp" srcset="/images/cities/xian/skyline.webp">
+        <img class="city-xian__skyline" src="/images/cities/xian/skyline.png" alt="" aria-hidden="true">
+      </picture>
       <div class="city-xian__cta-word" aria-hidden="true">XI'AN</div>
       <div class="city-xian__cta-content">
         <h2 id="cta-title">Ready for your<br>Xi'an encounter?</h2>

@@ -1,10 +1,14 @@
 <template>
-  <div class="app-layout">
+  <div class="app-layout" :class="{ 'app-layout--wish': isWishLanding }">
     <!-- Header / Navigation -->
     <header class="navbar" :class="{ 'scrolled': isScrolled }">
       <div class="nav-container">
         <NuxtLink to="/" class="brand">
-          <img src="/images/common/logo-header.svg" alt="Lvyv Logo" class="brand-logo">
+          <span class="brand-logo wish-brand-logo" aria-label="Lvyv Logo">
+            <img src="/images/wish/logo-main.svg" alt="" loading="eager" decoding="sync">
+            <img src="/images/wish/logo-accent.svg" alt="" loading="eager" decoding="sync">
+          </span>
+          <img src="/images/common/logo-header.svg" alt="Lvyv Logo" class="brand-logo brand-logo--default">
         </NuxtLink>
 
         <nav class="nav-links">
@@ -49,7 +53,6 @@
             </Transition>
           </div>
           <a v-else href="/login/" class="nav-login">
-            <AuthGlobeIcon :icon="faUser" class="nav-login-icon" aria-hidden="true" />
             <span>Login</span>
           </a>
           <NuxtLink to="/wish" class="nav-start-planning">Start Your Wish</NuxtLink>
@@ -155,7 +158,7 @@
     <slot />
 
     <!-- Footer -->
-    <footer class="footer">
+    <footer v-if="!isWishLanding" class="footer">
       <div class="container footer-grid">
         <div class="footer-brand-info">
           <img src="/images/common/logo-footer.svg" alt="Lvyv Logo" class="footer-logo">
@@ -242,6 +245,7 @@ import { faGlobe, faTimes, faChevronDown, faUser } from '@fortawesome/free-solid
 import businessLicenseIconUrl from '~/assets/generated/common/yyzz-48.png'
 
 const route = useRoute()
+const isWishLanding = computed(() => route.path === '/wish')
 const activeSection = ref('hero')
 // Keep the first client render identical to SSR; sync scroll state after mount.
 const isScrolled = ref(false)
@@ -343,3 +347,94 @@ onBeforeUnmount(() => {
   }
 })
 </script>
+
+<style scoped>
+.app-layout--wish .navbar,
+.app-layout--wish .navbar.scrolled {
+  background: transparent !important;
+  border-bottom: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.wish-brand-logo {
+  position: relative;
+  display: none;
+  width: 120px;
+  height: 41px;
+  flex: 0 0 120px;
+}
+
+.app-layout--wish .wish-brand-logo {
+  display: block;
+}
+
+.app-layout--wish .brand-logo--default {
+  display: none;
+}
+
+.wish-brand-logo img {
+  position: absolute;
+  display: block;
+  max-width: none;
+}
+
+.wish-brand-logo img:first-child {
+  inset: 0 auto auto 0;
+  width: 94.747px;
+  height: 40.996px;
+}
+
+.wish-brand-logo img:last-child {
+  top: 11.25px;
+  left: 96.65px;
+  width: 23.357px;
+  height: 10.83px;
+}
+
+.app-layout--wish .nav-links > a,
+.app-layout--wish .nav-item-dropdown > a,
+.app-layout--wish .lang-selector,
+.app-layout--wish .nav-login,
+.app-layout--wish .member-trigger {
+  color: #fff;
+}
+
+.app-layout--wish .nav-links > a:hover,
+.app-layout--wish .nav-links > a.active,
+.app-layout--wish .nav-item-dropdown > a:hover,
+.app-layout--wish .nav-item-dropdown > a.active {
+  color: #fff;
+}
+
+.app-layout--wish .nav-login-icon {
+  display: none;
+}
+
+@media (min-width: 992px) {
+  .app-layout--wish .nav-links {
+    gap: 36px;
+  }
+}
+
+@media (max-width: 991px) {
+  .wish-brand-logo {
+    width: 106px;
+    height: 37px;
+    flex-basis: 106px;
+  }
+
+  .wish-brand-logo img:first-child {
+    width: 83.7px;
+    height: 36.24px;
+  }
+
+  .wish-brand-logo img:last-child {
+    top: 9.94px;
+    left: 85.38px;
+    width: 20.63px;
+    height: 9.56px;
+  }
+}
+</style>

@@ -150,14 +150,17 @@
             class="encounter-card encounter-card--beijing"
             aria-label="Explore BEIJING"
           >
-            <img
-              src="/images/home-v2/encounter-beijing-582.png"
-              alt="BEIJING 北京"
-              width="278"
-              height="389"
-              loading="lazy"
-              decoding="async"
-            >
+            <picture>
+              <source type="image/webp" srcset="/images/home-v2/encounter-beijing-582.webp">
+              <img
+                src="/images/home-v2/encounter-beijing-582.png"
+                alt="BEIJING 北京"
+                width="278"
+                height="389"
+                loading="lazy"
+                decoding="async"
+              >
+            </picture>
           </NuxtLink>
 
           <NuxtLink
@@ -165,14 +168,17 @@
             class="encounter-card encounter-card--chengdu"
             aria-label="Explore CHENGDU"
           >
-            <img
-              src="/images/home-v2/encounter-chengdu-582.png"
-              alt="CHENGDU 成都"
-              width="278"
-              height="389"
-              loading="lazy"
-              decoding="async"
-            >
+            <picture>
+              <source type="image/webp" srcset="/images/home-v2/encounter-chengdu-582.webp">
+              <img
+                src="/images/home-v2/encounter-chengdu-582.png"
+                alt="CHENGDU 成都"
+                width="278"
+                height="389"
+                loading="lazy"
+                decoding="async"
+              >
+            </picture>
           </NuxtLink>
 
           <NuxtLink
@@ -180,14 +186,17 @@
             class="encounter-card encounter-card--xian"
             aria-label="Explore XI'AN"
           >
-            <img
-              src="/images/home-v2/encounter-xian-582.png"
-              alt="XI'AN 西安"
-              width="278"
-              height="389"
-              loading="lazy"
-              decoding="async"
-            >
+            <picture>
+              <source type="image/webp" srcset="/images/home-v2/encounter-xian-582.webp">
+              <img
+                src="/images/home-v2/encounter-xian-582.png"
+                alt="XI'AN 西安"
+                width="278"
+                height="389"
+                loading="lazy"
+                decoding="async"
+              >
+            </picture>
           </NuxtLink>
         </div>
       </div>

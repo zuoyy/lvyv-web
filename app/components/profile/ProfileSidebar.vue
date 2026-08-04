@@ -28,7 +28,7 @@
           </button>
         </li>
         <li :class="{ active: activeTab === 'wishes' }">
-          <NuxtLink to="/wish" class="nav-link" @click="emit('close')">
+          <NuxtLink to="/wish/my" class="nav-link" @click="emit('close')">
             <font-awesome-icon :icon="['fas', 'heart']" class="nav-icon" />
             <span>My Wishes</span>
           </NuxtLink>
@@ -37,6 +37,18 @@
           <NuxtLink to="/trips" class="nav-link" @click="emit('close')">
             <font-awesome-icon :icon="['fas', 'location-dot']" class="nav-icon" />
             <span>My Trips</span>
+          </NuxtLink>
+        </li>
+        <li :class="{ active: activeTab === 'catalog' }">
+          <NuxtLink to="/catalog" class="nav-link" @click="emit('close')">
+            <font-awesome-icon :icon="['fas', 'compass']" class="nav-icon" />
+            <span>Journey Catalog</span>
+          </NuxtLink>
+        </li>
+        <li :class="{ active: activeTab === 'orders' }">
+          <NuxtLink to="/orders" class="nav-link" @click="emit('close')">
+            <font-awesome-icon :icon="['fas', 'credit-card']" class="nav-icon" />
+            <span>My Orders</span>
           </NuxtLink>
         </li>
         <li :class="{ active: activeTab === 'badges' }">

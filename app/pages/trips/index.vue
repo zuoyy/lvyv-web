@@ -23,7 +23,7 @@
       <div class="empty-symbol"><font-awesome-icon :icon="['fas', 'route']" /></div>
       <strong>{{ trips.length ? 'No trips match this filter' : 'No itineraries yet' }}</strong>
       <span>{{ trips.length ? 'Choose another view to see your trips.' : 'When a travel designer delivers your first itinerary, it will appear here.' }}</span>
-      <NuxtLink v-if="!trips.length" to="/wish">View my wishes</NuxtLink>
+      <NuxtLink v-if="!trips.length" to="/wish/my">View my wishes</NuxtLink>
     </div>
 
     <div v-else class="trip-grid">
@@ -85,22 +85,17 @@ import AccountPageShell from '~/components/profile/AccountPageShell.vue'
 
 useNoIndex()
 
-interface ApiResult<T> { code: number; msg?: string; data: T }
-interface PageResult<T> { list: T[]; total: number; page: number; size: number }
-interface WishSummary { id: number; wishNo: string; status: number; statusLabel: string; hasItinerary: boolean }
-interface ItinerarySimple { id: number; versionNo: number }
-interface WishDetail { wish: WishSummary; currentItinerary?: ItinerarySimple }
 interface TripItemDetail { id: number; projectTypeLabel?: string; title: string; subtitle?: string; address?: string }
 interface TripDay { id: number; dayNo: number; title: string; summary?: string; items: TripItemDetail[] }
 interface Trip {
-  id: number; wishId: number; wishNo: string; wishStatus: number; wishStatusLabel: string; versionNo: number
+  id: number; wishId?: number; wishNo?: string; wishStatus: string; wishStatusLabel: string; versionNo: number
   itineraryTypeLabel?: string; title: string; cityLabel: string; coverImageUrl?: string; dateText?: string
   summary?: string; designerMessage?: string; days: TripDay[]
 }
 
 const { auth, ready, initializeAccount } = useAccountPage('/trips')
-const config = useRuntimeConfig()
 const route = useRoute()
+const commerce = useTourCommerce()
 const trips = ref<Trip[]>([])
 const loading = ref(false)
 const loadError = ref('')
@@ -108,29 +103,69 @@ const selectedTrip = ref<Trip | null>(null)
 const activeFilter = ref<'all' | 'ready' | 'revision' | 'closed'>('all')
 const filters = [{ value: 'all' as const, label: 'All' }, { value: 'ready' as const, label: 'Ready' }, { value: 'revision' as const, label: 'In revision' }, { value: 'closed' as const, label: 'Past' }]
 const filteredTrips = computed(() => trips.value.filter((trip) => {
-  if (activeFilter.value === 'ready') return trip.wishStatus === 30
-  if (activeFilter.value === 'revision') return [40, 50].includes(trip.wishStatus)
-  if (activeFilter.value === 'closed') return [80, 90].includes(trip.wishStatus)
+  if (activeFilter.value === 'ready') return ['WAITING_CONFIRMATION', 'DELIVERED'].includes(trip.wishStatus)
+  if (activeFilter.value === 'revision') return ['REVISION_REQUESTED', 'REVISING'].includes(trip.wishStatus)
+  if (activeFilter.value === 'closed') return ['CLOSED', 'CANCELLED'].includes(trip.wishStatus)
   return true
 }))
-const headers = computed(() => ({ Authorization: `Bearer ${auth.token.value}`, 'Accept-Language': auth.member.value?.locale || 'en-US', 'X-Time-Zone': auth.member.value?.timezone || detectMemberTimeZone() }))
-
 const fetchTrips = async () => {
   loading.value = true
   loadError.value = ''
   try {
-    const wishResponse = await $fetch<ApiResult<PageResult<WishSummary>>>('/tour/wishes/page', { baseURL: config.public.apiBase as string, headers: headers.value, params: { page: 1, size: 100 } })
-    if (wishResponse.code !== 200) throw new Error(wishResponse.msg || 'Request failed')
-    const itineraryWishes = wishResponse.data.list.filter(wish => wish.hasItinerary)
-    const detailResults = await Promise.allSettled(itineraryWishes.map(async (wish) => {
-      const wishDetailResponse = await $fetch<ApiResult<WishDetail>>(`/tour/wishes/${wish.id}`, { baseURL: config.public.apiBase as string, headers: headers.value })
-      const simple = wishDetailResponse.data.currentItinerary
-      if (!simple) return null
-      const itineraryResponse = await $fetch<ApiResult<Omit<Trip, 'wishNo' | 'wishStatus' | 'wishStatusLabel'>>>(`/tour/itineraries/${simple.id}`, { baseURL: config.public.apiBase as string, headers: headers.value })
-      return { ...itineraryResponse.data, wishNo: wish.wishNo, wishStatus: wish.status, wishStatusLabel: wish.statusLabel } as Trip
-    }))
-    trips.value = detailResults.flatMap(result => result.status === 'fulfilled' && result.value ? [result.value] : [])
-      .sort((left, right) => right.id - left.id)
+    const [entitlements, customItineraries] = await Promise.all([
+      commerce.listEntitlements(),
+      commerce.listCustomItineraries()
+    ])
+    const customTrips = customItineraries.map((view): Trip | null => {
+      if (!view.content) return null
+      const { content, days, items } = view.content
+      return {
+        id: view.itinerary.id,
+        wishId: view.itinerary.wishId,
+        wishStatus: view.wishStatus || view.itinerary.status,
+        wishStatusLabel: view.wishStatusLabel || view.customItineraryStatusLabel || view.itinerary.status,
+        versionNo: view.version?.versionNo || 1,
+        itineraryTypeLabel: 'Custom itinerary',
+        title: content.title,
+        cityLabel: content.cityCode,
+        coverImageUrl: content.coverImageUrl,
+        dateText: content.dateText,
+        summary: content.summary,
+        designerMessage: content.designerMessage,
+        days: days.map(day => ({
+          id: day.id,
+          dayNo: day.dayNo,
+          title: day.title,
+          summary: day.summary,
+          items: items.filter(item => item.dayId === day.id).map(item => ({ ...item, projectTypeLabel: item.projectType }))
+        }))
+      }
+    }).filter((trip): trip is Trip => !!trip)
+    const standardTrips = entitlements.flatMap(entitlement => {
+      const product = entitlement.standardProduct
+      if (entitlement.entitlementType !== 'STANDARD_PRODUCT' || !product) return []
+      return [{
+        id: product.versionId,
+        wishStatus: 'DELIVERED',
+        wishStatusLabel: 'Ready',
+        versionNo: product.versionNo,
+        itineraryTypeLabel: 'Standard product',
+        title: product.title,
+        cityLabel: product.cityCode,
+        coverImageUrl: product.coverImageUrl,
+        dateText: product.dateText,
+        summary: product.summary,
+        designerMessage: product.designerMessage,
+        days: product.days.map(day => ({
+          id: day.id,
+          dayNo: day.dayNo,
+          title: day.title,
+          summary: day.summary,
+          items: day.items.map(item => ({ ...item, projectTypeLabel: item.projectType }))
+        }))
+      } as Trip]
+    })
+    trips.value = [...customTrips, ...standardTrips].sort((left, right) => right.id - left.id)
     const selectedWishId = typeof route.query.wish === 'string' ? Number(route.query.wish) : 0
     if (selectedWishId) selectedTrip.value = trips.value.find(trip => trip.wishId === selectedWishId) || null
   } catch (caught) {
@@ -140,7 +175,9 @@ const fetchTrips = async () => {
   }
 }
 
-const tripStatusClass = (status: number) => status === 30 ? 'ready' : status >= 80 ? 'past' : status >= 40 ? 'revision' : 'working'
+const tripStatusClass = (status: string) => ['WAITING_CONFIRMATION', 'DELIVERED'].includes(status) ? 'ready'
+  : ['CLOSED', 'CANCELLED'].includes(status) ? 'past'
+    : ['REVISION_REQUESTED', 'REVISING'].includes(status) ? 'revision' : 'working'
 onMounted(async () => {
   if (!await initializeAccount()) return
   await fetchTrips()
