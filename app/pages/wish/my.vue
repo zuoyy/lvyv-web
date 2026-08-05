@@ -60,7 +60,7 @@
         </div>
         <div class="wish-footer">
           <span>Created {{ formatDate(wish.createTime) }}</span>
-          <NuxtLink v-if="wish.hasItinerary" :to="`/trips?wish=${wish.id}`">View itinerary <font-awesome-icon :icon="['fas', 'arrow-right']" /></NuxtLink>
+          <NuxtLink v-if="wish.hasItinerary" :to="`/trips?wish=${wish.id}`">{{ wishActionLabel(wish.status) }} <font-awesome-icon :icon="['fas', 'arrow-right']" /></NuxtLink>
           <span v-else class="design-note">{{ wish.designerNickname ? `With ${wish.designerNickname}` : 'Waiting for a travel designer' }}</span>
         </div>
       </article>
@@ -126,10 +126,9 @@ const submitError = ref('')
 
 const statusOptions = [
   { value: 'SUBMITTED', label: 'Submitted' }, { value: 'QUOTING', label: 'Quoting' },
-  { value: 'WAITING_PAYMENT', label: 'Waiting for payment' }, { value: 'FULFILLING', label: 'In fulfillment' },
-  { value: 'WAITING_CONFIRMATION', label: 'Waiting for confirmation' },
+  { value: 'WAITING_CONFIRMATION', label: 'Review itinerary and offer' }, { value: 'WAITING_PAYMENT', label: 'Waiting for payment' },
   { value: 'REVISION_REQUESTED', label: 'Revision requested' }, { value: 'REVISING', label: 'Revision in progress' },
-  { value: 'DELIVERED', label: 'Delivered' }, { value: 'CLOSED', label: 'Closed' }, { value: 'CANCELLED', label: 'Cancelled' },
+  { value: 'DELIVERED', label: 'Completed' }, { value: 'CLOSED', label: 'Closed' }, { value: 'CANCELLED', label: 'Cancelled' },
 ]
 const interestOptions = [
   { value: 'street_eats', label: 'Street eats' }, { value: 'ancient_stories', label: 'Ancient stories' },
@@ -175,6 +174,8 @@ const cityFallback = (code: string) => ({ xian: "Xi'an", chengdu: 'Chengdu', sur
 const statusClass = (status: string) => status === 'DELIVERED' ? 'success'
   : ['CLOSED', 'CANCELLED'].includes(status) ? 'muted'
     : ['REVISION_REQUESTED', 'REVISING'].includes(status) ? 'warning' : 'active'
+const wishActionLabel = (status: string) => status === 'WAITING_CONFIRMATION' ? 'Review itinerary and offer'
+  : status === 'WAITING_PAYMENT' ? 'View payment order' : 'View itinerary'
 const closeCreateDialog = () => { showCreateDialog.value = false; submitError.value = ''; Object.assign(wishForm, blankWishForm()) }
 
 const submitWish = async () => {

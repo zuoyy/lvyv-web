@@ -101,7 +101,7 @@ export interface OrderSnapshot {
 }
 
 export interface OrderView {
-  order: { id: number; orderNo: string; status: string; currency: string; subtotal: string | number; promotionDiscountAmount: string | number; couponDiscountAmount: string | number; discountAmount: string | number; totalAmount: string | number; createTime?: string }
+  order: { id: number; orderNo: string; status: string; currency: string; sourceType: string; subtotal: string | number; promotionDiscountAmount: string | number; couponDiscountAmount: string | number; discountAmount: string | number; totalAmount: string | number; createTime?: string }
   items: Array<{ item: { id: number; itemType: string; fulfillmentStatus: string; quantity: number; listUnitPrice?: string | number; unitPrice: string | number; promotionDiscountAmount?: string | number; wishId?: number; customItineraryId?: number }; snapshot?: OrderSnapshot }>
   entitlements: Entitlement[]
   coupon?: { couponNo: string; discountType: string; discountValue: string | number; discountAmount: string | number; status: string }
@@ -139,6 +139,7 @@ export interface CustomOfferView {
   offerNo: string
   wishId: number
   customItineraryId: number
+  customItineraryVersionId?: number
   skuId: number
   status: 'SENT' | 'ACCEPTED' | 'EXPIRED' | 'CANCELLED' | string
   currency: string
@@ -151,6 +152,23 @@ export interface CustomOfferView {
   acceptedOrderId?: number
   createTime?: string
 }
+
+export interface TourConfirmationView {
+  customItineraryId: number
+  customItineraryVersionId: number
+  versionNo: number
+  wishId: number
+  wishNo?: string
+  memberId: number
+  wishPlanId?: number
+  wishStatus: string
+  customItineraryStatus: string
+  versionStatus: string
+  planStatus: string
+  content?: { content?: ContentView['content']; days?: ContentView['days']; items?: ContentView['items'] }
+}
+
+export interface CustomOfferConfirmationView { offer: CustomOfferView; itinerary: TourConfirmationView; canConfirm: boolean; canRequestRevision: boolean }
 
 export const useTourCommerce = () => {
   const auth = useMemberAuth()
@@ -167,9 +185,9 @@ export const useTourCommerce = () => {
     listOrders: () => auth.request<OrderView[]>('/commerce/orders', undefined, 'GET'),
     listCustomOffers: () => auth.request<CustomOfferView[]>('/commerce/custom-offers', undefined, 'GET'),
     getOrder: (orderNo: string) => auth.request<OrderView>(`/commerce/orders/${encodeURIComponent(orderNo)}`, undefined, 'GET'),
-    getOffer: (offerNo: string) => auth.request<CustomOfferView>(`/commerce/custom-offers/${encodeURIComponent(offerNo)}`, undefined, 'GET'),
-    acceptOffer: (offerNo: string) => auth.request<OrderView>(`/commerce/custom-offers/${encodeURIComponent(offerNo)}/accept`),
+    getOffer: (offerNo: string) => auth.request<CustomOfferConfirmationView>(`/commerce/custom-offers/${encodeURIComponent(offerNo)}`, undefined, 'GET'),
+    confirmOffer: (offerNo: string) => auth.request<OrderView>(`/commerce/custom-offers/${encodeURIComponent(offerNo)}/confirm`),
+    requestRevision: (wishPlanId: number, requestContent: string) => auth.request('/tour/wish-plans/revisions', { wishPlanId, requestContent }),
     cancelOrder: (orderNo: string) => auth.request<OrderView>(`/commerce/orders/${encodeURIComponent(orderNo)}/cancel`),
-    confirmOrderCompletion: (orderNo: string) => auth.request<OrderView>(`/commerce/orders/${encodeURIComponent(orderNo)}/confirm-completion`),
   }
 }

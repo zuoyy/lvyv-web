@@ -48,7 +48,7 @@
               <div class="line-meta"><strong>{{ line.snapshot?.currency || selectedOrder.order.currency }} {{ line.snapshot?.unitPrice || selectedOrder.order.totalAmount }}</strong><span>{{ line.item.quantity }} × · {{ line.item.fulfillmentStatus }}</span></div>
             </article>
           </div>
-          <footer><NuxtLink v-if="customWishId(selectedOrder)" :to="`/trips?wish=${customWishId(selectedOrder)}`">View itinerary</NuxtLink><button v-if="selectedOrder.order.status === 'PENDING_PAYMENT'" type="button" @click="cancel(selectedOrder.order.orderNo)">Cancel order</button><button v-if="canConfirm(selectedOrder)" type="button" :disabled="confirming" @click="confirmCompletion(selectedOrder.order.orderNo)">{{ confirming ? 'Confirming' : 'Confirm completion' }}</button><button type="button" @click="selectedOrder = null">Close</button></footer>
+          <p v-if="selectedOrder.order.status === 'PENDING_PAYMENT' && selectedOrder.order.sourceType === 'CUSTOM_SERVICE'" class="payment-note">Please complete payment using the offline instructions from Lvyv. A team member will confirm your payment.</p><footer><NuxtLink v-if="customWishId(selectedOrder)" :to="`/trips?wish=${customWishId(selectedOrder)}`">View itinerary</NuxtLink><button v-if="selectedOrder.order.status === 'PENDING_PAYMENT'" type="button" @click="cancel(selectedOrder.order.orderNo)">Cancel order</button><button type="button" @click="selectedOrder = null">Close</button></footer>
         </section>
       </div>
     </Teleport>
@@ -68,7 +68,6 @@ const offers = ref<CustomOfferView[]>([])
 const selectedOrder = ref<OrderView | null>(null)
 const loading = ref(false)
 const error = ref('')
-const confirming = ref(false)
 
 const formatDate = (value?: string) => value ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value)) : ''
 const load = async () => {
@@ -97,22 +96,7 @@ const businessStage = (order: OrderView) => {
   return order.items.some(({ item }) => item.itemType === 'CUSTOM_SERVICE') ? 'In fulfillment' : 'Paid'
 }
 const customWishId = (order: OrderView) => order.items.find(({ item }) => item.itemType === 'CUSTOM_SERVICE')?.item.wishId
-const canConfirm = (order: OrderView) => order.order.status === 'PAID'
-  && order.items.some(({ item }) => item.itemType === 'CUSTOM_SERVICE')
-  && order.items.every(({ item }) => item.fulfillmentStatus === 'DELIVERED')
 const cancel = async (orderNo: string) => { try { selectedOrder.value = await commerce.cancelOrder(orderNo); orders.value = await commerce.listOrders() } catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not cancel the order.' } }
-const confirmCompletion = async (orderNo: string) => {
-  confirming.value = true
-  error.value = ''
-  try {
-    selectedOrder.value = await commerce.confirmOrderCompletion(orderNo)
-    orders.value = await commerce.listOrders()
-  } catch (caught) {
-    error.value = caught instanceof Error ? caught.message : 'Could not confirm completion.'
-  } finally {
-    confirming.value = false
-  }
-}
 onMounted(async () => { if (await initializeAccount()) await load() })
 </script>
 
