@@ -2,43 +2,14 @@ export interface Entitlement {
   id: number
   orderItemId: number
   memberId: number
-  entitlementType: 'STANDARD_PRODUCT' | 'CUSTOM_ITINERARY'
-  standardProductVersionId?: number
+  entitlementType: 'STANDARD_ITINERARY' | 'CUSTOM_ITINERARY'
+  standardItineraryVersionId?: number
   customItineraryVersionId?: number
   quantity: number
+  startDate?: string
+  endDate?: string
   status: string
   grantedTime: string
-  standardProduct?: EntitledStandardProduct
-}
-
-export interface EntitledStandardProduct {
-  productId: number
-  productCode: string
-  currentVersionId?: number
-  versionId: number
-  versionNo: number
-  versionStatus: string
-  title: string
-  cityCode: string
-  coverImageUrl?: string
-  dateText?: string
-  designerMessage?: string
-  summary?: string
-  deliveryNote?: string
-  days: Array<{
-    id: number
-    dayNo: number
-    title: string
-    summary?: string
-    sort: number
-    items: Array<{
-      id: number
-      projectType: string
-      title: string
-      subtitle?: string
-      address?: string
-    }>
-  }>
 }
 
 export interface ContentView {
@@ -68,25 +39,70 @@ export interface ContentView {
   }>
 }
 
-export interface StandardProductView {
-  product: { id: number; productCode: string; currentVersionId?: number }
+export interface StandardItineraryView {
+  product: { id: number; itineraryCode: string; currentVersionId?: number }
   version: { id: number; versionNo: number; status: string; publishedTime?: string }
   content: ContentView
 }
 
-export interface CustomItineraryView {
-  itinerary: { id: number; wishId: number; memberId: number; status: string; deliveredTime?: string }
-  version?: { id: number; versionNo: number; status: string; deliveredTime?: string }
-  content?: ContentView
+export interface CatalogProductView {
+  product: { id: number; productCode: string; name: string; summary?: string; coverImageUrl?: string; standardItineraryVersionId: number; status: string }
+  price?: { currency: string; listPrice: string | number; salePrice: string | number }
+  pricing: { listUnitPrice: string | number; saleUnitPrice: string | number; promotionItem?: { salePrice: string | number; listPrice?: string | number }; promotionCampaign?: { endTime: string; name: string; campaignNo?: string } }
+  itinerary: {
+    standardItineraryId: number
+    itineraryCode: string
+    standardItineraryStatus: string
+    currentPublishedVersionId?: number
+    versionId: number
+    versionNo: number
+    contentId: number
+    versionStatus: string
+    title: string
+    cityCode: string
+    coverImageUrl?: string
+    dateText?: string
+    designerMessage?: string
+    summary?: string
+    deliveryNote?: string
+    days: Array<{ id: number; dayNo: number; title: string; summary?: string; sort: number; items: Array<Record<string, unknown>> }>
+  }
+}
+
+export interface ItineraryInstance {
+  id: number
+  itineraryNo: string
+  itineraryType: 'STANDARD_PURCHASE' | 'CUSTOM_SERVICE'
+  sourceType: 'STANDARD_PRODUCT' | 'WISH' | 'MANUAL'
+  sourceBusinessNo?: string
+  memberId: number
+  memberNickname?: string
+  customItineraryId?: number
+  wishId?: number
   wishNo?: string
-  wishStatus?: string
-  wishStatusLabel?: string
-  customItineraryStatusLabel?: string
+  orderId?: number
+  orderNo?: string
+  entitlementId?: number
+  standardItineraryVersionId?: number
+  customItineraryVersionId?: number
+  title: string
+  cityCode?: string
+  cityLabel?: string
+  coverImageUrl?: string
+  travelerCount?: number
+  startDate?: string
+  endDate?: string
+  designerNickname?: string
+  versionNo?: number
+  status: 'PLANNING' | 'WAITING_CONFIRMATION' | 'REVISION_REQUIRED' | 'REVISING' | 'WAITING_PAYMENT' | 'UPCOMING' | 'IN_PROGRESS' | 'FINISHED' | 'CLOSED' | 'CANCELLED'
+  statusName: string
+  createTime?: string
+  deliveredTime?: string
+  content?: ContentView
 }
 
 export interface OrderSnapshot {
   title: string
-  skuCode?: string
   productCode?: string
   productVersionNo?: number
   currency: string
@@ -102,15 +118,9 @@ export interface OrderSnapshot {
 
 export interface OrderView {
   order: { id: number; orderNo: string; status: string; currency: string; sourceType: string; subtotal: string | number; promotionDiscountAmount: string | number; couponDiscountAmount: string | number; discountAmount: string | number; totalAmount: string | number; createTime?: string }
-  items: Array<{ item: { id: number; itemType: string; fulfillmentStatus: string; quantity: number; listUnitPrice?: string | number; unitPrice: string | number; promotionDiscountAmount?: string | number; wishId?: number; customItineraryId?: number }; snapshot?: OrderSnapshot }>
+  items: Array<{ item: { id: number; itemType: string; quantity: number; listUnitPrice?: string | number; unitPrice: string | number; promotionDiscountAmount?: string | number; taxAmount?: string | number; startDate?: string; endDate?: string; customItineraryId?: number; customItineraryVersionId?: number; itineraryInstanceId?: number }; snapshot?: OrderSnapshot; itineraryNo?: string }>
   entitlements: Entitlement[]
   coupon?: { couponNo: string; discountType: string; discountValue: string | number; discountAmount: string | number; status: string }
-}
-
-export interface SkuView {
-  sku: { id: number; skuCode: string; skuType: string; standardProductVersionId?: number; status: string }
-  price?: { currency: string; listPrice: string | number; salePrice: string | number }
-  pricing?: { listUnitPrice: string | number; saleUnitPrice: string | number; promotionItem?: { salePrice: string | number; listPrice?: string | number }; promotionCampaign?: { endTime: string; name: string; campaignNo?: string } }
 }
 
 export interface MemberCouponView {
@@ -119,7 +129,7 @@ export interface MemberCouponView {
 }
 
 export interface OrderPricingQuote {
-  skuId: number
+  productId: number
   quantity: number
   currency: string
   listUnitPrice: string | number
@@ -137,16 +147,16 @@ export interface OrderPricingQuote {
 export interface CustomOfferView {
   id: number
   offerNo: string
-  wishId: number
+  memberId: number
   customItineraryId: number
   customItineraryVersionId?: number
-  skuId: number
-  status: 'SENT' | 'ACCEPTED' | 'EXPIRED' | 'CANCELLED' | string
+  serviceCode: string
+  status: 'SENT' | 'ACCEPTED' | 'REVISION_REQUESTED' | 'EXPIRED' | 'CANCELLED' | string
   currency: string
-  subtotal: string | number
-  discountAmount: string | number
-  taxAmount: string | number
-  totalAmount: string | number
+  unitSubtotal: string | number
+  unitDiscountAmount: string | number
+  unitTaxAmount: string | number
+  unitTotalAmount: string | number
   validUntil?: string
   offerSnapshotJson?: string
   acceptedOrderId?: number
@@ -155,17 +165,20 @@ export interface CustomOfferView {
 
 export interface TourConfirmationView {
   customItineraryId: number
+  itineraryNo: string
+  sourceType: 'WISH' | 'MANUAL'
   customItineraryVersionId: number
   versionNo: number
-  wishId: number
+  wishId?: number
   wishNo?: string
   memberId: number
-  wishPlanId?: number
-  wishStatus: string
+  wishStatus?: string
   customItineraryStatus: string
   versionStatus: string
-  planStatus: string
   content?: { content?: ContentView['content']; days?: ContentView['days']; items?: ContentView['items'] }
+  startDate?: string
+  endDate?: string
+  travelerCount?: number
 }
 
 export interface CustomOfferConfirmationView { offer: CustomOfferView; itinerary: TourConfirmationView; canConfirm: boolean; canRequestRevision: boolean }
@@ -174,20 +187,19 @@ export const useTourCommerce = () => {
   const auth = useMemberAuth()
 
   return {
-    listEntitlements: () => auth.request<Entitlement[]>('/commerce/entitlements', undefined, 'GET'),
-    listCustomItineraries: () => auth.request<CustomItineraryView[]>('/tour/my-itineraries', undefined, 'GET'),
-    getStandardVersion: (versionId: number) => auth.request<StandardProductView>(`/tour/catalog/standard-products/${versionId}`, undefined, 'GET'),
-    listStandardCatalog: () => auth.request<SkuView[]>('/commerce/catalog/standard-products', undefined, 'GET'),
+    listItineraries: () => auth.request<ItineraryInstance[]>('/tour/itineraries', undefined, 'GET'),
+    getItinerary: (itineraryNo: string) => auth.request<ItineraryInstance>(`/tour/itineraries/${encodeURIComponent(itineraryNo)}`, undefined, 'GET'),
+    listCatalogProducts: () => auth.request<CatalogProductView[]>('/commerce/catalog/products', undefined, 'GET'),
     listCoupons: () => auth.request<MemberCouponView[]>('/commerce/coupons?status=AVAILABLE', undefined, 'GET'),
     redeemCoupon: (redeemCode: string) => auth.request<MemberCouponView>('/commerce/coupons/redeem', { redeemCode }),
-    previewStandardOrder: (skuId: number, quantity = 1, memberCouponId?: number) => auth.request<OrderPricingQuote>('/commerce/orders/standard/preview', { skuId, quantity, currency: 'USD', memberCouponId }),
-    createStandardOrder: (skuId: number, quantity = 1, memberCouponId?: number) => auth.request<OrderView>('/commerce/orders/standard', { skuId, quantity, currency: 'USD', memberCouponId }),
+    previewStandardOrder: (productCode: string, quantity: number, startDate: string, memberCouponId?: number) => auth.request<OrderPricingQuote>('/commerce/orders/standard/preview', { productCode, quantity, currency: 'USD', startDate, memberCouponId }),
+    createStandardOrder: (productCode: string, quantity: number, startDate: string, memberCouponId?: number) => auth.request<OrderView>('/commerce/orders/standard', { productCode, quantity, currency: 'USD', startDate, memberCouponId }),
     listOrders: () => auth.request<OrderView[]>('/commerce/orders', undefined, 'GET'),
     listCustomOffers: () => auth.request<CustomOfferView[]>('/commerce/custom-offers', undefined, 'GET'),
     getOrder: (orderNo: string) => auth.request<OrderView>(`/commerce/orders/${encodeURIComponent(orderNo)}`, undefined, 'GET'),
     getOffer: (offerNo: string) => auth.request<CustomOfferConfirmationView>(`/commerce/custom-offers/${encodeURIComponent(offerNo)}`, undefined, 'GET'),
-    confirmOffer: (offerNo: string) => auth.request<OrderView>(`/commerce/custom-offers/${encodeURIComponent(offerNo)}/confirm`),
-    requestRevision: (wishPlanId: number, requestContent: string) => auth.request('/tour/wish-plans/revisions', { wishPlanId, requestContent }),
+    confirmOffer: (offerNo: string, travelerCount: number) => auth.request<OrderView>(`/commerce/custom-offers/${encodeURIComponent(offerNo)}/confirm`, { travelerCount }),
+    requestRevision: (offerNo: string, requestContent: string) => auth.request(`/commerce/custom-offers/${encodeURIComponent(offerNo)}/request-revision`, { requestContent }),
     cancelOrder: (orderNo: string) => auth.request<OrderView>(`/commerce/orders/${encodeURIComponent(orderNo)}/cancel`),
   }
 }

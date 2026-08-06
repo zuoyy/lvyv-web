@@ -4,7 +4,8 @@
     <div v-else-if="error" class="checkout-state error">{{ error }} <button type="button" @click="load">Try again</button></div>
     <section v-else class="checkout-layout">
       <div class="checkout-panel">
-        <label>Quantity<input v-model.number="quantity" type="number" min="1" step="1" @change="refreshQuote"></label>
+        <label>People<input v-model.number="quantity" type="number" min="1" step="1" @change="refreshQuote"></label>
+        <label>Departure date<input v-model="startDate" type="date" :min="today" @change="refreshQuote"></label>
         <label>Coupon
           <select v-model="selectedCouponId" @change="refreshQuote">
             <option :value="undefined">No coupon</option>
@@ -33,8 +34,10 @@ useNoIndex()
 const route = useRoute()
 const commerce = useTourCommerce()
 const { ready, initializeAccount } = useAccountPage('/checkout')
-const skuId = computed(() => Number(route.query.sku || 0))
+const productCode = computed(() => String(route.query.product || ''))
 const quantity = ref(1)
+const today = new Date().toISOString().slice(0, 10)
+const startDate = ref(today)
 const selectedCouponId = ref<number | undefined>(undefined)
 const coupons = ref<MemberCouponView[]>([])
 const quote = ref<OrderPricingQuote | null>(null)
@@ -47,9 +50,9 @@ const error = ref('')
 const couponLabel = (coupon: MemberCouponView) => coupon.template.discountType === 'PERCENT'
   ? `${coupon.template.discountValue}% off` : `USD ${coupon.template.discountValue} off`
 const refreshQuote = async () => {
-  if (!skuId.value) { error.value = 'A product SKU is required.'; return }
+  if (!productCode.value) { error.value = 'A product is required.'; return }
   try {
-    quote.value = await commerce.previewStandardOrder(skuId.value, Math.max(1, quantity.value), selectedCouponId.value)
+    quote.value = await commerce.previewStandardOrder(productCode.value, Math.max(1, quantity.value), startDate.value, selectedCouponId.value)
     error.value = ''
   } catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not calculate the price.' }
 }
@@ -71,7 +74,7 @@ const redeem = async () => {
 const submit = async () => {
   submitting.value = true
   try {
-    const order = await commerce.createStandardOrder(skuId.value, Math.max(1, quantity.value), selectedCouponId.value)
+    const order = await commerce.createStandardOrder(productCode.value, Math.max(1, quantity.value), startDate.value, selectedCouponId.value)
     await navigateTo(`/orders?order=${encodeURIComponent(order.order.orderNo)}`)
   } catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not create the order.' } finally { submitting.value = false }
 }

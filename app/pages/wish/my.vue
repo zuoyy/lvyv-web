@@ -60,7 +60,7 @@
         </div>
         <div class="wish-footer">
           <span>Created {{ formatDate(wish.createTime) }}</span>
-          <NuxtLink v-if="wish.hasItinerary" :to="`/trips?wish=${wish.id}`">{{ wishActionLabel(wish.status) }} <font-awesome-icon :icon="['fas', 'arrow-right']" /></NuxtLink>
+          <NuxtLink v-if="wish.hasItinerary" :to="wish.itineraryNo ? `/trips?itineraryNo=${encodeURIComponent(wish.itineraryNo)}` : '/trips'">{{ wishActionLabel(wish.status) }} <font-awesome-icon :icon="['fas', 'arrow-right']" /></NuxtLink>
           <span v-else class="design-note">{{ wish.designerNickname ? `With ${wish.designerNickname}` : 'Waiting for a travel designer' }}</span>
         </div>
       </article>
@@ -104,7 +104,7 @@ interface EnumLabel { code: string; messageKey: string; label: string }
 interface WishItem {
   id: number; wishNo: string; cityCode: string; cityLabel: string; tripDays: number; startDate?: string
   interests: EnumLabel[]; budgetLevelLabel: string; story: string; status: string; statusLabel: string
-  designerNickname?: string; createTime: string; hasItinerary: boolean
+  designerNickname?: string; createTime: string; hasItinerary: boolean; itineraryNo?: string
 }
 interface PageResult<T> { list: T[]; total: number; page: number; size: number }
 interface ApiResult<T> { code: number; msg?: string; data: T }
@@ -125,7 +125,7 @@ const submitting = ref(false)
 const submitError = ref('')
 
 const statusOptions = [
-  { value: 'SUBMITTED', label: 'Submitted' }, { value: 'QUOTING', label: 'Quoting' },
+  { value: 'SUBMITTED', label: 'Submitted' }, { value: 'ITINERARY_PLANNING', label: 'Itinerary planning' },
   { value: 'WAITING_CONFIRMATION', label: 'Review itinerary and offer' }, { value: 'WAITING_PAYMENT', label: 'Waiting for payment' },
   { value: 'REVISION_REQUESTED', label: 'Revision requested' }, { value: 'REVISING', label: 'Revision in progress' },
   { value: 'DELIVERED', label: 'Completed' }, { value: 'CLOSED', label: 'Closed' }, { value: 'CANCELLED', label: 'Cancelled' },

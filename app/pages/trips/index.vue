@@ -27,23 +27,24 @@
     </div>
 
     <div v-else class="trip-grid">
-      <article v-for="trip in filteredTrips" :key="trip.id" class="trip-card">
+      <article v-for="trip in filteredTrips" :key="trip.itineraryNo" class="trip-card">
         <div class="trip-media">
           <img v-if="trip.coverImageUrl" :src="trip.coverImageUrl" :alt="trip.cityLabel || trip.title">
           <div v-else class="trip-placeholder"><font-awesome-icon :icon="['fas', 'compass']" /><span>{{ trip.cityLabel || 'China' }}</span></div>
-          <span class="trip-status" :class="tripStatusClass(trip.wishStatus)">{{ trip.wishStatusLabel }}</span>
+          <span class="trip-status" :class="tripStatusClass(trip.status)">{{ trip.statusName }}</span>
         </div>
         <div class="trip-body">
-          <p class="trip-version">Version {{ trip.versionNo }} · {{ trip.itineraryTypeLabel || 'Custom itinerary' }}</p>
+          <p class="trip-version">{{ trip.itineraryNo }} · Version {{ trip.versionNo }} · {{ trip.itineraryTypeLabel }}</p>
           <h2>{{ trip.title || `${trip.cityLabel} journey` }}</h2>
           <p class="trip-summary">{{ trip.summary || 'Your day-by-day Lvyv itinerary.' }}</p>
           <div class="trip-facts">
             <span><font-awesome-icon :icon="['fas', 'location-dot']" />{{ trip.cityLabel || 'China' }}</span>
-            <span><font-awesome-icon :icon="['fas', 'calendar-days']" />{{ trip.dateText || `${trip.days.length} day plan` }}</span>
+            <span><font-awesome-icon :icon="['fas', 'calendar-days']" />{{ trip.startDate ? `${trip.startDate}${trip.endDate ? ` - ${trip.endDate}` : ''}` : (trip.dateText || `${trip.days.length} day plan`) }}</span>
+            <span v-if="trip.travelerCount"><font-awesome-icon :icon="['fas', 'users']" />{{ trip.travelerCount }} travelers</span>
           </div>
         </div>
         <div class="trip-footer">
-          <span>{{ trip.designerMessage ? 'Designed for you' : trip.wishNo ? `Wish ${trip.wishNo}` : 'Your itinerary' }}</span>
+          <span>{{ trip.sourceLabel }}</span>
           <button type="button" @click="openTripAction(trip)">{{ tripActionLabel(trip) }} <font-awesome-icon :icon="['fas', 'arrow-right']" /></button>
         </div>
       </article>
@@ -90,8 +91,8 @@ useNoIndex()
 interface TripItemDetail { id: number; projectTypeLabel?: string; title: string; subtitle?: string; address?: string }
 interface TripDay { id: number; dayNo: number; title: string; summary?: string; items: TripItemDetail[] }
 interface Trip {
-  id: number; wishId?: number; wishNo?: string; orderNo?: string; offerNo?: string; wishStatus: string; wishStatusLabel: string; versionNo: number
-  itineraryTypeLabel?: string; title: string; cityLabel: string; coverImageUrl?: string; dateText?: string
+  itineraryNo: string; itineraryType: 'STANDARD_PURCHASE' | 'CUSTOM_SERVICE'; sourceType: 'STANDARD_PRODUCT' | 'WISH' | 'MANUAL'; wishId?: number; wishNo?: string; orderNo?: string; status: string; statusName: string; versionNo: number; travelerCount?: number; startDate?: string; endDate?: string
+  itineraryTypeLabel: string; sourceLabel: string; title: string; cityLabel: string; coverImageUrl?: string; dateText?: string
   summary?: string; designerMessage?: string; days: TripDay[]
 }
 
@@ -105,52 +106,45 @@ const selectedTrip = ref<Trip | null>(null)
 const activeFilter = ref<'all' | 'ready' | 'revision' | 'closed'>('all')
 const filters = [{ value: 'all' as const, label: 'All' }, { value: 'ready' as const, label: 'Ready' }, { value: 'revision' as const, label: 'In revision' }, { value: 'closed' as const, label: 'Past' }]
 const filteredTrips = computed(() => trips.value.filter((trip) => {
-  if (activeFilter.value === 'ready') return ['WAITING_CONFIRMATION', 'WAITING_PAYMENT', 'DELIVERED'].includes(trip.wishStatus)
-  if (activeFilter.value === 'revision') return ['REVISION_REQUESTED', 'REVISING'].includes(trip.wishStatus)
-  if (activeFilter.value === 'closed') return ['CLOSED', 'CANCELLED'].includes(trip.wishStatus)
+  if (activeFilter.value === 'ready') return ['WAITING_CONFIRMATION', 'WAITING_PAYMENT', 'UPCOMING', 'IN_PROGRESS'].includes(trip.status)
+  if (activeFilter.value === 'revision') return ['REVISION_REQUIRED', 'REVISING'].includes(trip.status)
+  if (activeFilter.value === 'closed') return ['FINISHED', 'CLOSED', 'CANCELLED'].includes(trip.status)
   return true
 }))
 const fetchTrips = async () => {
   loading.value = true
   loadError.value = ''
   try {
-    const [entitlements, customItineraries, orders, offers] = await Promise.all([
-      commerce.listEntitlements(),
-      commerce.listCustomItineraries(),
-      commerce.listOrders(),
-      commerce.listCustomOffers()
-    ])
-    const customOrderByWishId = new Map<number, string>()
-    for (const order of orders) {
-      for (const { item } of order.items) {
-        if (item.itemType === 'CUSTOM_SERVICE' && item.wishId != null && !customOrderByWishId.has(item.wishId)) {
-          customOrderByWishId.set(item.wishId, order.order.orderNo)
-        }
-      }
-    }
-    const sentOfferByWishId = new Map<number, string>()
-    for (const offer of offers) {
-      if (offer.status === 'SENT' && !sentOfferByWishId.has(offer.wishId)) sentOfferByWishId.set(offer.wishId, offer.offerNo)
-    }
-    const customTrips = customItineraries.map((view): Trip | null => {
-      if (!view.content) return null
-      const { content, days, items } = view.content
+    const instances = await commerce.listItineraries()
+    trips.value = instances.map((instance): Trip => {
+      const content = instance.content?.content
+      const days = instance.content?.days || []
+      const items = instance.content?.items || []
+      const sourceLabel = instance.sourceType === 'STANDARD_PRODUCT' ? 'Featured journey purchase'
+        : instance.sourceType === 'WISH' ? `Wish customization${instance.wishNo ? ` · ${instance.wishNo}` : ''}` : 'Concierge customization'
       return {
-        id: view.itinerary.id,
-        wishId: view.itinerary.wishId,
-        wishNo: view.wishNo,
-        orderNo: customOrderByWishId.get(view.itinerary.wishId),
-        offerNo: sentOfferByWishId.get(view.itinerary.wishId),
-        wishStatus: view.wishStatus || view.itinerary.status,
-        wishStatusLabel: view.wishStatusLabel || view.customItineraryStatusLabel || view.itinerary.status,
-        versionNo: view.version?.versionNo || 1,
-        itineraryTypeLabel: 'Custom itinerary',
-        title: content.title,
-        cityLabel: content.cityCode,
-        coverImageUrl: content.coverImageUrl,
-        dateText: content.dateText,
-        summary: content.summary,
-        designerMessage: content.designerMessage,
+        itineraryNo: instance.itineraryNo,
+        itineraryType: instance.itineraryType,
+        sourceType: instance.sourceType,
+        wishId: instance.wishId,
+        wishNo: instance.wishNo,
+        orderNo: instance.orderNo,
+        status: instance.status,
+        statusName: instance.statusName,
+        versionNo: instance.versionNo || 1,
+        itineraryTypeLabel: instance.itineraryType === 'STANDARD_PURCHASE' ? 'Featured journey' : 'Custom itinerary',
+        sourceLabel,
+        title: content?.title || instance.title,
+        cityLabel: instance.cityLabel || instance.cityCode || content?.cityCode || '',
+        coverImageUrl: content?.coverImageUrl || instance.coverImageUrl,
+        dateText: instance.startDate
+          ? `${instance.startDate}${instance.endDate ? ` - ${instance.endDate}` : ''}`
+          : content?.dateText,
+        travelerCount: instance.travelerCount,
+        startDate: instance.startDate,
+        endDate: instance.endDate,
+        summary: content?.summary,
+        designerMessage: content?.designerMessage,
         days: days.map(day => ({
           id: day.id,
           dayNo: day.dayNo,
@@ -159,34 +153,9 @@ const fetchTrips = async () => {
           items: items.filter(item => item.dayId === day.id).map(item => ({ ...item, projectTypeLabel: item.projectType }))
         }))
       }
-    }).filter((trip): trip is Trip => !!trip)
-    const standardTrips = entitlements.flatMap(entitlement => {
-      const product = entitlement.standardProduct
-      if (entitlement.entitlementType !== 'STANDARD_PRODUCT' || !product) return []
-      return [{
-        id: product.versionId,
-        wishStatus: 'DELIVERED',
-        wishStatusLabel: 'Ready',
-        versionNo: product.versionNo,
-        itineraryTypeLabel: 'Standard product',
-        title: product.title,
-        cityLabel: product.cityCode,
-        coverImageUrl: product.coverImageUrl,
-        dateText: product.dateText,
-        summary: product.summary,
-        designerMessage: product.designerMessage,
-        days: product.days.map(day => ({
-          id: day.id,
-          dayNo: day.dayNo,
-          title: day.title,
-          summary: day.summary,
-          items: day.items.map(item => ({ ...item, projectTypeLabel: item.projectType }))
-        }))
-      } as Trip]
     })
-    trips.value = [...customTrips, ...standardTrips].sort((left, right) => right.id - left.id)
-    const selectedWishId = typeof route.query.wish === 'string' ? Number(route.query.wish) : 0
-    const routeTrip = selectedWishId ? trips.value.find(trip => trip.wishId === selectedWishId) : undefined
+    const selectedItineraryNo = typeof route.query.itineraryNo === 'string' ? route.query.itineraryNo : ''
+    const routeTrip = selectedItineraryNo ? trips.value.find(trip => trip.itineraryNo === selectedItineraryNo) : undefined
     if (routeTrip) await openTripAction(routeTrip)
   } catch (caught) {
     loadError.value = caught instanceof Error ? caught.message : 'Request failed.'
@@ -195,17 +164,12 @@ const fetchTrips = async () => {
   }
 }
 
-const tripStatusClass = (status: string) => ['WAITING_CONFIRMATION', 'WAITING_PAYMENT', 'DELIVERED'].includes(status) ? 'ready'
-  : ['CLOSED', 'CANCELLED'].includes(status) ? 'past'
-    : ['REVISION_REQUESTED', 'REVISING'].includes(status) ? 'revision' : 'working'
-const tripActionLabel = (trip: Trip) => trip.wishStatus === 'WAITING_CONFIRMATION' && trip.offerNo
-  ? 'Review itinerary and offer'
-  : trip.wishStatus === 'WAITING_PAYMENT' && trip.orderNo ? 'View payment order' : 'View plan'
+const tripStatusClass = (status: string) => ['WAITING_CONFIRMATION', 'WAITING_PAYMENT', 'UPCOMING'].includes(status) ? 'ready'
+  : ['FINISHED', 'CLOSED', 'CANCELLED'].includes(status) ? 'past'
+    : ['REVISION_REQUIRED', 'REVISING'].includes(status) ? 'revision' : 'working'
+const tripActionLabel = (trip: Trip) => trip.status === 'WAITING_PAYMENT' && trip.orderNo ? 'View payment order' : 'View plan'
 const openTripAction = (trip: Trip) => {
-  if (trip.wishStatus === 'WAITING_CONFIRMATION' && trip.offerNo) {
-    return navigateTo(`/offers/${encodeURIComponent(trip.offerNo)}`)
-  }
-  if (trip.wishStatus === 'WAITING_PAYMENT' && trip.orderNo) {
+  if (trip.status === 'WAITING_PAYMENT' && trip.orderNo) {
     return navigateTo(`/orders?order=${encodeURIComponent(trip.orderNo)}`)
   }
   selectedTrip.value = trip

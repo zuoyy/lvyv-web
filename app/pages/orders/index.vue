@@ -1,5 +1,5 @@
 <template>
-  <AccountPageShell active-page="orders" kicker="Commerce" title="My orders" description="Review order snapshots and the fulfillment status of every purchase." :ready="ready">
+  <AccountPageShell active-page="orders" kicker="Commerce" title="My orders" description="Review payment status and the exact itinerary snapshot for every purchase." :ready="ready">
     <section v-if="offers.length" class="offers-section" aria-labelledby="offers-title">
       <header class="offers-heading">
         <div>
@@ -14,7 +14,7 @@
           <h3>Custom itinerary service</h3>
           <span>{{ offerStatusLabel(offer) }}<template v-if="offer.validUntil"> · Valid until {{ formatDate(offer.validUntil) }}</template></span>
         </div>
-        <strong>{{ offer.currency }} {{ offer.totalAmount }}</strong>
+        <strong>{{ offer.currency }} {{ offer.unitTotalAmount }} / person</strong>
         <button type="button" :aria-label="offer.status === 'SENT' ? 'Review offer' : 'View offer'" @click="openOffer(offer.offerNo)">
           {{ offer.status === 'SENT' ? 'Review offer' : 'View offer' }}
           <font-awesome-icon :icon="['fas', 'arrow-right']" />
@@ -30,7 +30,7 @@
         <div>
           <p class="order-number">{{ order.order.orderNo }}</p>
           <h2>{{ order.items[0]?.snapshot?.title || 'Lvyv journey service' }}</h2>
-          <span>{{ formatDate(order.order.createTime) }} · {{ orderStatusLabel(order.order.status) }} · {{ businessStage(order) }}</span>
+          <span>{{ formatDate(order.order.createTime) }} · {{ orderStatusLabel(order.order.status) }}</span>
         </div>
         <strong>{{ order.order.currency }} {{ order.order.totalAmount }}</strong>
         <button type="button" aria-label="View order details" @click="openOrder(order.order.orderNo)"><font-awesome-icon :icon="['fas', 'arrow-right']" /></button>
@@ -41,14 +41,14 @@
       <div v-if="selectedOrder" class="modal-backdrop" @click.self="selectedOrder = null">
         <section class="order-modal" role="dialog" aria-modal="true" aria-labelledby="order-detail-title">
           <header><div><p>{{ selectedOrder.order.orderNo }}</p><h2 id="order-detail-title">Order details</h2></div><button type="button" aria-label="Close" @click="selectedOrder = null">×</button></header>
-          <dl class="order-summary"><div><dt>Order status</dt><dd>{{ orderStatusLabel(selectedOrder.order.status) }}</dd></div><div><dt>Service stage</dt><dd>{{ businessStage(selectedOrder) }}</dd></div><div><dt>Original</dt><dd>{{ selectedOrder.order.currency }} {{ selectedOrder.order.subtotal }}</dd></div><div><dt>Promotion</dt><dd>- {{ selectedOrder.order.currency }} {{ selectedOrder.order.promotionDiscountAmount }}</dd></div><div><dt>Coupon</dt><dd>- {{ selectedOrder.order.currency }} {{ selectedOrder.order.couponDiscountAmount }}</dd></div><div><dt>Total</dt><dd>{{ selectedOrder.order.currency }} {{ selectedOrder.order.totalAmount }}</dd></div><div><dt>Placed</dt><dd>{{ formatDate(selectedOrder.order.createTime) }}</dd></div></dl>
+          <dl class="order-summary"><div><dt>Order status</dt><dd>{{ orderStatusLabel(selectedOrder.order.status) }}</dd></div><div><dt>Original</dt><dd>{{ selectedOrder.order.currency }} {{ selectedOrder.order.subtotal }}</dd></div><div><dt>Promotion</dt><dd>- {{ selectedOrder.order.currency }} {{ selectedOrder.order.promotionDiscountAmount }}</dd></div><div><dt>Coupon</dt><dd>- {{ selectedOrder.order.currency }} {{ selectedOrder.order.couponDiscountAmount }}</dd></div><div><dt>Total</dt><dd>{{ selectedOrder.order.currency }} {{ selectedOrder.order.totalAmount }}</dd></div><div><dt>Placed</dt><dd>{{ formatDate(selectedOrder.order.createTime) }}</dd></div></dl>
           <div class="order-lines">
             <article v-for="line in selectedOrder.items" :key="line.item.id">
-              <div><span>{{ line.snapshot?.skuCode || line.item.itemType }}</span><h3>{{ line.snapshot?.title || 'Lvyv journey service' }}</h3><p>{{ line.snapshot?.contentSummary }}</p></div>
-              <div class="line-meta"><strong>{{ line.snapshot?.currency || selectedOrder.order.currency }} {{ line.snapshot?.unitPrice || selectedOrder.order.totalAmount }}</strong><span>{{ line.item.quantity }} × · {{ line.item.fulfillmentStatus }}</span></div>
+              <div><span>{{ line.itineraryNo || line.snapshot?.productCode || line.item.itemType }}</span><h3>{{ line.snapshot?.title || 'Lvyv journey service' }}</h3><p>{{ line.snapshot?.contentSummary }}</p></div>
+              <div class="line-meta"><strong>{{ line.snapshot?.currency || selectedOrder.order.currency }} {{ line.snapshot?.unitPrice || selectedOrder.order.totalAmount }}</strong><span>{{ line.item.quantity }} ×</span></div>
             </article>
           </div>
-          <p v-if="selectedOrder.order.status === 'PENDING_PAYMENT' && selectedOrder.order.sourceType === 'CUSTOM_SERVICE'" class="payment-note">Please complete payment using the offline instructions from Lvyv. A team member will confirm your payment.</p><footer><NuxtLink v-if="customWishId(selectedOrder)" :to="`/trips?wish=${customWishId(selectedOrder)}`">View itinerary</NuxtLink><button v-if="selectedOrder.order.status === 'PENDING_PAYMENT'" type="button" @click="cancel(selectedOrder.order.orderNo)">Cancel order</button><button type="button" @click="selectedOrder = null">Close</button></footer>
+          <p v-if="selectedOrder.order.status === 'PENDING_PAYMENT' && selectedOrder.order.sourceType === 'CUSTOM_SERVICE'" class="payment-note">Please complete payment using the offline instructions from Lvyv. A team member will confirm your payment.</p><footer><NuxtLink v-if="itineraryNo(selectedOrder)" :to="`/trips?itineraryNo=${encodeURIComponent(itineraryNo(selectedOrder)!)}`">View itinerary</NuxtLink><button v-if="selectedOrder.order.status === 'PENDING_PAYMENT'" type="button" @click="cancel(selectedOrder.order.orderNo)">Cancel order</button><button type="button" @click="selectedOrder = null">Close</button></footer>
         </section>
       </div>
     </Teleport>
@@ -85,17 +85,10 @@ const openOrder = async (orderNo: string) => { selectedOrder.value = await comme
 const openOffer = (offerNo: string) => navigateTo(`/offers/${encodeURIComponent(offerNo)}`)
 const offerStatusLabel = (offer: CustomOfferView) => {
   if (offer.status === 'SENT' && offer.validUntil && new Date(offer.validUntil).getTime() <= Date.now()) return 'Expired'
-  return ({ SENT: 'Awaiting your response', ACCEPTED: 'Accepted', EXPIRED: 'Expired', CANCELLED: 'Cancelled' } as Record<string, string>)[offer.status] || offer.status
+  return ({ SENT: 'Awaiting your response', ACCEPTED: 'Accepted', REVISION_REQUESTED: 'Revision requested', EXPIRED: 'Expired', CANCELLED: 'Cancelled' } as Record<string, string>)[offer.status] || offer.status
 }
-const orderStatusLabel = (status: string) => ({ PENDING_PAYMENT: 'Waiting for payment', PAID: 'Paid', CANCELLED: 'Cancelled', COMPLETED: 'Completed', REFUNDED: 'Refunded' } as Record<string, string>)[status] || status
-const businessStage = (order: OrderView) => {
-  if (order.order.status === 'CANCELLED') return 'Cancelled'
-  if (order.order.status === 'COMPLETED') return 'Delivered'
-  if (order.order.status === 'PENDING_PAYMENT') return 'Waiting for payment'
-  if (order.items.some(({ item }) => item.fulfillmentStatus === 'DELIVERED')) return 'Waiting for your confirmation'
-  return order.items.some(({ item }) => item.itemType === 'CUSTOM_SERVICE') ? 'In fulfillment' : 'Paid'
-}
-const customWishId = (order: OrderView) => order.items.find(({ item }) => item.itemType === 'CUSTOM_SERVICE')?.item.wishId
+const orderStatusLabel = (status: string) => ({ PENDING_PAYMENT: 'Waiting for payment', CANCELLED: 'Cancelled', COMPLETED: 'Completed', REFUNDED: 'Refunded' } as Record<string, string>)[status] || status
+const itineraryNo = (order: OrderView) => order.items.find(line => line.itineraryNo)?.itineraryNo
 const cancel = async (orderNo: string) => { try { selectedOrder.value = await commerce.cancelOrder(orderNo); orders.value = await commerce.listOrders() } catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not cancel the order.' } }
 onMounted(async () => { if (await initializeAccount()) await load() })
 </script>

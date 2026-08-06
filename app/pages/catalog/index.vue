@@ -2,9 +2,9 @@
   <AccountPageShell active-page="catalog" kicker="Lvyv products" title="Standard journeys" description="Choose a ready-made itinerary and keep its purchased version in your trips." :ready="ready">
     <div v-if="loading" class="catalog-state">Loading journeys...</div>
     <div v-else-if="error" class="catalog-state error">{{ error }} <button type="button" @click="load">Try again</button></div>
-    <div v-else-if="!products.length" class="catalog-state">No standard products are available right now.</div>
+    <div v-else-if="!products.length" class="catalog-state">No featured journeys are available right now.</div>
     <div v-else class="catalog-grid">
-      <article v-for="product in products" :key="product.skuId" class="catalog-item">
+      <article v-for="product in products" :key="product.productCode" class="catalog-item">
         <div class="catalog-image">
           <img v-if="product.coverImageUrl" :src="product.coverImageUrl" :alt="product.title">
           <span v-else>{{ product.cityCode }}</span>
@@ -15,7 +15,7 @@
           <p>{{ product.summary || 'A considered day-by-day journey prepared by the Lvyv design team.' }}</p>
           <div class="catalog-footer">
             <div class="catalog-price"><strong>{{ product.currency }} {{ product.salePrice }}</strong><del v-if="Number(product.listPrice) > Number(product.salePrice)">{{ product.currency }} {{ product.listPrice }}</del><small v-if="product.discountPercent">-{{ product.discountPercent }}% · {{ product.promotionName }}</small><small v-if="product.promotionEndTime">Ends {{ formatDate(product.promotionEndTime) }}</small></div>
-            <button type="button" :disabled="buying === product.skuId" @click="buy(product.skuId)">{{ buying === product.skuId ? 'Opening checkout...' : 'Buy journey' }}</button>
+            <button type="button" :disabled="buying === product.productCode" @click="buy(product.productCode)">{{ buying === product.productCode ? 'Opening checkout...' : 'Buy journey' }}</button>
           </div>
         </div>
       </article>
@@ -30,28 +30,27 @@ useNoIndex()
 
 const { ready, initializeAccount } = useAccountPage('/catalog')
 const commerce = useTourCommerce()
-const products = ref<Array<{ skuId: number; productCode: string; versionNo: number; title: string; cityCode: string; coverImageUrl?: string; summary?: string; currency: string; listPrice: string | number; salePrice: string | number; promotionName?: string; promotionEndTime?: string; discountPercent?: number }>>([])
+const products = ref<Array<{ productCode: string; versionNo: number; title: string; cityCode: string; coverImageUrl?: string; summary?: string; currency: string; listPrice: string | number; salePrice: string | number; promotionName?: string; promotionEndTime?: string; discountPercent?: number }>>([])
 const loading = ref(false)
-const buying = ref<number | null>(null)
+const buying = ref<string | null>(null)
 const error = ref('')
 
 const load = async () => {
   loading.value = true
   error.value = ''
   try {
-    const skus = await commerce.listStandardCatalog()
-    const details = await Promise.allSettled(skus.filter(item => item.price && item.sku.standardProductVersionId).map(async item => {
-      const view = await commerce.getStandardVersion(item.sku.standardProductVersionId!)
+    const catalog = await commerce.listCatalogProducts()
+    products.value = catalog.map(item => {
+      const view = item.itinerary
       const pricing = item.pricing
-      const listPrice = Number(pricing?.listUnitPrice ?? item.price!.listPrice)
-      const salePrice = Number(pricing?.saleUnitPrice ?? item.price!.salePrice)
-      return { skuId: item.sku.id, productCode: view.product.productCode, versionNo: view.version.versionNo, title: view.content.content.title,
-        cityCode: view.content.content.cityCode, coverImageUrl: view.content.content.coverImageUrl, summary: view.content.content.summary,
-        currency: item.price!.currency, listPrice, salePrice,
+      const listPrice = Number(pricing?.listUnitPrice ?? item.price?.listPrice ?? 0)
+      const salePrice = Number(pricing?.saleUnitPrice ?? item.price?.salePrice ?? 0)
+      return { productCode: item.product.productCode, versionNo: view.versionNo, title: view.title,
+        cityCode: view.cityCode, coverImageUrl: item.product.coverImageUrl || view.coverImageUrl, summary: item.product.summary || view.summary,
+        currency: item.price?.currency || 'USD', listPrice, salePrice,
         promotionName: pricing?.promotionCampaign?.name, promotionEndTime: pricing?.promotionCampaign?.endTime,
         discountPercent: listPrice > salePrice ? Math.round((1 - salePrice / listPrice) * 100) : undefined }
-    }))
-    products.value = details.flatMap(result => result.status === 'fulfilled' ? [result.value] : [])
+    })
   } catch (caught) {
     error.value = caught instanceof Error ? caught.message : 'Could not load the catalogue.'
   } finally {
@@ -59,10 +58,10 @@ const load = async () => {
   }
 }
 
-const buy = async (skuId: number) => {
-  buying.value = skuId
+const buy = async (productCode: string) => {
+  buying.value = productCode
   try {
-    await navigateTo(`/checkout?sku=${skuId}`)
+    await navigateTo(`/checkout?product=${encodeURIComponent(productCode)}`)
   } catch (caught) {
     error.value = caught instanceof Error ? caught.message : 'Could not create the order.'
   } finally {
