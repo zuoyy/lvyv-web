@@ -121,6 +121,40 @@ export interface OrderView {
   items: Array<{ item: { id: number; itemType: string; quantity: number; listUnitPrice?: string | number; unitPrice: string | number; promotionDiscountAmount?: string | number; taxAmount?: string | number; startDate?: string; endDate?: string; customItineraryId?: number; customItineraryVersionId?: number; itineraryInstanceId?: number }; snapshot?: OrderSnapshot; itineraryNo?: string }>
   entitlements: Entitlement[]
   coupon?: { couponNo: string; discountType: string; discountValue: string | number; discountAmount: string | number; status: string }
+  activeOnlinePayment: boolean
+}
+
+export type PaymentChannel = 'CREDIT_CARD' | 'WECHAT_PAY' | 'ALIPAY'
+export type PaymentStatus = 'CREATED' | 'PENDING' | 'UNKNOWN' | 'SUCCEEDED' | 'FAILED' | 'EXPIRED' | 'REVIEW_REQUIRED'
+export interface PaymentChannelView { channel: PaymentChannel; name: string; enabled: boolean }
+export interface BillingDetails {
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+  country: string
+  state?: string
+  city: string
+  address: string
+  zip: string
+}
+export interface PaymentView {
+  paymentNo: string
+  provider: string
+  channel: string
+  methods?: string
+  currency: string
+  amount: string | number
+  status: PaymentStatus
+  providerPaymentId?: string
+  redirectUrl?: string
+  billingMasked?: string
+  failureCode?: string
+  failureMessage?: string
+  paidTime?: string
+  expireTime?: string
+  createTime?: string
+  updateTime?: string
 }
 
 export interface MemberCouponView {
@@ -201,5 +235,9 @@ export const useTourCommerce = () => {
     confirmOffer: (offerNo: string, travelerCount: number) => auth.request<OrderView>(`/commerce/custom-offers/${encodeURIComponent(offerNo)}/confirm`, { travelerCount }),
     requestRevision: (offerNo: string, requestContent: string) => auth.request(`/commerce/custom-offers/${encodeURIComponent(offerNo)}/request-revision`, { requestContent }),
     cancelOrder: (orderNo: string) => auth.request<OrderView>(`/commerce/orders/${encodeURIComponent(orderNo)}/cancel`),
+    listPaymentChannels: () => auth.request<PaymentChannelView[]>('/commerce/payments/channels', undefined, 'GET'),
+    createPayment: (orderNo: string, channel: PaymentChannel, clientType: 'DESKTOP_WEB' | 'MOBILE_WEB' | 'WECHAT_BROWSER', billing: BillingDetails) =>
+      auth.request<PaymentView>(`/commerce/orders/${encodeURIComponent(orderNo)}/payments`, { channel, clientType, billing }),
+    getPayment: (paymentNo: string) => auth.request<PaymentView>(`/commerce/payments/${encodeURIComponent(paymentNo)}`, undefined, 'GET'),
   }
 }

@@ -30,6 +30,11 @@ export default defineNuxtConfig({
       }
     },
     prerender: {
+      // Compliance documents must be directly reachable through the static Nginx site.
+      routes: [
+        '/terms',
+        '/intellectual-property-rights'
+      ],
       // 积分页中的未来功能入口尚未实现，不参与静态路由爬取。
       ignore: [
         '/badges',

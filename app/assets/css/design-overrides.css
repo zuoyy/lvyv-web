@@ -1125,7 +1125,7 @@ a {
 
   .footer {
     position: relative;
-    height: 231px;
+    height: 281px;
     padding: 0;
     background: #152723;
   }
@@ -1202,6 +1202,39 @@ a {
   .footer-links-column a {
     font-size: 14px;
     line-height: 30px;
+  }
+
+  .payment-methods {
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0;
+  }
+
+  .payment-logo-list {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .payment-logo-list li {
+    width: 48px;
+    height: 30px;
+    overflow: hidden;
+    border-radius: 3px;
+    background: #fff;
+  }
+
+  .payment-logo-list img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
   }
 }
 
@@ -1563,6 +1596,22 @@ a {
     line-height: 20px;
     white-space: normal;
     text-align: center;
+  }
+
+  .payment-methods {
+    grid-column: 1 / -1;
+    margin-top: 0;
+  }
+
+  .payment-logo-list {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .payment-logo-list li {
+    width: 44px;
+    height: 28px;
   }
 
   .footer-links-column h4 {

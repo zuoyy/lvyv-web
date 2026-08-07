@@ -48,7 +48,7 @@
               <div class="line-meta"><strong>{{ line.snapshot?.currency || selectedOrder.order.currency }} {{ line.snapshot?.unitPrice || selectedOrder.order.totalAmount }}</strong><span>{{ line.item.quantity }} ×</span></div>
             </article>
           </div>
-          <p v-if="selectedOrder.order.status === 'PENDING_PAYMENT' && selectedOrder.order.sourceType === 'CUSTOM_SERVICE'" class="payment-note">Please complete payment using the offline instructions from Lvyv. A team member will confirm your payment.</p><footer><NuxtLink v-if="itineraryNo(selectedOrder)" :to="`/trips?itineraryNo=${encodeURIComponent(itineraryNo(selectedOrder)!)}`">View itinerary</NuxtLink><button v-if="selectedOrder.order.status === 'PENDING_PAYMENT'" type="button" @click="cancel(selectedOrder.order.orderNo)">Cancel order</button><button type="button" @click="selectedOrder = null">Close</button></footer>
+          <footer><NuxtLink v-if="itineraryNo(selectedOrder)" :to="`/trips?itineraryNo=${encodeURIComponent(itineraryNo(selectedOrder)!)}`">View itinerary</NuxtLink><NuxtLink v-if="selectedOrder.order.status === 'PENDING_PAYMENT'" :to="`/orders/${encodeURIComponent(selectedOrder.order.orderNo)}/pay`">{{ selectedOrder.activeOnlinePayment ? 'Resume payment' : 'Pay now' }}</NuxtLink><button v-if="selectedOrder.order.status === 'PENDING_PAYMENT'" type="button" :disabled="selectedOrder.activeOnlinePayment" @click="cancel(selectedOrder.order.orderNo)">Cancel order</button><button type="button" @click="selectedOrder = null">Close</button></footer>
         </section>
       </div>
     </Teleport>

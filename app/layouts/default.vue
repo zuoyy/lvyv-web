@@ -227,10 +227,22 @@
           <h4>Support</h4>
           <ul>
             <li><NuxtLink to="/en/faq/">FAQ</NuxtLink></li>
-            <li><NuxtLink to="#">Safety</NuxtLink></li>
-            <li><NuxtLink to="#">Privacy Policy</NuxtLink></li>
+            <li><NuxtLink to="/terms">Terms &amp; Conditions</NuxtLink></li>
+            <li><NuxtLink to="/intellectual-property-rights">Intellectual Property Rights</NuxtLink></li>
           </ul>
         </div>
+      </div>
+
+      <div class="container payment-methods" aria-label="Accepted payment methods">
+        <ul class="payment-logo-list">
+          <li><img src="/images/payment/visa.png" alt="Visa" width="320" height="200"></li>
+          <li><img src="/images/payment/mastercard.png" alt="Mastercard" width="320" height="200"></li>
+          <li><img src="/images/payment/maestro.png" alt="Maestro" width="320" height="200"></li>
+          <li><img src="/images/payment/jcb.png" alt="JCB" width="320" height="200"></li>
+          <li><img src="/images/payment/american-express.png" alt="American Express" width="320" height="200"></li>
+          <li><img src="/images/payment/diners-club.png" alt="Diners Club" width="276" height="200"></li>
+          <li><img src="/images/payment/discover.png" alt="Discover" width="288" height="200"></li>
+        </ul>
       </div>
 
 

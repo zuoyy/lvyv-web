@@ -77,7 +77,9 @@ const submit = async () => {
   submitting.value = true
   try {
     const order = await commerce.createStandardOrder(productCode.value, Math.max(1, quantity.value), startDate.value, selectedCouponId.value)
-    await navigateTo(`/orders?order=${encodeURIComponent(order.order.orderNo)}`)
+    await navigateTo(order.order.status === 'COMPLETED'
+      ? '/trips'
+      : `/orders/${encodeURIComponent(order.order.orderNo)}/pay`)
   } catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not create the order.' } finally { submitting.value = false }
 }
 onMounted(async () => { if (await initializeAccount()) await load() })

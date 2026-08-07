@@ -18,6 +18,7 @@ import {
   faCircleMinus,
   faCompass,
   faCreditCard,
+  faClock,
   faCrown,
   faEnvelope,
   faEye,
@@ -42,12 +43,14 @@ import {
   faRoute,
   faScaleBalanced,
   faShieldHalved,
+  faSpinner,
   faTrashCan,
   faTicketSimple,
   faTriangleExclamation,
   faUtensils,
   faUser,
   faUserPlus,
+  faWallet,
   faXmark
 } from '@fortawesome/free-solid-svg-icons'
 import {
@@ -78,6 +81,7 @@ library.add(
   faCircleMinus,
   faCompass,
   faCreditCard,
+  faClock,
   faCrown,
   faEnvelope,
   faEye,
@@ -107,6 +111,7 @@ library.add(
   faRoute,
   faScaleBalanced,
   faShieldHalved,
+  faSpinner,
   faTrashCan,
   faTicketSimple,
   faTiktok,
@@ -115,6 +120,7 @@ library.add(
   faTwitter,
   faUser,
   faUserPlus,
+  faWallet,
   faXmark
 )
 
