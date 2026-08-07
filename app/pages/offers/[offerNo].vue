@@ -9,6 +9,8 @@
         <p>{{ itinerary.content?.content?.summary || description }}</p>
         <dl>
           <div><dt>Status</dt><dd>{{ statusLabel }}</dd></div>
+          <div><dt>Departure date</dt><dd>{{ formatDate(itinerary.startDate) }}</dd></div>
+          <div><dt>End date</dt><dd>{{ formatDate(itinerary.endDate) }}</dd></div>
           <div><dt>Price per person</dt><dd>{{ formatMoney(offer.unitSubtotal) }}</dd></div>
           <div v-if="Number(offer.unitDiscountAmount) > 0"><dt>Discount per person</dt><dd>- {{ formatMoney(offer.unitDiscountAmount) }}</dd></div>
           <div v-if="Number(offer.unitTaxAmount) > 0"><dt>Tax per person</dt><dd>{{ formatMoney(offer.unitTaxAmount) }}</dd></div>
@@ -65,6 +67,16 @@ const canConfirm = computed(() => !!confirmation.value?.canConfirm && !expired.v
 const canRequestRevision = computed(() => !!confirmation.value?.canRequestRevision && !expired.value)
 const statusLabel = computed(() => ({ SENT: 'Awaiting your confirmation', ACCEPTED: 'Accepted - waiting for payment', REVISION_REQUESTED: 'Revision requested', EXPIRED: 'Expired', CANCELLED: 'Cancelled' } as Record<string, string>)[offer.value?.status || ''] || offer.value?.status || '')
 const formatMoney = (amount: string | number) => `${offer.value?.currency || ''} ${Number(amount).toFixed(2)}`
+const formatDate = (value?: string) => {
+  if (!value) return 'Not set'
+  const [yearText, monthText, dayText] = value.split('-')
+  if (!yearText || !monthText || !dayText) return value
+  const year = Number(yearText)
+  const month = Number(monthText)
+  const day = Number(dayText)
+  if (![year, month, day].every(Number.isInteger)) return value
+  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(year, month - 1, day))
+}
 const formatDateTime = (value: string) => new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
 const load = async () => { loading.value = true; error.value = ''; try { confirmation.value = await commerce.getOffer(String(route.params.offerNo)) } catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not load this offer.' } finally { loading.value = false } }
 const confirmOffer = async () => { submitting.value = true; error.value = ''; try { const order = await commerce.confirmOffer(String(route.params.offerNo), Math.max(1, travelerCount.value)); await navigateTo(`/orders?order=${encodeURIComponent(order.order.orderNo)}`) } catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not confirm this offer.' } finally { submitting.value = false } }

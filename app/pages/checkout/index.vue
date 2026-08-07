@@ -5,7 +5,7 @@
     <section v-else class="checkout-layout">
       <div class="checkout-panel">
         <label>People<input v-model.number="quantity" type="number" min="1" step="1" @change="refreshQuote"></label>
-        <label>Departure date<input v-model="startDate" type="date" :min="today" @change="refreshQuote"></label>
+        <label>Departure date<input v-model="startDate" type="date" :min="today" required @change="refreshQuote"></label>
         <label>Coupon
           <select v-model="selectedCouponId" @change="refreshQuote">
             <option :value="undefined">No coupon</option>
@@ -51,6 +51,7 @@ const couponLabel = (coupon: MemberCouponView) => coupon.template.discountType =
   ? `${coupon.template.discountValue}% off` : `USD ${coupon.template.discountValue} off`
 const refreshQuote = async () => {
   if (!productCode.value) { error.value = 'A product is required.'; return }
+  if (!startDate.value) { error.value = 'A departure date is required.'; quote.value = null; return }
   try {
     quote.value = await commerce.previewStandardOrder(productCode.value, Math.max(1, quantity.value), startDate.value, selectedCouponId.value)
     error.value = ''
@@ -72,6 +73,7 @@ const redeem = async () => {
   } catch (caught) { redeemMessage.value = caught instanceof Error ? caught.message : 'Could not redeem that code.' }
 }
 const submit = async () => {
+  if (!startDate.value) { error.value = 'A departure date is required.'; return }
   submitting.value = true
   try {
     const order = await commerce.createStandardOrder(productCode.value, Math.max(1, quantity.value), startDate.value, selectedCouponId.value)
