@@ -8,6 +8,7 @@
       <object
         class="legal-page__embed"
         data="https://www.9-bill.com/index/legal"
+        style="width:100%"
         type="text/html"
         title="Intellectual Property Rights"
       >
