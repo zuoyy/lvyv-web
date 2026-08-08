@@ -133,7 +133,7 @@ export interface BillingDetails {
   email: string
   phone: string
   country: string
-  state?: string
+  state: string
   city: string
   address: string
   zip: string

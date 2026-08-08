@@ -19,8 +19,8 @@
           <label><span>Last name</span><input v-model.trim="billing.lastName" autocomplete="family-name" required maxlength="64"></label>
           <label><span>Email</span><input v-model.trim="billing.email" type="email" autocomplete="email" required maxlength="128"></label>
           <label><span>Phone</span><input v-model.trim="billing.phone" autocomplete="tel" required maxlength="32"></label>
-          <label><span>Country code</span><input v-model.trim="billing.country" autocomplete="country" required minlength="2" maxlength="2" placeholder="US"></label>
-          <label><span>State / province</span><input v-model.trim="billing.state" autocomplete="address-level1" maxlength="64"></label>
+          <label><span>Country code</span><SearchCodeSelect v-model="billing.country" input-id="billing-country" placeholder="Search country" :options="countryOptions" required @update:model-value="billing.state = ''" /></label>
+          <label><span>State / province code</span><SearchCodeSelect v-model="billing.state" input-id="billing-state" placeholder="Search state or province" :options="stateOptions" :disabled="!billing.country" required /></label>
           <label><span>City</span><input v-model.trim="billing.city" autocomplete="address-level2" required maxlength="64"></label>
           <label><span>Postal code</span><input v-model.trim="billing.zip" autocomplete="postal-code" required maxlength="20"></label>
           <label class="wide"><span>Address</span><input v-model.trim="billing.address" autocomplete="street-address" required maxlength="200"></label>
@@ -38,7 +38,10 @@
 
 <script setup lang="ts">
 import AccountPageShell from '~/components/profile/AccountPageShell.vue'
+import SearchCodeSelect from '~/components/payment/SearchCodeSelect.vue'
 import type { BillingDetails, OrderView, PaymentChannel } from '~/composables/useTourCommerce'
+import { allCountries } from 'country-region-data'
+import { passportCountryOptions } from '~/utils/countries'
 useNoIndex()
 const route = useRoute()
 const { ready, initializeAccount } = useAccountPage(`/orders/${String(route.params.orderNo)}/pay`)
@@ -51,6 +54,11 @@ const loading = ref(true)
 const submitting = ref(false)
 const error = ref('')
 const billing = reactive<BillingDetails>({ firstName: '', lastName: '', email: '', phone: '', country: '', state: '', city: '', address: '', zip: '' })
+const countryOptions = passportCountryOptions
+const stateOptions = computed(() => {
+  const country = allCountries.find((entry) => entry[1] === billing.country)
+  return country ? country[2].map(([name, code]) => ({ name, code })).sort((left, right) => left.name.localeCompare(right.name, 'en')) : []
+})
 
 const clientType = () => {
   if (/MicroMessenger/i.test(navigator.userAgent)) return 'WECHAT_BROWSER' as const
