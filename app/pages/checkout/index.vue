@@ -5,7 +5,7 @@
     <section v-else class="checkout-layout">
       <div class="checkout-panel">
         <label>People<input v-model.number="quantity" type="number" min="1" step="1" @change="refreshQuote"></label>
-        <label>Departure date<input v-model="startDate" type="date" :min="today" required @change="refreshQuote"></label>
+        <label>Departure date<input v-model="startDate" type="date" :min="earliestStartDate" required @change="refreshQuote"></label>
         <label>Coupon
           <select v-model="selectedCouponId" @change="refreshQuote">
             <option :value="undefined">No coupon</option>
@@ -36,8 +36,17 @@ const commerce = useTourCommerce()
 const { ready, initializeAccount } = useAccountPage('/checkout')
 const productCode = computed(() => String(route.query.product || ''))
 const quantity = ref(1)
-const today = new Date().toISOString().slice(0, 10)
-const startDate = ref(today)
+const dateAfter = (days: number) => {
+  const date = new Date()
+  date.setHours(12, 0, 0, 0)
+  date.setDate(date.getDate() + days)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+const earliestStartDate = dateAfter(1)
+const startDate = ref(earliestStartDate)
 const selectedCouponId = ref<number | undefined>(undefined)
 const coupons = ref<MemberCouponView[]>([])
 const quote = ref<OrderPricingQuote | null>(null)

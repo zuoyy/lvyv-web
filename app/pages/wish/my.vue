@@ -80,7 +80,7 @@
             <div class="form-grid">
               <label class="field"><span>Destination</span><select v-model="wishForm.cityCode" required><option value="xian">Xi'an</option><option value="chengdu">Chengdu</option><option value="surprise">Surprise me</option></select></label>
               <label class="field"><span>Trip length</span><input v-model.number="wishForm.tripDays" type="number" min="1" max="30" required></label>
-              <label class="field"><span>Start date <em>Optional</em></span><input v-model="wishForm.startDate" type="date" :min="today"></label>
+              <label class="field"><span>Start date <em>Optional</em></span><input v-model="wishForm.startDate" type="date" :min="earliestStartDate"></label>
               <label class="field"><span>Budget</span><select v-model="wishForm.budgetLevel" required><option value="backpacker">Budget</option><option value="comfort">Comfort</option><option value="premium">Premium</option></select></label>
             </div>
             <fieldset class="interest-field"><legend>What are you drawn to?</legend><label v-for="interest in interestOptions" :key="interest.value"><input v-model="wishForm.interestCodes" type="checkbox" :value="interest.value"><span>{{ interest.label }}</span></label></fieldset>
@@ -138,7 +138,15 @@ const interestOptions = [
 ]
 const blankWishForm = () => ({ cityCode: 'xian', tripDays: 3, startDate: '', budgetLevel: 'comfort', interestCodes: [] as string[], story: '', specialRequirement: '' })
 const wishForm = reactive(blankWishForm())
-const today = new Date().toISOString().slice(0, 10)
+const dateAfter = (days: number) => {
+  const date = new Date()
+  date.setDate(date.getDate() + days)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+const earliestStartDate = dateAfter(1)
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / size)))
 
 const headers = computed(() => ({
