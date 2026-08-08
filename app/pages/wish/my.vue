@@ -47,7 +47,7 @@
             <span class="wish-number">{{ wish.wishNo }}</span>
             <span class="status-badge" :class="statusClass(wish.status)">{{ wish.statusLabel }}</span>
           </div>
-          <h2>{{ wish.cityLabel || cityFallback(wish.cityCode) }}</h2>
+          <h2>{{ wish.cityLabel || wish.cityCode }}</h2>
           <p class="wish-story">{{ wish.story }}</p>
           <div v-if="wish.interests?.length" class="interest-list">
             <span v-for="interest in wish.interests" :key="interest.code">{{ interest.label }}</span>
@@ -78,7 +78,7 @@
           <header><div><p>New journey</p><h2 id="new-wish-title">Make a wish</h2></div><button type="button" aria-label="Close" @click="closeCreateDialog">×</button></header>
           <form @submit.prevent="submitWish">
             <div class="form-grid">
-              <label class="field"><span>Destination</span><select v-model="wishForm.cityCode" required><option value="xian">Xi'an</option><option value="chengdu">Chengdu</option><option value="surprise">Surprise me</option></select></label>
+              <label class="field"><span>Destination</span><select v-model="wishForm.cityCode" :disabled="cityLoading || !!cityError" required><option v-for="city in cities" :key="city.code" :value="city.code">{{ city.label }}</option></select></label>
               <label class="field"><span>Trip length</span><input v-model.number="wishForm.tripDays" type="number" min="1" max="30" required></label>
               <label class="field"><span>Start date <em>Optional</em></span><input v-model="wishForm.startDate" type="date" :min="earliestStartDate"></label>
               <label class="field"><span>Budget</span><select v-model="wishForm.budgetLevel" required><option value="backpacker">Budget</option><option value="comfort">Comfort</option><option value="premium">Premium</option></select></label>
@@ -86,8 +86,9 @@
             <fieldset class="interest-field"><legend>What are you drawn to?</legend><label v-for="interest in interestOptions" :key="interest.value"><input v-model="wishForm.interestCodes" type="checkbox" :value="interest.value"><span>{{ interest.label }}</span></label></fieldset>
             <label class="field"><span>Your wish</span><textarea v-model="wishForm.story" rows="5" maxlength="1000" required placeholder="I wish to..."></textarea><small>{{ wishForm.story.length }}/1000</small></label>
             <label class="field"><span>Anything else? <em>Optional</em></span><textarea v-model="wishForm.specialRequirement" rows="3" maxlength="500" placeholder="Accessibility, dietary or pacing preferences"></textarea></label>
+            <p v-if="cityError" class="submit-error" role="alert">{{ cityError }}</p>
             <p v-if="submitError" class="submit-error" role="alert">{{ submitError }}</p>
-            <div class="modal-actions"><button type="button" class="secondary-button" @click="closeCreateDialog">Cancel</button><button type="submit" class="primary-action" :disabled="submitting">{{ submitting ? 'Submitting' : 'Submit wish' }}</button></div>
+            <div class="modal-actions"><button type="button" class="secondary-button" @click="closeCreateDialog">Cancel</button><button type="submit" class="primary-action" :disabled="submitting || cityLoading || !!cityError || !wishForm.cityCode">{{ submitting ? 'Submitting' : 'Submit wish' }}</button></div>
           </form>
         </section>
       </div>
@@ -123,6 +124,7 @@ const statusFilter = ref('')
 const showCreateDialog = ref(false)
 const submitting = ref(false)
 const submitError = ref('')
+const { cities, loading: cityLoading, error: cityError, load: loadCities } = useTourCities()
 
 const statusOptions = [
   { value: 'SUBMITTED', label: 'Submitted' }, { value: 'ITINERARY_PLANNING', label: 'Itinerary planning' },
@@ -136,7 +138,7 @@ const interestOptions = [
   { value: 'nature_hiking', label: 'Nature hiking' }, { value: 'photo_spots', label: 'Photo spots' },
   { value: 'local_life', label: 'Local life' },
 ]
-const blankWishForm = () => ({ cityCode: 'xian', tripDays: 3, startDate: '', budgetLevel: 'comfort', interestCodes: [] as string[], story: '', specialRequirement: '' })
+const blankWishForm = () => ({ cityCode: cities.value[0]?.code || '', tripDays: 3, startDate: '', budgetLevel: 'comfort', interestCodes: [] as string[], story: '', specialRequirement: '' })
 const wishForm = reactive(blankWishForm())
 const dateAfter = (days: number) => {
   const date = new Date()
@@ -178,7 +180,6 @@ const fetchWishes = async () => {
 const changeFilter = () => { page.value = 1; fetchWishes() }
 const goPage = (value: number) => { page.value = value; fetchWishes(); window.scrollTo({ top: 0, behavior: 'smooth' }) }
 const formatDate = (value: string) => new Intl.DateTimeFormat('en', { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(value))
-const cityFallback = (code: string) => ({ xian: "Xi'an", chengdu: 'Chengdu', surprise: 'Surprise destination' }[code] || code)
 const statusClass = (status: string) => status === 'DELIVERED' ? 'success'
   : ['CLOSED', 'CANCELLED'].includes(status) ? 'muted'
     : ['REVISION_REQUESTED', 'REVISING'].includes(status) ? 'warning' : 'active'
@@ -210,6 +211,8 @@ const submitWish = async () => {
 
 onMounted(async () => {
   if (!await initializeAccount()) return
+  await loadCities(true).catch(() => undefined)
+  if (!wishForm.cityCode) wishForm.cityCode = cities.value[0]?.code || ''
   if (route.query.create === '1') showCreateDialog.value = true
   await fetchWishes()
 })
