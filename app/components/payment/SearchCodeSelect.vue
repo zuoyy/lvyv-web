@@ -99,9 +99,27 @@ onBeforeUnmount(() => document.removeEventListener('click', handleDocumentClick)
 </script>
 
 <style scoped>
-.code-select { position: relative; }
+.code-select { position: relative; width: 100%; min-width: 0; }
 .code-input-wrap { position: relative; }
-.code-input-wrap input { padding-right: 34px !important; }
+.code-input-wrap input {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 0 34px 0 12px;
+  border: 1px solid #ccd7d0;
+  border-radius: 0;
+  background: #fff;
+  color: #243a31;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.code-input-wrap input:focus {
+  outline: 2px solid rgba(23, 77, 64, .16);
+  border-color: #174d40;
+}
+.code-input-wrap input:disabled { background: #f3f6f4; color: #9aa7a0; cursor: not-allowed; }
 .code-chevron { position: absolute; top: 50%; right: 13px; width: 7px; height: 7px; border-right: 1px solid #718078; border-bottom: 1px solid #718078; transform: translateY(-65%) rotate(45deg); pointer-events: none; }
 .code-menu { position: absolute; z-index: 20; top: calc(100% + 4px); right: 0; left: 0; max-height: 260px; overflow-y: auto; padding: 5px; border: 1px solid #ccd7d0; background: #fff; box-shadow: 0 8px 22px rgba(29, 51, 42, .12); }
 .code-menu button { display: flex; width: 100%; justify-content: space-between; gap: 12px; padding: 9px 10px; border: 0; background: #fff; color: #31463c; text-align: left; cursor: pointer; }
