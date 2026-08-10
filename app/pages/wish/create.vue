@@ -102,7 +102,7 @@
             <div v-else-if="currentStep === 1" class="wish-calendar-card">
               <div class="wish-calendar-card__summary">
                 <span>{{ travelDateLabel }}</span>
-                <span class="wish-duration">
+                <span v-if="hasCompleteTravelDates" class="wish-duration">
                   <button type="button" aria-label="Reduce trip length" @click="changeTripDays(-1)">-</button>
                   <strong>{{ form.tripDays }}</strong> days
                   <button type="button" aria-label="Increase trip length" @click="changeTripDays(1)">+</button>
@@ -132,7 +132,7 @@
                   @click="selectCalendarDay(day.key)"
                 >{{ day.day }}</button>
               </div>
-              <button type="button" class="wish-calendar-card__reset" @click="resetDates">Flexible dates</button>
+              <button type="button" class="wish-calendar-card__reset" @click="resetDates">Clear dates</button>
             </div>
 
             <div v-else-if="configLoading" class="wish-config-state" role="status">
@@ -337,7 +337,7 @@ const addDays = (date: Date, count: number) => {
 
 const initialDraft = (): WishDraft => ({
   cityCode: 'xian',
-  tripDays: 7,
+  tripDays: 0,
   startDate: '',
   endDate: '',
   interestCodes: [],
@@ -384,6 +384,7 @@ const selectedCityLabel = computed(() => {
 })
 const selectedInterestOptions = computed(() => interestOptions.value.filter(option => form.interestCodes.includes(option.code)))
 const selectedBudget = computed(() => budgetOptions.value.find(option => option.code === form.budgetLevel))
+const hasCompleteTravelDates = computed(() => Boolean(form.startDate && form.endDate))
 
 const calendarTitle = computed(() => new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric' }).format(calendarMonth.value))
 const calendarDays = computed<CalendarDay[]>(() => {
@@ -407,7 +408,7 @@ const calendarDays = computed<CalendarDay[]>(() => {
 })
 
 const travelDateLabel = computed(() => {
-  if (!form.startDate) return 'Flexible dates'
+  if (!form.startDate) return 'Select travel dates'
   const start = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(parseDateKey(form.startDate))
   const end = form.endDate
     ? new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' }).format(parseDateKey(form.endDate))
@@ -423,11 +424,7 @@ const reviewTravelDate = computed(() => {
 const canContinue = computed(() => {
   if (configLoading.value || configError.value) return false
   if (currentStep.value === 0) return Boolean(form.cityCode && interestOptions.value.length && budgetOptions.value.length && journeyOptions.value.length)
-  if (currentStep.value === 1) {
-    const hasStartDate = Boolean(form.startDate)
-    const hasEndDate = Boolean(form.endDate)
-    return form.tripDays >= 1 && hasStartDate === hasEndDate
-  }
+  if (currentStep.value === 1) return hasCompleteTravelDates.value && form.tripDays >= 1
   if (currentStep.value === 2) return form.interestCodes.length > 0
   if (currentStep.value === 3) return Boolean(form.budgetLevel)
   if (currentStep.value === 4) return form.story.trim().length > 0
@@ -435,7 +432,7 @@ const canContinue = computed(() => {
 })
 
 const goToStep = (index: number) => {
-  if (submitted.value || index > furthestStep.value) return
+  if (submitted.value || index > furthestStep.value || (index > 1 && !hasCompleteTravelDates.value)) return
   currentStep.value = index
   submitError.value = ''
 }
@@ -530,18 +527,24 @@ const selectCalendarDay = (key: string) => {
   if (!form.startDate || form.endDate || key <= form.startDate) {
     form.startDate = key
     form.endDate = ''
+    form.tripDays = 0
+    furthestStep.value = Math.min(furthestStep.value, 1)
     return
   }
   form.endDate = key
   form.tripDays = Math.max(1, Math.round((parseDateKey(key).getTime() - parseDateKey(form.startDate).getTime()) / 86_400_000) + 1)
 }
 const changeTripDays = (amount: number) => {
+  if (!hasCompleteTravelDates.value) return
   form.tripDays = Math.min(30, Math.max(1, form.tripDays + amount))
-  if (form.startDate) form.endDate = formatDateKey(addDays(parseDateKey(form.startDate), form.tripDays - 1))
+  form.endDate = formatDateKey(addDays(parseDateKey(form.startDate), form.tripDays - 1))
 }
 const resetDates = () => {
   form.startDate = ''
   form.endDate = ''
+  form.tripDays = 0
+  furthestStep.value = Math.min(furthestStep.value, 1)
+  if (currentStep.value > 1) currentStep.value = 1
 }
 
 const saveDraft = () => {
@@ -556,9 +559,23 @@ const restoreDraft = () => {
     Object.assign(form, initialDraft(), saved.form)
     currentStep.value = Math.min(6, Math.max(0, Number(saved.step) || 0))
     furthestStep.value = Math.min(6, Math.max(currentStep.value, Number(saved.furthest) || 0))
-    if (form.startDate) {
+    if (form.startDate && form.endDate) {
       const date = parseDateKey(form.startDate)
-      calendarMonth.value = new Date(date.getFullYear(), date.getMonth(), 1)
+      const calculatedDays = Math.round((parseDateKey(form.endDate).getTime() - date.getTime()) / 86_400_000) + 1
+      if (calculatedDays >= 1) {
+        form.tripDays = calculatedDays
+        calendarMonth.value = new Date(date.getFullYear(), date.getMonth(), 1)
+      }
+      else {
+        resetDates()
+      }
+    }
+    else {
+      resetDates()
+    }
+    if (!hasCompleteTravelDates.value && currentStep.value > 1) {
+      currentStep.value = 1
+      furthestStep.value = 1
     }
   } catch {
     sessionStorage.removeItem(DRAFT_KEY)
@@ -567,6 +584,11 @@ const restoreDraft = () => {
 
 const submitWish = async () => {
   submitError.value = ''
+  if (!hasCompleteTravelDates.value || form.tripDays < 1) {
+    currentStep.value = 1
+    furthestStep.value = 1
+    return
+  }
   saveDraft()
   if (!auth.token.value) {
     await navigateTo(`/login/?redirect=${encodeURIComponent('/wish/create?resume=1')}`)
@@ -618,8 +640,14 @@ onMounted(async () => {
   if (!cities.value.some(city => city.code === form.cityCode)) form.cityCode = cities.value[0]?.code || ''
   if (form.cityCode) await applyCityConfig(form.cityCode, true).catch(() => undefined)
   if (route.query.resume === '1' && currentStep.value < 6) {
-    currentStep.value = 6
-    furthestStep.value = 6
+    if (hasCompleteTravelDates.value) {
+      currentStep.value = 6
+      furthestStep.value = 6
+    }
+    else {
+      currentStep.value = 1
+      furthestStep.value = 1
+    }
   }
 })
 
