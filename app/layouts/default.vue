@@ -55,7 +55,7 @@
           <a v-else href="/login/" class="nav-login">
             <span>Login</span>
           </a>
-          <NuxtLink to="/wish" class="nav-start-planning">Start Your Wish</NuxtLink>
+          <NuxtLink :to="startWishPath" class="nav-start-planning">Start Your Wish</NuxtLink>
 
           <!-- Mobile Nav Toggle Button -->
           <button
@@ -147,7 +147,7 @@
             </a>
           </div>
 
-          <NuxtLink to="/wish" class="mobile-start-planning-btn" @click="mobileMenuOpen = false">
+          <NuxtLink :to="startWishPath" class="mobile-start-planning-btn" @click="mobileMenuOpen = false">
             Start Your Wish
           </NuxtLink>
         </div>
@@ -263,6 +263,9 @@ const activeSection = ref('hero')
 // Keep the first client render identical to SSR; sync scroll state after mount.
 const isScrolled = ref(false)
 const { token: memberToken, member, loadMember, clearSession, logout: logoutMember } = useMemberAuth()
+const startWishPath = computed(() => memberToken.value
+  ? '/wish/create'
+  : `/login/?redirect=${encodeURIComponent('/wish/create')}`)
 const accountOpen = ref(false)
 const accountMenu = ref(null)
 const avatarFailed = ref(false)
