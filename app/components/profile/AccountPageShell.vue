@@ -14,16 +14,17 @@
         </div>
         <div class="heading-actions">
           <slot name="actions" />
-          <button class="mobile-menu-button" type="button" @click="showSidebar = true">
+          <button v-if="showNavigation" class="mobile-menu-button" type="button" @click="showSidebar = true">
             <font-awesome-icon :icon="['fas', 'bars']" />
             <span>Account menu</span>
           </button>
         </div>
       </header>
 
-      <div class="account-layout">
-        <div v-if="showSidebar" class="sidebar-overlay" @click="showSidebar = false" />
+      <div class="account-layout" :class="{ 'without-navigation': !showNavigation }">
+        <div v-if="showNavigation && showSidebar" class="sidebar-overlay" @click="showSidebar = false" />
         <ProfileSidebar
+          v-if="showNavigation"
           :active-tab="activePage"
           :show="showSidebar"
           :display-name="displayName"
@@ -43,13 +44,18 @@
 <script setup lang="ts">
 import ProfileSidebar from './ProfileSidebar.vue'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   activePage: string
   kicker: string
   title: string
   description: string
   ready: boolean
-}>()
+  showNavigation?: boolean
+}>(), {
+  showNavigation: true,
+})
+
+const { showNavigation } = toRefs(props)
 
 const auth = useMemberAuth()
 const showSidebar = ref(false)
@@ -75,6 +81,7 @@ const openProfileSection = (section: string) => {
 .heading-actions { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
 .mobile-menu-button { min-height: 44px; display: none; align-items: center; gap: 9px; padding: 0 15px; border: 1px solid #cad3ce; background: #fff; color: #174d40; font: 700 13px/1 'Inter', sans-serif; cursor: pointer; }
 .account-layout { display: flex; align-items: flex-start; gap: 52px; }
+.account-layout.without-navigation { display: block; }
 .account-workspace { min-width: 0; flex: 1; }
 .account-loading { min-height: 55vh; display: flex; align-items: center; justify-content: center; gap: 12px; color: #65746e; font-size: 14px; }
 .loading-mark { width: 18px; height: 18px; border: 2px solid #ccd5d0; border-top-color: #174d40; border-radius: 50%; animation: spin 700ms linear infinite; }

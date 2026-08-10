@@ -1,5 +1,5 @@
 <template>
-  <AccountPageShell active-page="orders" kicker="Secure checkout" title="Pay for your journey" description="Choose a payment method and continue to Oceanpayment's secure hosted checkout." :ready="ready">
+  <AccountPageShell active-page="orders" kicker="Secure checkout" title="Pay for your journey" description="Choose a payment method and continue to Oceanpayment's secure hosted checkout." :ready="true" :show-navigation="false">
     <div v-if="loading" class="payment-state">Loading payment details...</div>
     <div v-else-if="error" class="payment-state error">{{ error }}</div>
     <form v-else-if="order" class="payment-layout" @submit.prevent="submit">
@@ -44,7 +44,6 @@ import { allCountries } from 'country-region-data'
 import { passportCountryOptions } from '~/utils/countries'
 useNoIndex()
 const route = useRoute()
-const { ready, initializeAccount } = useAccountPage(`/orders/${String(route.params.orderNo)}/pay`)
 const commerce = useTourCommerce()
 const auth = useMemberAuth()
 const order = ref<OrderView>()
@@ -75,10 +74,12 @@ const submit = async () => {
   finally { submitting.value = false }
 }
 onMounted(async () => {
-  if (!await initializeAccount()) return
   try {
+    if (auth.token.value && !auth.member.value) {
+      try { await auth.loadMember() } catch { auth.clearSession() }
+    }
     const [loadedOrder, loadedChannels] = await Promise.all([commerce.getOrder(String(route.params.orderNo)), commerce.listPaymentChannels()])
-    if (loadedOrder.order.status === 'COMPLETED') { await navigateTo('/trips'); return }
+    if (loadedOrder.order.status === 'COMPLETED') { await navigateTo(auth.token.value ? '/trips' : '/encounters'); return }
     order.value = loadedOrder; channels.value = loadedChannels.filter(item => item.enabled); channel.value = channels.value[0]?.channel
     billing.email = auth.member.value?.email || ''
     const names = (auth.member.value?.nickname || '').trim().split(/\s+/)

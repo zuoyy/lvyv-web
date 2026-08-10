@@ -7,7 +7,7 @@
     :ready="ready"
   >
     <template #actions>
-      <button class="primary-action" type="button" @click="showCreateDialog = true">
+      <button class="primary-action" type="button" @click="startNewWish">
         <font-awesome-icon :icon="['fas', 'plus']" /> New wish
       </button>
     </template>
@@ -37,7 +37,7 @@
       <div class="empty-symbol"><font-awesome-icon :icon="['fas', 'heart']" /></div>
       <strong>{{ statusFilter ? 'No wishes match this status' : 'Your first wish starts here' }}</strong>
       <span>{{ statusFilter ? 'Choose another status to see more.' : 'Tell us what you hope to experience and we will shape it into a journey.' }}</span>
-      <button v-if="!statusFilter" class="primary-action" type="button" @click="showCreateDialog = true">Create a wish</button>
+      <button v-if="!statusFilter" class="primary-action" type="button" @click="startNewWish">Create a wish</button>
     </div>
 
     <div v-else class="wish-list">
@@ -78,15 +78,16 @@
           <header><div><p>New journey</p><h2 id="new-wish-title">Make a wish</h2></div><button type="button" aria-label="Close" @click="closeCreateDialog">×</button></header>
           <form @submit.prevent="submitWish">
             <div class="form-grid">
-              <label class="field"><span>Destination</span><select v-model="wishForm.cityCode" :disabled="cityLoading || !!cityError" required><option v-for="city in cities" :key="city.code" :value="city.code">{{ city.label }}</option></select></label>
+              <label class="field"><span>Destination</span><select v-model="wishForm.cityCode" :disabled="cityLoading || !!cityError" required @change="loadQuickConfig(wishForm.cityCode)"><option v-for="city in cities" :key="city.code" :value="city.code">{{ city.label }}</option></select></label>
               <label class="field"><span>Trip length</span><input v-model.number="wishForm.tripDays" type="number" min="1" max="30" required></label>
               <label class="field"><span>Start date <em>Optional</em></span><input v-model="wishForm.startDate" type="date" :min="earliestStartDate"></label>
-              <label class="field"><span>Budget</span><select v-model="wishForm.budgetLevel" required><option value="backpacker">Budget</option><option value="comfort">Comfort</option><option value="premium">Premium</option></select></label>
+              <label class="field"><span>Budget</span><select v-model="wishForm.budgetLevel" :disabled="wishConfigLoading" required><option v-for="option in budgetOptions" :key="option.value" :value="option.value">{{ option.label }}</option></select></label>
             </div>
             <fieldset class="interest-field"><legend>What are you drawn to?</legend><label v-for="interest in interestOptions" :key="interest.value"><input v-model="wishForm.interestCodes" type="checkbox" :value="interest.value"><span>{{ interest.label }}</span></label></fieldset>
+            <label v-if="storyOptions.length" class="field"><span>Story inspiration <em>Optional</em></span><select v-model="storyTemplateCode" @change="applyQuickStory"><option value="">Write my own</option><option v-for="option in storyOptions" :key="option.value" :value="option.value">{{ option.label }}</option></select></label>
             <label class="field"><span>Your wish</span><textarea v-model="wishForm.story" rows="5" maxlength="1000" required placeholder="I wish to..."></textarea><small>{{ wishForm.story.length }}/1000</small></label>
             <label class="field"><span>Anything else? <em>Optional</em></span><textarea v-model="wishForm.specialRequirement" rows="3" maxlength="500" placeholder="Accessibility, dietary or pacing preferences"></textarea></label>
-            <p v-if="cityError" class="submit-error" role="alert">{{ cityError }}</p>
+            <p v-if="cityError || wishConfigError" class="submit-error" role="alert">{{ cityError || wishConfigError }}</p>
             <p v-if="submitError" class="submit-error" role="alert">{{ submitError }}</p>
             <div class="modal-actions"><button type="button" class="secondary-button" @click="closeCreateDialog">Cancel</button><button type="submit" class="primary-action" :disabled="submitting || cityLoading || !!cityError || !wishForm.cityCode">{{ submitting ? 'Submitting' : 'Submit wish' }}</button></div>
           </form>
@@ -125,6 +126,7 @@ const showCreateDialog = ref(false)
 const submitting = ref(false)
 const submitError = ref('')
 const { cities, loading: cityLoading, error: cityError, load: loadCities } = useTourCities()
+const { loading: wishConfigLoading, error: wishConfigError, load: loadWishConfig } = useWishConfig()
 
 const statusOptions = [
   { value: 'SUBMITTED', label: 'Submitted' }, { value: 'ITINERARY_PLANNING', label: 'Itinerary planning' },
@@ -132,14 +134,37 @@ const statusOptions = [
   { value: 'REVISION_REQUESTED', label: 'Revision requested' }, { value: 'REVISING', label: 'Revision in progress' },
   { value: 'DELIVERED', label: 'Completed' }, { value: 'CLOSED', label: 'Closed' }, { value: 'CANCELLED', label: 'Cancelled' },
 ]
-const interestOptions = [
-  { value: 'street_eats', label: 'Street eats' }, { value: 'ancient_stories', label: 'Ancient stories' },
-  { value: 'art_craft', label: 'Arts & crafts' }, { value: 'night_vibes', label: 'Night vibes' },
-  { value: 'nature_hiking', label: 'Nature hiking' }, { value: 'photo_spots', label: 'Photo spots' },
-  { value: 'local_life', label: 'Local life' },
-]
-const blankWishForm = () => ({ cityCode: cities.value[0]?.code || '', tripDays: 3, startDate: '', budgetLevel: 'comfort', interestCodes: [] as string[], story: '', specialRequirement: '' })
+const interestOptions = ref<Array<{ value: string; label: string }>>([])
+const budgetOptions = ref<Array<{ value: string; label: string }>>([])
+const storyOptions = ref<Array<{ value: string; label: string; story: string }>>([])
+const storyTemplateCode = ref('')
+const blankWishForm = () => ({ cityCode: cities.value[0]?.code || '', tripDays: 3, startDate: '', budgetLevel: '', interestCodes: [] as string[], story: '', specialRequirement: '' })
 const wishForm = reactive(blankWishForm())
+const loadQuickConfig = async (cityCode: string) => {
+  if (!cityCode) return
+  try {
+    const cityConfig = await loadWishConfig(cityCode, true)
+    interestOptions.value = cityConfig.interests.map(item => ({ value: item.code, label: item.label }))
+    budgetOptions.value = cityConfig.budgets.map(item => ({ value: item.code, label: item.label }))
+    storyOptions.value = cityConfig.storyTemplates.map(item => ({ value: item.code, label: item.title, story: item.story }))
+    wishForm.interestCodes = cityConfig.interests.filter(item => item.defaultSelected).map(item => item.code)
+    wishForm.budgetLevel = cityConfig.budgets.find(item => item.defaultSelected)?.code || cityConfig.budgets[0]?.code || ''
+    const defaultStory = cityConfig.storyTemplates.find(item => item.defaultSelected) || cityConfig.storyTemplates[0]
+    storyTemplateCode.value = defaultStory?.code || ''
+    wishForm.story = defaultStory?.story || ''
+  }
+  catch {
+    interestOptions.value = []
+    budgetOptions.value = []
+    storyOptions.value = []
+    wishForm.interestCodes = []
+    wishForm.budgetLevel = ''
+  }
+}
+const applyQuickStory = () => {
+  const selected = storyOptions.value.find(item => item.value === storyTemplateCode.value)
+  if (selected) wishForm.story = selected.story
+}
 const dateAfter = (days: number) => {
   const date = new Date()
   date.setDate(date.getDate() + days)
@@ -186,6 +211,7 @@ const statusClass = (status: string) => status === 'DELIVERED' ? 'success'
 const wishActionLabel = (status: string) => status === 'WAITING_CONFIRMATION' ? 'Review itinerary and offer'
   : status === 'WAITING_PAYMENT' ? 'View payment order' : 'View itinerary'
 const closeCreateDialog = () => { showCreateDialog.value = false; submitError.value = ''; Object.assign(wishForm, blankWishForm()) }
+const startNewWish = () => navigateTo('/wish/create')
 
 const submitWish = async () => {
   submitError.value = ''
@@ -213,6 +239,7 @@ onMounted(async () => {
   if (!await initializeAccount()) return
   await loadCities(true).catch(() => undefined)
   if (!wishForm.cityCode) wishForm.cityCode = cities.value[0]?.code || ''
+  if (wishForm.cityCode) await loadQuickConfig(wishForm.cityCode)
   if (route.query.create === '1') showCreateDialog.value = true
   await fetchWishes()
 })

@@ -3,7 +3,7 @@ const ORIGIN = 'https://www.lvyv.com'
 const STATIC_URLS = [
   { path: '/', priority: '1.0' },
   { path: '/about', priority: '0.8' },
-  { path: '/stories', priority: '0.7' },
+  { path: '/encounters', priority: '0.7' },
   { path: '/cities/xian', priority: '0.7' },
   { path: '/cities/chengdu', priority: '0.7' }
 ]

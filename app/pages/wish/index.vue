@@ -23,7 +23,7 @@
         <span class="wish-landing__countdown-value">{{ countdownParts.seconds }}</span>
       </div>
 
-      <NuxtLink to="/wish/my?create=1" class="wish-landing__cta">
+      <NuxtLink to="/wish/create" class="wish-landing__cta">
         <span>Start Your Wish</span>
         <img src="/images/wish/arrow-right.svg" alt="" aria-hidden="true">
       </NuxtLink>

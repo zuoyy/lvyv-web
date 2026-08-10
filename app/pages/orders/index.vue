@@ -24,7 +24,7 @@
 
     <div v-if="loading" class="orders-state">Loading orders...</div>
     <div v-else-if="error" class="orders-state error">{{ error }} <button type="button" @click="load">Try again</button></div>
-    <div v-else-if="!orders.length" class="orders-state">No orders yet. <NuxtLink to="/catalog">Browse journeys</NuxtLink></div>
+    <div v-else-if="!orders.length" class="orders-state">No orders yet. <NuxtLink to="/encounters">Browse encounters</NuxtLink></div>
     <div v-else class="order-list">
       <article v-for="order in orders" :key="order.order.id" class="order-row">
         <div>

@@ -14,6 +14,7 @@
         <nav class="nav-links">
           <NuxtLink to="/#hero" :class="{ active: $route && $route.path === '/' && activeSection === 'hero' }">Home</NuxtLink>
           <NuxtLink to="/wish" :class="{ active: $route && $route.path === '/wish' }">Wish</NuxtLink>
+          <NuxtLink to="/encounters" :class="{ active: $route && $route.path === '/encounters' }">Encounters</NuxtLink>
           <div class="nav-item-dropdown">
             <a href="javascript:void(0)" @click.prevent :class="{ active: $route && $route.path.startsWith('/cities') }">Cities</a>
             <div class="dropdown-menu">
@@ -27,7 +28,6 @@
               </NuxtLink>
             </div>
           </div>
-          <NuxtLink to="/stories" :class="{ active: $route && $route.path === '/stories' }">Stories</NuxtLink>
           <NuxtLink to="/about" :class="{ active: $route && $route.path === '/about' }">About</NuxtLink>
           <NuxtLink to="/en/faq/" :class="{ active: $route && $route.path.includes('/faq') }">FAQ</NuxtLink>
         </nav>
@@ -100,6 +100,7 @@
           <nav class="mobile-nav-links">
             <NuxtLink to="/#hero" class="mobile-nav-item" :class="{ active: $route && $route.path === '/' && activeSection === 'hero' }" @click="handleNavClick('/#hero')">Home</NuxtLink>
             <NuxtLink to="/wish" class="mobile-nav-item" :class="{ active: $route && $route.path === '/wish' }" @click="handleNavClick('/wish')">Wish</NuxtLink>
+            <NuxtLink to="/encounters" class="mobile-nav-item" :class="{ active: $route && $route.path === '/encounters' }" @click="handleNavClick('/encounters')">Encounters</NuxtLink>
 
             <!-- Submenu: Cities -->
             <div class="mobile-nav-item-accordion">
@@ -121,7 +122,6 @@
               </Transition>
             </div>
 
-            <NuxtLink to="/stories" class="mobile-nav-item" :class="{ active: $route && $route.path === '/stories' }" @click="handleNavClick('/stories')">Stories</NuxtLink>
             <NuxtLink to="/about" class="mobile-nav-item" :class="{ active: $route && $route.path === '/about' }" @click="handleNavClick('/about')">About</NuxtLink>
             <NuxtLink to="/en/faq/" class="mobile-nav-item" :class="{ active: $route && $route.path.includes('/faq') }" @click="handleNavClick('/en/faq/')">FAQ</NuxtLink>
           </nav>
@@ -158,7 +158,7 @@
     <slot />
 
     <!-- Footer -->
-    <footer v-if="!isWishLanding" class="footer">
+    <footer v-if="!hidesFooter" class="footer">
       <div class="container footer-grid">
         <div class="footer-brand-info">
           <img src="/images/common/logo-footer.svg" alt="Lvyv Logo" class="footer-logo">
@@ -208,7 +208,7 @@
         <div class="footer-links-column">
           <h4>Community</h4>
           <ul>
-            <li><NuxtLink to="#">Stories</NuxtLink></li>
+            <li><NuxtLink to="/encounters">Encounters</NuxtLink></li>
             <li><NuxtLink to="/#wish-pool">Wish Pool</NuxtLink></li>
             <li><NuxtLink to="#">Mission</NuxtLink></li>
           </ul>
@@ -258,6 +258,7 @@ import businessLicenseIconUrl from '~/assets/generated/common/yyzz-48.png'
 
 const route = useRoute()
 const isWishLanding = computed(() => route.path === '/wish')
+const hidesFooter = computed(() => isWishLanding.value || route.path === '/wish/create')
 const activeSection = ref('hero')
 // Keep the first client render identical to SSR; sync scroll state after mount.
 const isScrolled = ref(false)

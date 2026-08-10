@@ -25,8 +25,6 @@
           >
         </picture>
       </div>
-      <div class="hero-v2__shade" />
-
       <div class="hero-v2__content">
         <h1 id="home-title" class="sr-only">Go, meet someone.</h1>
         <img
@@ -43,7 +41,7 @@
             <span>Start Your Journey</span>
             <img src="/images/common/arrow-right.svg" alt="" aria-hidden="true">
           </NuxtLink>
-          <NuxtLink to="/stories" class="home-button home-button--outline">
+          <NuxtLink to="/encounters" class="home-button home-button--outline">
             <span>Watch Stories</span>
             <img src="/images/common/arrow-right-contained.svg" alt="" aria-hidden="true">
           </NuxtLink>
@@ -241,7 +239,7 @@
         </header>
 
         <div class="story-grid">
-          <NuxtLink v-for="story in stories" :key="story.title" to="/stories" class="story-card">
+          <NuxtLink v-for="story in stories" :key="story.title" to="/encounters" class="story-card">
             <img :src="story.image" :alt="story.alt" width="1000" height="1000" loading="lazy" decoding="async">
             <div class="story-card__shade" />
             <span class="story-card__play" aria-hidden="true">
@@ -259,7 +257,7 @@
         </div>
 
         <div class="stories-section__more">
-          <NuxtLink to="/stories" class="see-more-button">
+          <NuxtLink to="/encounters" class="see-more-button">
             <span>See more</span>
             <span class="see-more-button__icon" aria-hidden="true">
               <font-awesome-icon :icon="['fas', 'chevron-right']" />
@@ -711,12 +709,6 @@ onUnmounted(() => {
 .hero-v2__slide img {
   object-fit: cover;
   object-position: center top;
-}
-
-.hero-v2__shade {
-  position: absolute;
-  inset: 80px 0 0;
-  background: rgba(0, 0, 0, .4);
 }
 
 .hero-v2__content {
@@ -1774,11 +1766,6 @@ onUnmounted(() => {
 
   .hero-v2 {
     height: 100svh;
-  }
-
-  .hero-v2__shade {
-    inset: 64px 0 0;
-    background: rgba(0, 0, 0, .4);
   }
 
   .hero-v2__content {

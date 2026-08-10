@@ -39,12 +39,6 @@
             <span>My Trips</span>
           </NuxtLink>
         </li>
-        <li :class="{ active: activeTab === 'catalog' }">
-          <NuxtLink to="/catalog" class="nav-link" @click="emit('close')">
-            <font-awesome-icon :icon="['fas', 'compass']" class="nav-icon" />
-            <span>Journey Catalog</span>
-          </NuxtLink>
-        </li>
         <li :class="{ active: activeTab === 'orders' }">
           <NuxtLink to="/orders" class="nav-link" @click="emit('close')">
             <font-awesome-icon :icon="['fas', 'credit-card']" class="nav-icon" />

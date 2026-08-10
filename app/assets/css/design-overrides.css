@@ -65,19 +65,19 @@ a {
 
   .navbar {
     height: 80px;
-    background: transparent;
+    background: rgba(255, 255, 255, 0.6);
     border: 0;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
     transition: background-color 80ms linear, border-color 80ms linear, box-shadow 120ms ease;
   }
 
   .navbar.scrolled {
-    background: #FFFFFF !important; /* Pure white background on scroll */
-    border-bottom: 1px solid rgba(21, 75, 63, 0.08) !important; /* Slight forest green line */
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02); /* Very soft drop shadow */
-    backdrop-filter: blur(15px) !important;
-    -webkit-backdrop-filter: blur(15px) !important;
+    background: rgba(255, 255, 255, 0.6) !important;
+    border-bottom: 0 !important;
+    box-shadow: none;
+    backdrop-filter: blur(5px) !important;
+    -webkit-backdrop-filter: blur(5px) !important;
   }
 
   .nav-container {
@@ -102,15 +102,15 @@ a {
     margin-left: 75px;
     margin-right: auto;
     display: flex;
-    gap: 36px;
+    gap: 52px;
   }
 
   .nav-links a {
-    padding: 0 0 6px 0;
-    color: rgba(32, 61, 51, 0.65);
+    padding: 0;
+    color: #203d33;
     font-family: Inter, sans-serif;
     font-size: 15px;
-    font-weight: 500;
+    font-weight: 400;
     line-height: 21px;
     position: relative;
     transition: color 0.25s ease;
@@ -122,23 +122,7 @@ a {
   }
 
   .nav-links a::after {
-    display: block !important;
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%) scaleX(0);
-    width: 16px;
-    height: 3.5px;
-    background-color: var(--color-lime);
-    border-radius: 2px;
-    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    transform-origin: center;
-  }
-
-  .nav-links a:hover::after,
-  .nav-links a.active::after {
-    transform: translateX(-50%) scaleX(1);
+    display: none !important;
   }
 
   .nav-actions {
@@ -146,6 +130,13 @@ a {
     height: 48px;
     margin-left: auto;
     gap: 16px;
+  }
+
+  .nav-start-planning {
+    height: 44px;
+    min-height: 44px;
+    align-items: center;
+    padding: 0 23px;
   }
 
   .lang-selector {
@@ -1253,16 +1244,18 @@ a {
 
   .navbar {
     height: 72px;
-    background: transparent;
+    background: rgba(255, 255, 255, 0.6);
     border-bottom: 0;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
   }
 
   .navbar.scrolled {
-    background: #fff;
-    border-bottom: 1px solid rgba(21, 75, 63, 0.08);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+    background: rgba(255, 255, 255, 0.6);
+    border-bottom: 0;
+    box-shadow: none;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
   }
 
   .nav-container {

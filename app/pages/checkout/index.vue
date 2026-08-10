@@ -1,19 +1,19 @@
 <template>
-  <AccountPageShell active-page="catalog" kicker="Checkout" title="Confirm your journey" description="Review the server-calculated price and apply one available coupon before creating your order." :ready="ready">
+  <AccountPageShell active-page="orders" kicker="Checkout" title="Confirm your journey" description="Review the server-calculated price before creating your order." :ready="true" :show-navigation="false">
     <div v-if="loading" class="checkout-state">Loading checkout...</div>
     <div v-else-if="error" class="checkout-state error">{{ error }} <button type="button" @click="load">Try again</button></div>
     <section v-else class="checkout-layout">
       <div class="checkout-panel">
         <label>People<input v-model.number="quantity" type="number" min="1" step="1" @change="refreshQuote"></label>
         <label>Departure date<input v-model="startDate" type="date" :min="earliestStartDate" required @change="refreshQuote"></label>
-        <label>Coupon
+        <label v-if="isLoggedIn">Coupon
           <select v-model="selectedCouponId" @change="refreshQuote">
             <option :value="undefined">No coupon</option>
             <option v-for="coupon in coupons" :key="coupon.coupon.id" :value="coupon.coupon.id">{{ coupon.template.name }} · {{ couponLabel(coupon) }}</option>
           </select>
         </label>
-        <div class="redeem-row"><input v-model="redeemCode" placeholder="Redeem code"><button type="button" @click="redeem">Redeem</button></div>
-        <p v-if="redeemMessage" class="feedback">{{ redeemMessage }}</p>
+        <div v-if="isLoggedIn" class="redeem-row"><input v-model="redeemCode" placeholder="Redeem code"><button type="button" @click="redeem">Redeem</button></div>
+        <p v-if="isLoggedIn && redeemMessage" class="feedback">{{ redeemMessage }}</p>
       </div>
       <aside v-if="quote" class="checkout-summary">
         <div><span>Original subtotal</span><strong>USD {{ quote.listSubtotal }}</strong></div>
@@ -33,7 +33,8 @@ import type { MemberCouponView, OrderPricingQuote } from '~/composables/useTourC
 useNoIndex()
 const route = useRoute()
 const commerce = useTourCommerce()
-const { ready, initializeAccount } = useAccountPage('/checkout')
+const auth = useMemberAuth()
+const isLoggedIn = computed(() => Boolean(auth.token.value))
 const productCode = computed(() => String(route.query.product || ''))
 const quantity = ref(1)
 const dateAfter = (days: number) => {
@@ -68,7 +69,12 @@ const refreshQuote = async () => {
 }
 const load = async () => {
   loading.value = true
-  try { coupons.value = await commerce.listCoupons(); await refreshQuote() } finally { loading.value = false }
+  try {
+    if (isLoggedIn.value) coupons.value = await commerce.listCoupons()
+    await refreshQuote()
+  } catch (caught) {
+    error.value = caught instanceof Error ? caught.message : 'Could not load checkout.'
+  } finally { loading.value = false }
 }
 const redeem = async () => {
   if (!redeemCode.value.trim()) return
@@ -87,11 +93,11 @@ const submit = async () => {
   try {
     const order = await commerce.createStandardOrder(productCode.value, Math.max(1, quantity.value), startDate.value, selectedCouponId.value)
     await navigateTo(order.order.status === 'COMPLETED'
-      ? '/trips'
+      ? (isLoggedIn.value ? '/trips' : '/encounters')
       : `/orders/${encodeURIComponent(order.order.orderNo)}/pay`)
   } catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not create the order.' } finally { submitting.value = false }
 }
-onMounted(async () => { if (await initializeAccount()) await load() })
+onMounted(load)
 </script>
 
 <style scoped>
