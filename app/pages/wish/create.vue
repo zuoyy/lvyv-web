@@ -414,14 +414,20 @@ const travelDateLabel = computed(() => {
     : 'Choose an end date'
   return `${start}  →  ${end}`
 })
-const reviewTravelDate = computed(() => form.startDate
-  ? new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' }).format(parseDateKey(form.startDate))
-  : 'Not Decided Yet')
+const reviewTravelDate = computed(() => {
+  if (!form.startDate || !form.endDate) return 'Not Decided Yet'
+  const formatter = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' })
+  return `${formatter.format(parseDateKey(form.startDate))} - ${formatter.format(parseDateKey(form.endDate))}`
+})
 
 const canContinue = computed(() => {
   if (configLoading.value || configError.value) return false
   if (currentStep.value === 0) return Boolean(form.cityCode && interestOptions.value.length && budgetOptions.value.length && journeyOptions.value.length)
-  if (currentStep.value === 1) return form.tripDays >= 1
+  if (currentStep.value === 1) {
+    const hasStartDate = Boolean(form.startDate)
+    const hasEndDate = Boolean(form.endDate)
+    return form.tripDays >= 1 && hasStartDate === hasEndDate
+  }
   if (currentStep.value === 2) return form.interestCodes.length > 0
   if (currentStep.value === 3) return Boolean(form.budgetLevel)
   if (currentStep.value === 4) return form.story.trim().length > 0
@@ -573,6 +579,7 @@ const submitWish = async () => {
       cityCode: form.cityCode,
       tripDays: form.tripDays,
       startDate: form.startDate || null,
+      endDate: form.endDate || null,
       interestCodes: [...form.interestCodes],
       budgetLevel: form.budgetLevel,
       story: form.story.trim(),

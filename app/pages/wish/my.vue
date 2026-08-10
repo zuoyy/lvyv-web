@@ -54,7 +54,7 @@
           </div>
         </div>
         <div class="wish-meta">
-          <div><font-awesome-icon :icon="['fas', 'calendar-days']" /><span>{{ wish.startDate ? formatDate(wish.startDate) : 'Flexible dates' }}</span></div>
+          <div><font-awesome-icon :icon="['fas', 'calendar-days']" /><span>{{ formatTravelDates(wish.startDate, wish.endDate) }}</span></div>
           <div><font-awesome-icon :icon="['fas', 'route']" /><span>{{ wish.tripDays }} {{ wish.tripDays === 1 ? 'day' : 'days' }}</span></div>
           <div><font-awesome-icon :icon="['fas', 'gift']" /><span>{{ wish.budgetLevelLabel }}</span></div>
         </div>
@@ -79,8 +79,9 @@
           <form @submit.prevent="submitWish">
             <div class="form-grid">
               <label class="field"><span>Destination</span><select v-model="wishForm.cityCode" :disabled="cityLoading || !!cityError" required @change="loadQuickConfig(wishForm.cityCode)"><option v-for="city in cities" :key="city.code" :value="city.code">{{ city.label }}</option></select></label>
-              <label class="field"><span>Trip length</span><input v-model.number="wishForm.tripDays" type="number" min="1" max="30" required></label>
-              <label class="field"><span>Start date <em>Optional</em></span><input v-model="wishForm.startDate" type="date" :min="earliestStartDate"></label>
+              <label class="field"><span>Trip length</span><input v-model.number="wishForm.tripDays" type="number" min="1" max="30" :disabled="!!wishForm.startDate && !!wishForm.endDate" required></label>
+              <label class="field"><span>Start date <em>Optional</em></span><input v-model="wishForm.startDate" type="date" :min="earliestStartDate" :required="!!wishForm.endDate"></label>
+              <label class="field"><span>End date <em>Optional</em></span><input v-model="wishForm.endDate" type="date" :min="wishForm.startDate || earliestStartDate" :required="!!wishForm.startDate"></label>
               <label class="field"><span>Budget</span><select v-model="wishForm.budgetLevel" :disabled="wishConfigLoading" required><option v-for="option in budgetOptions" :key="option.value" :value="option.value">{{ option.label }}</option></select></label>
             </div>
             <fieldset class="interest-field"><legend>What are you drawn to?</legend><label v-for="interest in interestOptions" :key="interest.value"><input v-model="wishForm.interestCodes" type="checkbox" :value="interest.value"><span>{{ interest.label }}</span></label></fieldset>
@@ -104,7 +105,7 @@ useNoIndex()
 
 interface EnumLabel { code: string; messageKey: string; label: string }
 interface WishItem {
-  id: number; wishNo: string; cityCode: string; cityLabel: string; tripDays: number; startDate?: string
+  id: number; wishNo: string; cityCode: string; cityLabel: string; tripDays: number; startDate?: string; endDate?: string
   interests: EnumLabel[]; budgetLevelLabel: string; story: string; status: string; statusLabel: string
   designerNickname?: string; createTime: string; hasItinerary: boolean; itineraryNo?: string
 }
@@ -138,7 +139,7 @@ const interestOptions = ref<Array<{ value: string; label: string }>>([])
 const budgetOptions = ref<Array<{ value: string; label: string }>>([])
 const storyOptions = ref<Array<{ value: string; label: string; story: string }>>([])
 const storyTemplateCode = ref('')
-const blankWishForm = () => ({ cityCode: cities.value[0]?.code || '', tripDays: 3, startDate: '', budgetLevel: '', interestCodes: [] as string[], story: '', specialRequirement: '' })
+const blankWishForm = () => ({ cityCode: cities.value[0]?.code || '', tripDays: 3, startDate: '', endDate: '', budgetLevel: '', interestCodes: [] as string[], story: '', specialRequirement: '' })
 const wishForm = reactive(blankWishForm())
 const loadQuickConfig = async (cityCode: string) => {
   if (!cityCode) return
@@ -205,6 +206,12 @@ const fetchWishes = async () => {
 const changeFilter = () => { page.value = 1; fetchWishes() }
 const goPage = (value: number) => { page.value = value; fetchWishes(); window.scrollTo({ top: 0, behavior: 'smooth' }) }
 const formatDate = (value: string) => new Intl.DateTimeFormat('en', { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(value))
+const formatTravelDate = (value: string) => new Intl.DateTimeFormat('en', { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(`${value}T00:00:00`))
+const formatTravelDates = (startDate?: string, endDate?: string) => {
+  if (!startDate) return 'Flexible dates'
+  if (!endDate || endDate === startDate) return formatTravelDate(startDate)
+  return `${formatTravelDate(startDate)} - ${formatTravelDate(endDate)}`
+}
 const statusClass = (status: string) => status === 'DELIVERED' ? 'success'
   : ['CLOSED', 'CANCELLED'].includes(status) ? 'muted'
     : ['REVISION_REQUESTED', 'REVISING'].includes(status) ? 'warning' : 'active'
@@ -221,7 +228,12 @@ const submitWish = async () => {
       baseURL: config.public.apiBase as string,
       method: 'POST',
       headers: headers.value,
-      body: { ...wishForm, startDate: wishForm.startDate || null, imageFileIds: [] },
+      body: {
+        ...wishForm,
+        startDate: wishForm.startDate || null,
+        endDate: wishForm.endDate || null,
+        imageFileIds: [],
+      },
     })
     if (response.code !== 200) throw new Error(response.msg || 'Unable to submit wish')
     closeCreateDialog()
@@ -242,6 +254,21 @@ onMounted(async () => {
   if (wishForm.cityCode) await loadQuickConfig(wishForm.cityCode)
   if (route.query.create === '1') showCreateDialog.value = true
   await fetchWishes()
+})
+
+watch(() => [wishForm.startDate, wishForm.endDate], ([startDate, endDate]) => {
+  if (!startDate && endDate) {
+    wishForm.endDate = ''
+    return
+  }
+  if (!startDate || !endDate) return
+  const start = new Date(`${startDate}T00:00:00`)
+  const end = new Date(`${endDate}T00:00:00`)
+  if (end < start) {
+    wishForm.endDate = ''
+    return
+  }
+  wishForm.tripDays = Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1
 })
 </script>
 
