@@ -73,9 +73,8 @@
               </div>
             </details>
 
-            <p v-if="searching" class="empty-search">{{ copy.searching }}</p>
-            <p v-else-if="searchQuery.trim() && filteredCategories.length === 0" class="empty-search">
-              {{ searchFailed ? copy.searchFailed : copy.noResults }}
+            <p v-if="searchQuery.trim() && filteredCategories.length === 0" class="empty-search">
+              {{ copy.noResults }}
             </p>
           </nav>
 
@@ -128,7 +127,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ContentManifestItem, ContentSearchItem, ContentTranslation, NavigationItem } from '~/composables/useContent'
+import type { ContentManifestItem, ContentTranslation, NavigationItem } from '~/composables/useContent'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import {
   faArrowUpRightFromSquare,
@@ -158,9 +157,7 @@ const copy = computed(() => props.locale === 'zh-CN' ? {
   documentation: '文档',
   updated: '最后更新：',
   readTime: (minutes: number) => `阅读时间约 ${minutes} 分钟`,
-  searching: '正在搜索…',
   noResults: '没有找到相关文档',
-  searchFailed: '搜索暂时不可用，请稍后重试',
   needHelp: '还需要帮助？',
   contactSupport: '联系 Lvyv 支持',
   wasHelpful: '这篇文档对你有帮助吗？',
@@ -180,9 +177,7 @@ const copy = computed(() => props.locale === 'zh-CN' ? {
   documentation: 'Documentation',
   updated: 'Last updated: ',
   readTime: (minutes: number) => `${minutes} min read`,
-  searching: 'Searching…',
   noResults: 'No matching documents',
-  searchFailed: 'Search is temporarily unavailable. Please try again later.',
   needHelp: 'Still need help?',
   contactSupport: 'Contact Lvyv Support',
   wasHelpful: 'Was this article helpful?',
@@ -193,12 +188,8 @@ const copy = computed(() => props.locale === 'zh-CN' ? {
   uncategorized: 'Other documents'
 })
 
-const { search } = useContentApi()
 const searchInput = ref<HTMLInputElement>()
 const searchQuery = ref('')
-const searchResults = ref<ContentSearchItem[]>([])
-const searching = ref(false)
-const searchFailed = ref(false)
 const mobileNavOpen = ref(false)
 const currentManifestItem = computed(() => props.manifest.find(item => item.contentKey === props.document.contentKey))
 const currentCategoryId = computed(() => currentManifestItem.value?.navigationNodeId)
@@ -218,10 +209,13 @@ const categories = computed(() => {
 })
 
 const filteredCategories = computed(() => {
-  if (!searchQuery.value.trim()) return categories.value
-  const matchedKeys = new Set(searchResults.value.map(item => item.contentKey))
+  const term = normalizeSearchText(searchQuery.value)
+  if (!term) return categories.value
   return categories.value
-    .map(category => ({ ...category, articles: category.articles.filter(article => matchedKeys.has(article.contentKey)) }))
+    .map(category => ({
+      ...category,
+      articles: category.articles.filter(article => normalizeSearchText(article.title).includes(term))
+    }))
     .filter(category => category.articles.length > 0)
 })
 
@@ -248,28 +242,17 @@ const syncCategoryExpansion = (categoryId: number, event: Event) => {
   expandedCategories.value = next
 }
 
-let searchTimer: ReturnType<typeof setTimeout> | undefined
+const normalizeSearchText = (value: string) => value
+  .trim()
+  .normalize('NFKC')
+  .toLocaleLowerCase(props.locale)
+
 watch(searchQuery, (value) => {
-  if (searchTimer) clearTimeout(searchTimer)
-  searchFailed.value = false
   if (!value.trim()) {
-    searchResults.value = []
-    searching.value = false
     expandedCategories.value = new Set(currentCategoryId.value === undefined ? [] : [currentCategoryId.value])
     return
   }
-  searching.value = true
-  searchTimer = setTimeout(async () => {
-    try {
-      searchResults.value = await search(props.locale, value.trim())
-      expandedCategories.value = new Set(categories.value.map(category => category.id))
-    } catch {
-      searchResults.value = []
-      searchFailed.value = true
-    } finally {
-      searching.value = false
-    }
-  }, 250)
+  expandedCategories.value = new Set(categories.value.map(category => category.id))
 })
 
 watch(currentCategoryId, (value) => {
@@ -284,10 +267,7 @@ const handleShortcut = (event: KeyboardEvent) => {
 }
 
 onMounted(() => window.addEventListener('keydown', handleShortcut))
-onBeforeUnmount(() => {
-  window.removeEventListener('keydown', handleShortcut)
-  if (searchTimer) clearTimeout(searchTimer)
-})
+onBeforeUnmount(() => window.removeEventListener('keydown', handleShortcut))
 </script>
 
 <style scoped>

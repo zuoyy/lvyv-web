@@ -33,35 +33,6 @@
       </div>
     </section>
 
-    <section class="city-chengdu__missions" aria-labelledby="missions-title">
-      <div class="city-chengdu__shell">
-        <header class="city-chengdu__missions-heading">
-          <div>
-            <h2 id="missions-title">CITY MISSIONS</h2>
-            <p>Turn the city into your playground</p>
-          </div>
-          <NuxtLink to="/wish" class="city-chengdu__missions-link">
-            <span>Explore All Missions</span>
-            <span class="city-chengdu__missions-link-icon" aria-hidden="true">&#8250;</span>
-          </NuxtLink>
-        </header>
-        <div class="city-chengdu__mission-board">
-          <NuxtLink
-            v-for="mission in missions"
-            :key="mission.title"
-            to="/wish"
-            class="city-chengdu__mission-pill"
-            :style="{ '--mission-left': mission.left, '--mission-top': mission.top, '--mission-width': mission.width }"
-          >
-            <span class="city-chengdu__mission-avatars" aria-hidden="true">
-              <img v-for="index in mission.avatars" :key="index" src="/images/common/star-filled.svg" alt="">
-            </span>
-            <span>{{ mission.title }}</span>
-          </NuxtLink>
-        </div>
-      </div>
-    </section>
-
     <section class="city-chengdu__cta" aria-labelledby="cta-title">
       <img class="city-chengdu__skyline" src="/images/cities/chengdu/skyline.webp" alt="" aria-hidden="true">
       <div class="city-chengdu__cta-word" aria-hidden="true">CHENG'DU</div>

@@ -31,37 +31,6 @@
       </div>
     </section>
 
-    <section class="city-xian__missions" aria-labelledby="missions-title">
-      <div class="city-xian__shell">
-        <header class="city-xian__missions-heading">
-          <div>
-            <h2 id="missions-title">CITY MISSIONS</h2>
-            <p>Turn the city into your playground</p>
-          </div>
-          <NuxtLink to="/wish" class="city-xian__missions-link">
-            <span>Explore All Missions</span>
-            <span class="city-xian__missions-link-icon" aria-hidden="true">&#8250;</span>
-          </NuxtLink>
-        </header>
-        <div class="city-xian__mission-grid">
-          <article v-for="mission in missions" :key="mission.title" class="city-xian__mission-card">
-            <div class="city-xian__mission-copy">
-              <img class="city-xian__mission-icon" :src="mission.icon" alt="" aria-hidden="true">
-              <h3>{{ mission.title }}</h3>
-              <p>{{ mission.description }}</p>
-              <NuxtLink to="/wish" class="city-xian__mission-more">
-                <span>SEE MORE</span>
-                <span aria-hidden="true">&#8594;</span>
-              </NuxtLink>
-            </div>
-            <div class="city-xian__mission-art">
-              <img :src="mission.image" :alt="mission.title">
-            </div>
-          </article>
-        </div>
-      </div>
-    </section>
-
     <section class="city-xian__cta" aria-labelledby="cta-title">
       <picture>
         <source type="image/webp" srcset="/images/cities/xian/skyline.webp">
