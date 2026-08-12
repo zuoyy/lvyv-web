@@ -1,7 +1,7 @@
 <template>
   <div class="app-layout" :class="{ 'app-layout--wish': isWishLanding }">
     <!-- Header / Navigation -->
-    <header v-if="!hidesSiteChrome" class="navbar" :class="{ 'scrolled': isScrolled }">
+    <header class="navbar" :class="{ 'scrolled': isScrolled }">
       <div class="nav-container">
         <NuxtLink to="/" class="brand">
           <span class="brand-logo wish-brand-logo" aria-label="Lvyv Logo">
@@ -77,7 +77,7 @@
     <!-- Mobile Drawer Backdrop Overlay -->
     <Transition name="fade">
       <div
-        v-if="mobileMenuOpen && !hidesSiteChrome"
+        v-if="mobileMenuOpen"
         class="mobile-menu-backdrop"
         @click="mobileMenuOpen = false"
         @touchmove.prevent
@@ -86,7 +86,7 @@
 
     <!-- Mobile Navigation Drawer -->
     <Transition name="slide-drawer">
-      <div v-if="mobileMenuOpen && !hidesSiteChrome" class="mobile-menu-drawer">
+      <div v-if="mobileMenuOpen" class="mobile-menu-drawer">
         <div class="mobile-drawer-header">
           <NuxtLink to="/" class="brand" @click="mobileMenuOpen = false">
             <img src="/images/common/logo-header.svg" alt="Lvyv Logo" class="brand-logo">
@@ -158,7 +158,7 @@
     <slot />
 
     <!-- Footer -->
-    <footer v-if="!hidesSiteChrome" class="footer">
+    <footer v-if="!hidesFooter" class="footer">
       <div class="container footer-grid">
         <div class="footer-brand-info">
           <img src="/images/common/logo-footer.svg" alt="Lvyv Logo" class="footer-logo">
@@ -262,7 +262,7 @@ const currentPath = computed(() => {
   return path.length > 1 ? path.replace(/\/+$/, '') : path
 })
 const isWishLanding = computed(() => currentPath.value === '/wish')
-const hidesSiteChrome = computed(() => isWishLanding.value || currentPath.value === '/wish/create')
+const hidesFooter = computed(() => isWishLanding.value || currentPath.value === '/wish/create')
 const activeSection = ref('hero')
 // Keep the first client render identical to SSR; sync scroll state after mount.
 const isScrolled = ref(false)
