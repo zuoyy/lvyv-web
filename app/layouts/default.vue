@@ -1,7 +1,7 @@
 <template>
   <div class="app-layout" :class="{ 'app-layout--wish': isWishLanding }">
     <!-- Header / Navigation -->
-    <header class="navbar" :class="{ 'scrolled': isScrolled }">
+    <header v-if="!hidesSiteChrome" class="navbar" :class="{ 'scrolled': isScrolled }">
       <div class="nav-container">
         <NuxtLink to="/" class="brand">
           <span class="brand-logo wish-brand-logo" aria-label="Lvyv Logo">
@@ -12,24 +12,24 @@
         </NuxtLink>
 
         <nav class="nav-links">
-          <NuxtLink to="/#hero" :class="{ active: $route && $route.path === '/' && activeSection === 'hero' }">Home</NuxtLink>
-          <NuxtLink to="/wish" :class="{ active: $route && $route.path === '/wish' }">Wish</NuxtLink>
-          <NuxtLink to="/encounters" :class="{ active: $route && $route.path === '/encounters' }">Encounters</NuxtLink>
+          <NuxtLink to="/#hero" :class="{ active: currentPath === '/' && activeSection === 'hero' }">Home</NuxtLink>
+          <NuxtLink to="/wish" :class="{ active: currentPath === '/wish' }">Wish</NuxtLink>
+          <NuxtLink to="/encounters" :class="{ active: currentPath === '/encounters' }">Encounters</NuxtLink>
           <div class="nav-item-dropdown">
-            <a href="javascript:void(0)" @click.prevent :class="{ active: $route && $route.path.startsWith('/cities') }">Cities</a>
+            <a href="javascript:void(0)" @click.prevent :class="{ active: currentPath.startsWith('/cities') }">Cities</a>
             <div class="dropdown-menu">
-              <NuxtLink to="/cities/xian" class="dropdown-item" :class="{ active: $route && $route.path === '/cities/xian' }">
+              <NuxtLink to="/cities/xian" class="dropdown-item" :class="{ active: currentPath === '/cities/xian' }">
                 <span class="city-en">Xi'an</span>
                 <span class="city-zh">西安</span>
               </NuxtLink>
-              <NuxtLink to="/cities/chengdu" class="dropdown-item" :class="{ active: $route && $route.path === '/cities/chengdu' }">
+              <NuxtLink to="/cities/chengdu" class="dropdown-item" :class="{ active: currentPath === '/cities/chengdu' }">
                 <span class="city-en">Chengdu</span>
                 <span class="city-zh">成都</span>
               </NuxtLink>
             </div>
           </div>
-          <NuxtLink to="/about" :class="{ active: $route && $route.path === '/about' }">About</NuxtLink>
-          <NuxtLink to="/en/faq/" :class="{ active: $route && $route.path.includes('/faq') }">FAQ</NuxtLink>
+          <NuxtLink to="/about" :class="{ active: currentPath === '/about' }">About</NuxtLink>
+          <NuxtLink to="/en/faq/" :class="{ active: currentPath.includes('/faq') }">FAQ</NuxtLink>
         </nav>
 
         <div class="nav-actions">
@@ -77,7 +77,7 @@
     <!-- Mobile Drawer Backdrop Overlay -->
     <Transition name="fade">
       <div
-        v-if="mobileMenuOpen"
+        v-if="mobileMenuOpen && !hidesSiteChrome"
         class="mobile-menu-backdrop"
         @click="mobileMenuOpen = false"
         @touchmove.prevent
@@ -86,7 +86,7 @@
 
     <!-- Mobile Navigation Drawer -->
     <Transition name="slide-drawer">
-      <div v-if="mobileMenuOpen" class="mobile-menu-drawer">
+      <div v-if="mobileMenuOpen && !hidesSiteChrome" class="mobile-menu-drawer">
         <div class="mobile-drawer-header">
           <NuxtLink to="/" class="brand" @click="mobileMenuOpen = false">
             <img src="/images/common/logo-header.svg" alt="Lvyv Logo" class="brand-logo">
@@ -98,9 +98,9 @@
 
         <div class="mobile-drawer-body">
           <nav class="mobile-nav-links">
-            <NuxtLink to="/#hero" class="mobile-nav-item" :class="{ active: $route && $route.path === '/' && activeSection === 'hero' }" @click="handleNavClick('/#hero')">Home</NuxtLink>
-            <NuxtLink to="/wish" class="mobile-nav-item" :class="{ active: $route && $route.path === '/wish' }" @click="handleNavClick('/wish')">Wish</NuxtLink>
-            <NuxtLink to="/encounters" class="mobile-nav-item" :class="{ active: $route && $route.path === '/encounters' }" @click="handleNavClick('/encounters')">Encounters</NuxtLink>
+            <NuxtLink to="/#hero" class="mobile-nav-item" :class="{ active: currentPath === '/' && activeSection === 'hero' }" @click="handleNavClick('/#hero')">Home</NuxtLink>
+            <NuxtLink to="/wish" class="mobile-nav-item" :class="{ active: currentPath === '/wish' }" @click="handleNavClick('/wish')">Wish</NuxtLink>
+            <NuxtLink to="/encounters" class="mobile-nav-item" :class="{ active: currentPath === '/encounters' }" @click="handleNavClick('/encounters')">Encounters</NuxtLink>
 
             <!-- Submenu: Cities -->
             <div class="mobile-nav-item-accordion">
@@ -110,11 +110,11 @@
               </button>
               <Transition name="accordion">
                 <div v-if="mobileCitiesOpen" class="mobile-accordion-content">
-                  <NuxtLink to="/cities/xian" class="mobile-subnav-item" :class="{ active: $route && $route.path === '/cities/xian' }" @click="handleNavClick('/cities/xian')">
+                  <NuxtLink to="/cities/xian" class="mobile-subnav-item" :class="{ active: currentPath === '/cities/xian' }" @click="handleNavClick('/cities/xian')">
                     <span class="city-en">Xi'an</span>
                     <span class="city-zh">西安</span>
                   </NuxtLink>
-                  <NuxtLink to="/cities/chengdu" class="mobile-subnav-item" :class="{ active: $route && $route.path === '/cities/chengdu' }" @click="handleNavClick('/cities/chengdu')">
+                  <NuxtLink to="/cities/chengdu" class="mobile-subnav-item" :class="{ active: currentPath === '/cities/chengdu' }" @click="handleNavClick('/cities/chengdu')">
                     <span class="city-en">Chengdu</span>
                     <span class="city-zh">成都</span>
                   </NuxtLink>
@@ -122,8 +122,8 @@
               </Transition>
             </div>
 
-            <NuxtLink to="/about" class="mobile-nav-item" :class="{ active: $route && $route.path === '/about' }" @click="handleNavClick('/about')">About</NuxtLink>
-            <NuxtLink to="/en/faq/" class="mobile-nav-item" :class="{ active: $route && $route.path.includes('/faq') }" @click="handleNavClick('/en/faq/')">FAQ</NuxtLink>
+            <NuxtLink to="/about" class="mobile-nav-item" :class="{ active: currentPath === '/about' }" @click="handleNavClick('/about')">About</NuxtLink>
+            <NuxtLink to="/en/faq/" class="mobile-nav-item" :class="{ active: currentPath.includes('/faq') }" @click="handleNavClick('/en/faq/')">FAQ</NuxtLink>
           </nav>
         </div>
 
@@ -158,7 +158,7 @@
     <slot />
 
     <!-- Footer -->
-    <footer v-if="!hidesFooter" class="footer">
+    <footer v-if="!hidesSiteChrome" class="footer">
       <div class="container footer-grid">
         <div class="footer-brand-info">
           <img src="/images/common/logo-footer.svg" alt="Lvyv Logo" class="footer-logo">
@@ -257,8 +257,12 @@ import { faGlobe, faTimes, faChevronDown, faUser } from '@fortawesome/free-solid
 import businessLicenseIconUrl from '~/assets/generated/common/yyzz-48.png'
 
 const route = useRoute()
-const isWishLanding = computed(() => route.path === '/wish')
-const hidesFooter = computed(() => isWishLanding.value || route.path === '/wish/create')
+const currentPath = computed(() => {
+  const path = route.path || '/'
+  return path.length > 1 ? path.replace(/\/+$/, '') : path
+})
+const isWishLanding = computed(() => currentPath.value === '/wish')
+const hidesSiteChrome = computed(() => isWishLanding.value || currentPath.value === '/wish/create')
 const activeSection = ref('hero')
 // Keep the first client render identical to SSR; sync scroll state after mount.
 const isScrolled = ref(false)
@@ -284,7 +288,7 @@ const handleNavClick = async (toPath) => {
       const targetPath = parts[0] || '/'
       const targetId = parts[1]
 
-      if (route.path === targetPath || (targetPath === '/' && route.path === '/')) {
+      if (currentPath.value === targetPath || (targetPath === '/' && currentPath.value === '/')) {
         await nextTick()
         setTimeout(() => {
           const el = document.getElementById(targetId)
