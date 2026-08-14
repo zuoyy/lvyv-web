@@ -1,5 +1,5 @@
 <template>
-  <div class="app-layout" :class="{ 'app-layout--wish': isWishLanding }">
+  <div class="app-layout" :class="{ 'app-layout--wish': isWishExperience }">
     <!-- Header / Navigation -->
     <header class="navbar" :class="{ 'scrolled': isScrolled }">
       <div class="nav-container">
@@ -13,7 +13,7 @@
 
         <nav class="nav-links">
           <NuxtLink to="/#hero" :class="{ active: currentPath === '/' && activeSection === 'hero' }">Home</NuxtLink>
-          <NuxtLink to="/wish" :class="{ active: currentPath === '/wish' }">Wish</NuxtLink>
+          <NuxtLink to="/wish" :class="{ active: currentPath.startsWith('/wish') }">Wish</NuxtLink>
           <NuxtLink to="/encounters" :class="{ active: currentPath === '/encounters' }">Encounters</NuxtLink>
           <div class="nav-item-dropdown">
             <a href="javascript:void(0)" @click.prevent :class="{ active: currentPath.startsWith('/cities') }">Cities</a>
@@ -261,8 +261,8 @@ const currentPath = computed(() => {
   const path = route.path || '/'
   return path.length > 1 ? path.replace(/\/+$/, '') : path
 })
-const isWishLanding = computed(() => currentPath.value === '/wish')
-const hidesFooter = computed(() => isWishLanding.value || currentPath.value === '/wish/create')
+const isWishExperience = computed(() => currentPath.value === '/wish' || currentPath.value === '/wish/my')
+const hidesFooter = computed(() => isWishExperience.value || currentPath.value === '/wish/create')
 const activeSection = ref('hero')
 // Keep the first client render identical to SSR; sync scroll state after mount.
 const isScrolled = ref(false)
