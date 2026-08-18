@@ -1,115 +1,159 @@
 <template>
-  <div class="about-page">
-    <!-- ① Hero 区（50vh） -->
-    <section class="about-hero">
-      <div class="hero-overlay"></div>
-      <div class="hero-content">
-        <h1 class="about-hero-title">Don't travel. Encounter.</h1>
-        <p class="about-hero-subtitle">This is the belief behind LVYV.</p>
+  <main class="about-page">
+    <section class="about-hero" aria-labelledby="about-hero-title">
+      <div class="about-hero__shade" />
+      <div class="about-hero__content">
+        <h1 id="about-hero-title">We don't sell tours.<br>We create encounters.</h1>
+        <p>A letter, from us, on what we believe.</p>
       </div>
+      <span class="about-hero__scroll" aria-hidden="true"><i /></span>
     </section>
 
-    <!-- ② 品牌故事 -->
-    <section class="about-story">
-      <div class="story-container">
-        <span class="section-label">OUR STORY</span>
-        <h2 class="section-heading">Why LVYV?</h2>
-        <div class="story-body">
-          <p>
-            We believe travel is not about ticking off landmarks. It's about the people you meet along the way.
-          </p>
-          <p>
-            The old man walking his bird on the city wall. The street vendor who's been making the same noodle dish for 40 years. The student who invites you to her family's hotpot dinner.
-          </p>
-          <p>
-            These encounters can't be packaged. They can only be discovered.
-          </p>
-          <p>
-            That's why we built LVYV — a platform that doesn't sell tours, but creates encounters.
-          </p>
-          <p class="highlight-p">
-            You tell us your dream. A real human handcrafts it. You go, and meet someone.
-          </p>
-        </div>
-        <div class="story-signature">
-          <span class="signature-text">LVYV Team</span>
-        </div>
-      </div>
-    </section>
+    <section class="letter-section">
+      <div class="letter">
+        <p class="letter__eyebrow">
+          <span>A letter from LVYV</span>
+          <span class="letter__preview">
+            <button class="letter__preview-trigger" type="button" aria-label="Preview the original handwritten LVYV letter">
+              <img src="/images/about/about-letter-preview-icon.svg" alt="" width="24" height="24" aria-hidden="true">
+            </button>
+            <span class="letter__preview-card" role="tooltip">
+              <img
+                src="/images/about/about-letter-handwritten.webp"
+                alt="The original handwritten letter from LVYV"
+                width="960"
+                height="1200"
+                loading="lazy"
+              >
+            </span>
+          </span>
+        </p>
 
-    <!-- ③ 品牌宣言 -->
-    <section class="about-manifesto">
-      <div class="manifesto-container">
-        <span class="section-label">OUR MANIFESTO</span>
-        <div class="manifesto-content">
-          <p class="manifesto-group">
-            Stop ticking off landmarks.<br />
-            Stop rushing through cities.<br />
-            Stop being a tourist.
-          </p>
-          <p class="manifesto-group">
-            Go. Walk the city walls at sunrise.<br />
-            Sit down with a stranger. Learn their dialect.<br />
-            Eat something you can't pronounce.<br />
-            Get lost. Find a story.
-          </p>
-          <p class="manifesto-group emphasis">
-            Don't travel through China.<br />
-            Encounter it.
-          </p>
+        <div class="letter__copy">
+          <p>We are LVYV. And this is what we believe.</p>
+          <p>The best travel moments don't come with a ticket. They come when you least expect them.</p>
+          <p>Sitting on a 600-year-old city wall at sunset. A stranger sits down next to you with a kite. You don't share a language — not really. But you sit there together for an hour, watching the sky shift from gold to dark. When the city lights flicker on, he nudges you and says something you barely understand, but you know exactly what he means.</p>
+          <p>Beautiful, right?</p>
+          <p>You'll never learn his name. You'll never see him again. But that hour will stay with you longer than any temple, any museum, any perfectly framed photograph.</p>
+          <p>Because travel isn't about places. It's about people. It's about the encounters that happen when you stop trying to see everything and just let yourself be there, open, waiting for someone to show up.</p>
+          <p>This is what the travel industry forgot.</p>
+          <p>Somewhere along the way, travel became a product. Packaged. Optimized. AI-generated. Travelers turned into cargo, shuttled from landmark to landmark. The human part — the best part — was stripped away.</p>
+          <p>We started LVYV to bring it back.</p>
+          <p>We don't sell tours. We don't use AI. Every journey we design is handcrafted by a real person who knows this country intimately — the noodle shop that's been open since 1982, the teahouse hidden behind an unmarked door, the park where kite-flyers gather at golden hour.</p>
+          <p>We are a China company, through and through. Every designer, every support person behind your journey lives here, works here, and loves here. When you travel with us, you're connecting directly with people who call this country home.</p>
+          <p>We believe travel should be an encounter — with a culture, with a place, and most importantly, with someone. We believe you shouldn't just see China. You should meet it.</p>
+          <p>Go, meet someone.</p>
         </div>
-        <div class="manifesto-footer">
-          <p class="manifesto-cta">"Go, meet someone."</p>
+
+        <div class="letter__signature">
+          <img src="/images/about/about-signature.png" alt="LVYV" width="183" height="55">
+          <strong>The LVYV Team</strong>
         </div>
       </div>
     </section>
 
-    <!-- ④ 团队介绍 -->
-    <section class="about-team">
-      <div class="team-container">
-        <span class="section-label">OUR TEAM</span>
-        <h2 class="section-heading">The people behind your encounters.</h2>
+    <section class="beliefs-section" aria-labelledby="beliefs-title">
+      <div class="section-shell">
+        <h2 id="beliefs-title" class="section-title">What we believe</h2>
+        <div class="belief-grid">
+          <article v-for="belief in beliefs" :key="belief.title" class="belief-card">
+            <span class="belief-card__emoji" aria-hidden="true">{{ belief.emoji }}</span>
+            <h3>{{ belief.title }}</h3>
+            <p>{{ belief.copy }}</p>
+            <img :src="belief.image" :alt="belief.alt" width="350" height="350" loading="lazy">
+          </article>
+        </div>
+      </div>
+    </section>
 
-        <!-- 团队成员列表（支持展示及拓展） -->
-        <div v-if="teamMembers && teamMembers.length > 0" class="team-grid">
-          <div v-for="member in teamMembers" :key="member.name" class="team-card">
-            <div class="avatar-wrapper">
-              <img :src="member.avatar" :alt="member.name" class="avatar-img" />
+    <section class="promise-section" aria-labelledby="promise-title">
+      <div class="promise-shell">
+        <h2 id="promise-title" class="section-title">Our promise to you</h2>
+        <ol class="promise-list">
+          <li v-for="(promise, index) in promises" :key="promise.title" class="promise-item">
+            <span class="promise-item__number">{{ index + 1 }}</span>
+            <div class="promise-item__heading">
+              <img :src="promise.image" alt="" loading="lazy" aria-hidden="true">
+              <h3>{{ promise.title }}</h3>
             </div>
-            <h3 class="member-name">{{ member.name }}</h3>
-            <p class="member-role">{{ member.role }}</p>
-            <p class="member-bio">{{ member.bio }}</p>
-          </div>
-        </div>
-
-        <!-- 暂无照片时的空状态卡片 -->
-        <div v-else class="team-empty">
-          <div class="empty-illustration">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#105446" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M15 9C15 10.6569 13.6569 12 12 12C10.3431 12 9 10.6569 9 9C9 7.34315 10.3431 6 12 6C13.6569 6 15 7.34315 15 9Z" stroke="#105446" stroke-width="1.5"/>
-              <path d="M6 19C6.83777 16.6192 9.2154 15 12 15C14.7846 15 17.1622 16.6192 18 19" stroke="#105446" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-          </div>
-          <p class="empty-text">We're a small team with a big dream. Photos coming soon.</p>
-        </div>
+            <p>{{ promise.copy }}</p>
+          </li>
+        </ol>
       </div>
     </section>
-  </div>
+
+    <section class="future-section" aria-labelledby="future-title">
+      <div class="future-shell">
+        <h2 id="future-title" class="section-title">Where we're going</h2>
+        <div class="future-copy">
+          <p>We started with Xi'an and Chengdu — two cities that capture the soul of China in different flavors. But this is just the beginning.</p>
+          <p>Over the coming years, we'll expand to 20+ cities across China. From the misty water towns of Jiangnan to the snowy highlands of Tibet. From neon-lit Shanghai to the silent deserts of the Silk Road.</p>
+          <p>We're building Travel Match — so solo wanderers can find each other on the road. We're designing deeper City Missions that turn every neighborhood into a living game map. We're growing a network of Local Hosts — students, artists, chefs, storytellers — who will open their worlds to you.</p>
+          <p>Our dream is simple: when a young person anywhere in the world thinks, “I want to experience the real China” — the first word that comes to mind is LVYV.</p>
+          <p>We're on our way. And we'd love for you to be part of it.</p>
+        </div>
+        <NuxtLink to="/wish" class="future-cta">Start Your Encounter</NuxtLink>
+      </div>
+    </section>
+
+  </main>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+const beliefs = [
+  {
+    emoji: '👋',
+    title: 'Humans, not algorithms',
+    copy: 'Every itinerary is handcrafted by a real person who knows China intimately. No AI. No templates. Just human care.',
+    image: '/images/about/belief-human.webp',
+    alt: 'Human written, no AI content'
+  },
+  {
+    emoji: '🤝',
+    title: 'Encounters, not sights',
+    copy: "We don't care how many landmarks you tick off. We care who you meet along the way. Travel is about people.",
+    image: '/images/about/belief-friends.webp',
+    alt: 'Travel friends, new connections'
+  },
+  {
+    emoji: '🌏',
+    title: 'Real China, real stories',
+    copy: 'We are a China-based team. We live here, we eat here, we get lost here. We share the China we know and love.',
+    image: '/images/about/belief-china.webp',
+    alt: 'Based in China, local team'
+  }
+]
 
-interface TeamMember {
-  name: string;
-  role: string;
-  bio: string;
-  avatar: string;
-}
+const promises = [
+  {
+    image: '/images/about/promise-human-designed.webp',
+    title: '100% Human-designed',
+    copy: 'Your itinerary is handmade by a real designer, not generated by AI or filled with templates.'
+  },
+  {
+    image: '/images/about/promise-concierge.webp',
+    title: 'Private concierge experience',
+    copy: 'From making a wish to departure, you have a dedicated designer to accompany you throughout the entire process. Like a personal butler, but understands China better.'
+  },
+  {
+    image: '/images/about/promise-deep.webp',
+    title: 'Deep, not shallow',
+    copy: "We won't take you to clock in. We'll take you to the old tea house at the foot of the city wall, the smoking roadside stall in the early morning, and the alley that even locals almost forgot about."
+  },
+  {
+    image: '/images/about/promise-china-team.webp',
+    title: '100% China-based team',
+    copy: 'We are a team rooted in China. Designers, customer service, operations — everyone is in China and truly understands China.'
+  },
+  {
+    image: '/images/about/promise-human-support.webp',
+    title: '24/7 real human support',
+    copy: 'Emergency? Find real people anytime. Not chatbots, they are flesh and blood people.'
+  }
+]
 
-const aboutTitle = "About Us — Don't travel. Encounter | LVYV"
-const aboutDescription = "Don't travel. Encounter. This is the belief behind LVYV — a platform that doesn't sell tours, but creates encounters."
+const aboutTitle = "About LVYV — We create encounters"
+const aboutDescription = 'LVYV creates human-designed encounters that help travelers meet the real China through its people, culture, and stories.'
 
 useLvyvSeo({
   title: aboutTitle,
@@ -123,337 +167,628 @@ useLvyvSeo({
     ])
   ]
 })
-
-// 团队成员列表数据 (初始为空以触发规范中要求的“照片筹备中”空状态，或可配置真实数据)
-const teamMembers = ref<TeamMember[]>([]);
 </script>
 
 <style scoped>
 .about-page {
+  --about-green: #0f5948;
+  --about-ink: #111714;
+  --about-muted: #f7f7f5;
   width: 100%;
-  overflow-x: hidden;
-  background-color: var(--color-white, #ffffff);
-  color: var(--color-dark, #203d33);
+  padding-top: 80px;
+  overflow: hidden;
+  background: #fff;
+  color: var(--about-ink);
+  font-family: var(--font-body, 'Inter', sans-serif);
 }
 
-/* ==========================================
-   ① Hero 区 (50vh)
-   ========================================== */
 .about-hero {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 50vh;
-  min-height: 420px;
-  padding-top: 80px; /* 避开 80px 的顶部固定导航栏 (navbar) */
-  background-image: url('/images/home/hero-bg-2.png');
-  background-position: center;
-  background-size: cover;
-  background-repeat: no-repeat;
+  display: grid;
+  min-height: 605px;
+  place-items: center;
+  background: url('/images/about/about-hero.webp') center 44% / cover no-repeat;
+  color: #fff;
   text-align: center;
-  box-sizing: border-box;
 }
 
-.hero-overlay {
+.about-hero__shade {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    180deg,
-    rgba(16, 84, 70, 0.78) 0%,
-    rgba(16, 84, 70, 0.92) 100%
-  );
+  background: linear-gradient(180deg, rgba(29, 29, 29, .34), rgba(29, 29, 29, .34));
 }
 
-.hero-content {
+.about-hero__content {
   position: relative;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  max-width: 800px;
-  padding: 20px;
-  margin: auto 0;
+  z-index: 1;
+  padding: 36px 24px 72px;
 }
 
-.about-hero-title {
-  color: #ffffff !important;
-  font-family: var(--font-heading, 'Didot', 'Playfair Display', Georgia, serif) !important;
-  font-size: 48px !important;
-  font-weight: 700 !important;
-  line-height: 1.1 !important;
-  letter-spacing: -0.01em !important;
-  margin: 0 0 4px 0 !important;
-  padding: 0 !important;
-  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.about-hero-subtitle {
-  color: rgba(255, 255, 255, 0.9) !important;
-  font-family: var(--font-body, 'Inter', sans-serif) !important;
-  font-size: 18px !important;
-  font-weight: 400 !important;
-  line-height: 1.3 !important;
-  letter-spacing: 0.02em !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-}
-
-/* ==========================================
-   通用 Section 标签与大标题
-   ========================================== */
-.section-label {
-  display: block;
-  color: var(--color-forest, #105446);
-  font-family: var(--font-body, 'Inter', sans-serif);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  margin-bottom: 12px;
-}
-
-.section-heading {
-  color: var(--color-dark, #203d33);
-  font-family: var(--font-heading, 'Didot', 'Playfair Display', Georgia, serif);
-  font-size: 40px;
-  font-weight: 700;
-  line-height: 1.25;
-  margin-bottom: 36px;
-}
-
-/* ==========================================
-   ② 品牌故事 (Our Story)
-   ========================================== */
-.about-story {
-  padding: 100px 20px;
-  background-color: #ffffff;
-}
-
-.story-container {
-  max-width: 700px;
-  margin: 0 auto;
-  text-align: center;
-}
-
-.story-body {
-  text-align: left;
-}
-
-.story-body p {
-  color: #555555;
-  font-family: var(--font-body, 'Inter', sans-serif);
-  font-size: 16px;
-  font-weight: 400;
-  line-height: 1.8;
-  margin-bottom: 24px;
-}
-
-.story-body p.highlight-p {
-  color: var(--color-dark, #203d33);
-  font-size: 17px;
-  font-weight: 500;
-}
-
-.story-signature {
-  margin-top: 48px;
-  text-align: right;
-}
-
-.signature-text {
-  color: var(--color-forest, #105446);
-  font-family: var(--font-cursive, 'Caveat', cursive);
-  font-size: 36px;
-  font-weight: 600;
-}
-
-/* ==========================================
-   ③ 品牌宣言 (Our Manifesto)
-   ========================================== */
-.about-manifesto {
-  padding: 80px 20px;
-  background-color: #f8f8f8;
-}
-
-.manifesto-container {
-  max-width: 700px;
-  margin: 0 auto;
-  text-align: center;
-}
-
-.manifesto-content {
-  margin-top: 32px;
-  text-align: center;
-}
-
-.manifesto-group {
-  color: var(--color-dark, #203d33);
-  font-family: var(--font-body, 'Inter', sans-serif);
-  font-size: 16px;
-  font-weight: 400;
-  line-height: 2.0;
-  margin-bottom: 32px;
-}
-
-.manifesto-group.emphasis {
-  font-weight: 600;
-  font-size: 17px;
-}
-
-.manifesto-footer {
-  margin-top: 40px;
-}
-
-.manifesto-cta {
-  color: var(--color-forest, #105446);
-  font-family: var(--font-heading, 'Didot', 'Playfair Display', Georgia, serif);
-  font-size: 24px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-}
-
-/* ==========================================
-   ④ 团队介绍 (Our Team)
-   ========================================== */
-.about-team {
-  padding: 80px 20px;
-  background-color: #ffffff;
-}
-
-.team-container {
+.about-hero h1 {
   max-width: 900px;
-  margin: 0 auto;
-  text-align: center;
+  margin: 0;
+  color: #fff;
+  font: 500 clamp(46px, 4.45vw, 64px)/1.08 var(--font-heading, Georgia, serif);
+  letter-spacing: -.025em;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, .16);
 }
 
-.team-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 40px;
-  margin-top: 48px;
-}
-
-.team-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.avatar-wrapper {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  overflow: hidden;
-  margin-bottom: 16px;
-  border: 3px solid var(--color-forest, #105446);
-}
-
-.avatar-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.member-name {
-  font-family: var(--font-body, 'Inter', sans-serif);
+.about-hero p {
+  margin: 21px 0 0;
+  color: rgba(255, 255, 255, .94);
   font-size: 18px;
-  font-weight: 600;
-  color: var(--color-dark, #203d33);
-  margin-bottom: 4px;
-}
-
-.member-role {
-  font-family: var(--font-body, 'Inter', sans-serif);
-  font-size: 14px;
-  color: #777777;
-  margin-bottom: 12px;
-}
-
-.member-bio {
-  font-family: var(--font-body, 'Inter', sans-serif);
-  font-size: 14px;
-  color: #555555;
   line-height: 1.5;
 }
 
-/* 团队空状态样式 */
-.team-empty {
+.about-hero__scroll {
+  position: absolute;
+  z-index: 1;
+  bottom: 36px;
+  left: 50%;
+  width: 23px;
+  height: 36px;
+  border: 1.5px solid rgba(255, 255, 255, .9);
+  border-radius: 14px;
+  transform: translateX(-50%);
+}
+
+.about-hero__scroll i {
+  position: absolute;
+  top: 7px;
+  left: 50%;
+  width: 3px;
+  height: 7px;
+  border-radius: 4px;
+  background: #fff;
+  transform: translateX(-50%);
+}
+
+.letter-section {
+  padding: 101px 24px 120px;
+  background: #fff;
+}
+
+.letter {
+  width: min(791px, 100%);
+  margin: 0 auto;
+}
+
+.letter__eyebrow {
   display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 0 0 43px;
+  color: var(--about-green);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.letter__preview {
+  position: relative;
+  display: inline-flex;
+  margin-left: 2px;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.letter__preview-trigger {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--about-green);
+  cursor: pointer;
+}
+
+.letter__preview-trigger:focus-visible {
+  outline: 2px solid var(--about-green);
+  outline-offset: 3px;
+}
+
+.letter__preview-trigger > img {
+  display: block;
+  width: 24px;
+  height: 24px;
+}
+
+.letter__preview-card {
+  position: fixed;
+  z-index: 1400;
+  top: 50%;
+  left: 50%;
+  display: block;
+  width: min(720px, calc((100vh - 64px) * .8), calc(100vw - 48px));
+  padding: 8px;
+  border: 1px solid rgba(25, 31, 28, .22);
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 18px 45px rgba(16, 25, 21, .24);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(.975);
+  transform-origin: center;
+  transition: opacity .18s ease, transform .18s ease, visibility .18s;
+  visibility: hidden;
+}
+
+.letter__preview-card img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.letter__preview:hover .letter__preview-card,
+.letter__preview:focus-within .letter__preview-card {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+  visibility: visible;
+}
+
+.letter__copy {
+  color: #1e211f;
+  text-align: center;
+}
+
+.letter__copy p {
+  margin: 0 0 20.75px;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.letter__copy p:last-child {
+  margin-top: 39px;
+}
+
+.letter__signature {
+  display: flex;
+  width: max-content;
+  margin: 67px 0 0 auto;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 48px 24px;
-  margin-top: 24px;
-  background-color: #fafdf7;
-  border: 1px dashed #d0dcd4;
-  border-radius: 16px;
+  color: #30332f;
+  font-size: 11px;
+  line-height: 1.5;
 }
 
-.empty-illustration {
+.letter__signature strong {
+  font-size: 12px;
+}
+
+.letter__signature img {
+  display: block;
+  width: 92px;
+  height: auto;
+  margin: 0 0 7px auto;
+}
+
+.section-shell {
+  width: min(1248px, calc(100% - 48px));
+  margin: 0 auto;
+}
+
+.section-title {
+  margin: 0;
+  color: var(--about-green);
+  font: 500 clamp(40px, 3.35vw, 50px)/1.1 var(--font-heading, Georgia, serif);
+  letter-spacing: -.025em;
+  text-align: center;
+}
+
+.beliefs-section {
+  padding: 102px 0 112px;
+  background: var(--about-muted);
+}
+
+.belief-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  margin-top: 72px;
+}
+
+.belief-card {
   display: flex;
+  min-height: 455px;
+  padding: 43px 43px 24px;
+  flex-direction: column;
+  border: 1px solid #28332f;
+  border-radius: 13px;
+  background: #fff;
+  box-shadow: 0 4px 2px rgba(15, 24, 20, .15);
+}
+
+.belief-card__emoji {
+  display: block;
+  margin-bottom: 20px;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.belief-card h3 {
+  margin: 0 0 14px;
+  color: #050505;
+  font-size: 25px;
+  font-weight: 750;
+  letter-spacing: -.04em;
+  line-height: 1.18;
+}
+
+.belief-card p {
+  margin: 0;
+  color: #1d211f;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.belief-card img {
+  display: block;
+  width: 178px;
+  height: 178px;
+  margin: auto auto 0;
+  object-fit: cover;
+}
+
+.promise-section {
+  padding: 108px 24px 135px;
+  background: #fff;
+}
+
+.promise-shell {
+  width: min(1280px, 100%);
+  margin: 0 auto;
+}
+
+.promise-list {
+  display: grid;
+  width: min(730px, 100%);
+  gap: 26px;
+  margin: 33px auto 0;
+  padding: 0;
+  list-style: none;
+}
+
+.promise-item {
+  display: grid;
+  min-height: 105px;
+  grid-template-columns: 70px 320px 300px;
+  align-items: center;
+  gap: 20px;
+}
+
+.promise-item__heading {
+  display: flex;
+  min-height: 105px;
   align-items: center;
   justify-content: center;
+  flex-direction: column;
+  text-align: center;
+  transform: translateX(-28px);
+}
+
+.promise-item__number {
+  color: #f1f2ef;
+  font: 500 44px/1 var(--font-heading, Georgia, serif);
+  text-align: center;
+  user-select: none;
+}
+
+.promise-item__heading img {
+  display: block;
   width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background-color: #eaf3ee;
-  margin-bottom: 16px;
+  height: 48px;
+  margin-bottom: 3px;
+  object-fit: contain;
 }
 
-.empty-text {
-  color: #666666;
+.promise-item:nth-child(3) .promise-item__heading img {
+  width: 64px;
+  height: 64px;
+}
+
+.promise-item:nth-child(4) .promise-item__heading img {
+  width: 68px;
+  height: 58px;
+}
+
+.promise-item:nth-child(5) .promise-item__heading img {
+  width: 52px;
+  height: 50px;
+}
+
+.promise-item h3 {
+  margin: 0;
+  color: #0c1813;
   font-family: var(--font-body, 'Inter', sans-serif);
-  font-size: 15px;
-  font-weight: 400;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.25;
 }
 
-/* ==========================================
-   移动端与响应式适配
-   ========================================== */
-@media (max-width: 768px) {
-  .hero-title {
-    font-size: 34px;
+.promise-item > p {
+  margin: 0;
+  color: #2f3431;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.future-section {
+  padding: 106px 24px 104px;
+  background: var(--about-muted);
+}
+
+.future-shell {
+  width: min(720px, 100%);
+  margin: 0 auto;
+  text-align: center;
+}
+
+.future-copy {
+  margin-top: 50px;
+}
+
+.future-copy p {
+  margin: 0 0 25px;
+  color: #292e2b;
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.future-copy p:last-child {
+  margin-bottom: 0;
+}
+
+.future-cta {
+  display: inline-flex;
+  width: 240px;
+  height: 60px;
+  margin-top: 43px;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 10px;
+  background: #105446;
+  color: #c0f177;
+  font: 600 16px/1 'Inter', sans-serif;
+  letter-spacing: 0;
+  text-decoration: none;
+  transition: transform .2s ease, background .2s ease;
+}
+
+.future-cta:hover {
+  background: #0b473a;
+  transform: translateY(-2px);
+}
+
+.careers-section {
+  padding: 103px 48px 112px;
+  background: #fff;
+}
+
+.careers-card {
+  display: grid;
+  width: min(1220px, 100%);
+  min-height: 327px;
+  margin: 0 auto;
+  padding: 24px 42px 24px 68px;
+  grid-template-columns: minmax(0, 1fr) 446px;
+  align-items: center;
+  gap: 52px;
+  border: 1px solid #7a7f7c;
+  border-radius: 180px;
+}
+
+.careers-card__copy h2 {
+  margin: 0;
+  color: var(--about-green);
+  font: 500 clamp(34px, 3vw, 46px)/1.08 var(--font-heading, Georgia, serif);
+  letter-spacing: -.025em;
+}
+
+.careers-card__copy p {
+  margin: 25px 0 17px;
+  color: #343936;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.careers-card__copy a {
+  color: var(--about-green);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.careers-card__copy a span {
+  display: inline-block;
+  margin-left: 5px;
+  font-size: 18px;
+  transition: transform .2s ease;
+}
+
+.careers-card__copy a:hover span {
+  transform: translateX(4px);
+}
+
+.careers-card__visual {
+  position: relative;
+}
+
+.careers-card__visual::before {
+  position: absolute;
+  inset: -9px 8px 9px -8px;
+  border: 1px solid #8d918f;
+  border-radius: 999px;
+  content: '';
+}
+
+.careers-card__visual img {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 446 / 278;
+  border: 1px solid #747a77;
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+@media (max-width: 1024px) {
+  .about-page {
+    padding-top: 72px;
   }
 
-  .hero-subtitle {
+  .about-hero {
+    min-height: 540px;
+  }
+
+  .belief-grid {
+    gap: 16px;
+  }
+
+  .belief-card {
+    min-height: 430px;
+    padding: 34px 28px 20px;
+  }
+
+  .belief-card h3 {
+    font-size: 21px;
+  }
+
+  .careers-card {
+    padding-left: 50px;
+    grid-template-columns: minmax(0, 1fr) 38%;
+    gap: 35px;
+  }
+}
+
+@media (max-width: 767px) {
+  .about-page {
+    padding-top: 64px;
+  }
+
+  .about-hero {
+    min-height: 510px;
+    background-position: 54% center;
+  }
+
+  .about-hero__content {
+    padding-bottom: 52px;
+  }
+
+  .about-hero h1 {
+    font-size: clamp(38px, 11vw, 52px);
+  }
+
+  .about-hero p {
     font-size: 15px;
   }
 
-  .about-story {
-    padding: 60px 20px;
+  .letter-section {
+    padding: 75px 22px 85px;
   }
 
-  .section-heading {
-    font-size: 30px;
-    margin-bottom: 24px;
+  .letter__copy p {
+    margin-bottom: 16px;
+    font-size: 12px;
+    line-height: 1.74;
   }
 
-  .story-body p {
-    font-size: 15px;
+  .letter__signature {
+    margin-right: 0;
   }
 
-  .signature-text {
-    font-size: 30px;
+  .beliefs-section,
+  .promise-section,
+  .future-section {
+    padding-top: 76px;
+    padding-bottom: 82px;
   }
 
-  .about-manifesto {
-    padding: 60px 20px;
+  .section-shell {
+    width: min(100% - 36px, 500px);
   }
 
-  .manifesto-group {
-    font-size: 15px;
+  .belief-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    margin-top: 48px;
   }
 
-  .manifesto-cta {
-    font-size: 20px;
+  .belief-card {
+    min-height: 420px;
   }
 
-  .about-team {
-    padding: 60px 20px;
+  .promise-list {
+    gap: 36px;
+    margin-top: 50px;
+  }
+
+  .promise-item {
+    min-height: 0;
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 12px 10px;
+  }
+
+  .promise-item__heading {
+    min-height: 0;
+    align-items: flex-start;
+    text-align: left;
+    transform: none;
+  }
+
+  .promise-item__number {
+    grid-row: 1 / span 2;
+    align-self: start;
+    padding-top: 8px;
+    font-size: 48px;
+  }
+
+  .promise-item > p {
+    grid-column: 2;
+    max-width: 470px;
+    text-align: left;
+  }
+
+  .future-copy {
+    margin-top: 40px;
+  }
+
+  .careers-section {
+    padding: 72px 18px 82px;
+  }
+
+  .careers-card {
+    min-height: 0;
+    padding: 44px 28px 36px;
+    grid-template-columns: 1fr;
+    gap: 40px;
+    border-radius: 44px;
+    text-align: center;
+  }
+
+  .careers-card__copy h2 {
+    font-size: 36px;
+  }
+
+  .careers-card__copy br {
+    display: none;
+  }
+
+  .careers-card__visual {
+    width: min(100%, 446px);
+    margin: 0 auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .future-cta,
+  .careers-card__copy a span {
+    transition: none;
   }
 }
 </style>
