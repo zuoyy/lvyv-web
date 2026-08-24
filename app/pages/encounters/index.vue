@@ -801,7 +801,7 @@ onMounted(load)
 
 .encounter-card__details {
   min-width: 0;
-  padding-left: 0;
+  padding-left: 8px;
 }
 
 .encounter-card__location {
