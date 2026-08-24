@@ -611,26 +611,35 @@ onMounted(load)
   height: 80px;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  padding: 16px 24px;
   overflow: hidden;
-  border-radius: 15px;
+  box-sizing: border-box;
+  border-radius: 12px;
   background: #fff;
-  box-shadow: 0 9px 18px rgba(31, 51, 44, .07);
+  box-shadow: 0 4px 16px rgba(17, 34, 17, .05);
 }
 
 .city-tabs button {
   position: relative;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0;
   border: 0;
   background: transparent;
   color: #1d332b;
   font: 700 15px/1 'Inter', sans-serif;
+  text-align: left;
   cursor: pointer;
 }
 
 .city-tabs button:not(:last-child)::before {
   position: absolute;
-  top: 16px;
+  top: 0;
   right: 0;
-  bottom: 16px;
+  bottom: 0;
   width: 1px;
   background: #d5e0e5;
   content: '';
@@ -639,8 +648,8 @@ onMounted(load)
 .city-tabs button::after {
   position: absolute;
   right: 24px;
-  bottom: 0;
-  left: 24px;
+  bottom: -16px;
+  left: 0;
   height: 4px;
   background: #698e4e;
   content: '';
@@ -940,8 +949,9 @@ onMounted(load)
   .encounters-hero h1 { font-size: 37px; }
   .encounters-hero p { max-width: 330px; margin-top: 16px; font-size: 17px; }
   .theme-options { grid-template-columns: repeat(2, max-content); }
+  .city-tabs { gap: 8px; padding: 16px; }
   .city-tabs button { font-size: 12px; }
-  .city-tabs button::after { right: 10px; left: 10px; }
+  .city-tabs button::after { right: 10px; }
   .results-toolbar { align-items: center; }
   .results-toolbar p { font-size: 11px; }
   .sort-control, .sort-control select { font-size: 11px; }
