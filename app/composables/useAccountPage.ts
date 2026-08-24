@@ -3,9 +3,14 @@ export const useAccountPage = (redirectPath: string) => {
   const ready = ref(false)
   const accountError = ref('')
 
+  const redirectToLogin = () => navigateTo(
+    `/login/?redirect=${encodeURIComponent(redirectPath)}`,
+    { replace: true },
+  )
+
   const initializeAccount = async () => {
     if (!auth.token.value) {
-      await navigateTo(`/login/?redirect=${encodeURIComponent(redirectPath)}`)
+      await redirectToLogin()
       return false
     }
 
@@ -16,7 +21,7 @@ export const useAccountPage = (redirectPath: string) => {
     } catch (caught) {
       auth.clearSession()
       accountError.value = caught instanceof Error ? caught.message : 'Unable to load your account.'
-      await navigateTo(`/login/?redirect=${encodeURIComponent(redirectPath)}`)
+      await redirectToLogin()
       return false
     }
   }
