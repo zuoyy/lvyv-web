@@ -152,8 +152,12 @@
                 <div class="encounter-card__summary">
                   <div class="encounter-card__details">
                     <p class="encounter-card__location">
-                      <span class="location-pin" aria-hidden="true" />
+                      <font-awesome-icon :icon="['fas', 'location-dot']" class="location-pin" aria-hidden="true" />
                       {{ encounterSubtitle(product) }}
+                    </p>
+                    <p class="encounter-card__reviews">
+                      <strong>Very Good</strong>
+                      <span>{{ product.reviewCount }} reviews</span>
                     </p>
                   </div>
                   <div class="encounter-card__price">
@@ -192,6 +196,7 @@ interface EncounterProduct {
   salePrice: number
   themes: string[]
   features: string[]
+  reviewCount: number
   priceNote?: string
 }
 
@@ -298,6 +303,11 @@ const formatPrice = (value: number, currency: string) => new Intl.NumberFormat('
   maximumFractionDigits: 0
 }).format(value)
 
+const generatedReviewCount = (productCode: string) => {
+  const seed = [...productCode].reduce((hash, character) => ((hash * 31) + character.charCodeAt(0)) >>> 0, 0)
+  return 200 + (seed % 301)
+}
+
 const clampPrice = (handle: 'min' | 'max') => {
   if (handle === 'min' && priceMin.value > priceMax.value - 10) priceMin.value = priceMax.value - 10
   if (handle === 'max' && priceMax.value < priceMin.value + 10) priceMax.value = priceMin.value + 10
@@ -348,6 +358,7 @@ const load = async () => {
           salePrice,
           themes: item.themes || [],
           features,
+          reviewCount: generatedReviewCount(item.product.productCode),
           priceNote: item.product.priceNote
         }
       }).filter(product => product.imageUrls.length > 0)
@@ -743,6 +754,7 @@ onMounted(load)
   height: 100%;
   display: block;
   object-fit: cover;
+  object-position: center;
   transition: transform 300ms ease;
 }
 
@@ -805,30 +817,19 @@ onMounted(load)
 }
 
 .location-pin {
-  position: relative;
-  width: 12px;
+  width: 16px;
   height: 16px;
-  flex: 0 0 12px;
-  border-radius: 8px 8px 8px 0;
-  background: #203d33;
-  transform: translate(2px, -1px) rotate(-45deg) scale(.72);
-}
-
-.location-pin::after {
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: #f5f6fa;
-  content: '';
+  flex: 0 0 16px;
+  color: #203d33;
 }
 
 .encounter-card__reviews {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   margin: 13px 0 0;
   color: #293d35;
-  font: 400 11px/1 'Inter', sans-serif;
+  font: 400 12px/15px 'Inter', sans-serif;
 }
 
 .encounter-card__reviews strong {
