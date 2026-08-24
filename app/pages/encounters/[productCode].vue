@@ -40,6 +40,12 @@
             </button>
           </section>
 
+          <section v-if="galleryImages.length" class="print-gallery" aria-label="Encounter photos in itinerary PDF">
+            <figure v-for="(image, imageIndex) in galleryImages" :key="`print-${image}`">
+              <img :src="image" :alt="`${detail.title} photo ${imageIndex + 1}`">
+            </figure>
+          </section>
+
           <section class="itinerary" aria-labelledby="itinerary-title">
             <div class="itinerary__title-row">
               <h2 id="itinerary-title">{{ detail.days.length }}-day itinerary</h2>
@@ -445,11 +451,28 @@ const restoreDaysAfterPrint = () => {
   openDaysBeforePrint.value = null
 }
 
+const waitForPrintImages = async () => {
+  const images = Array.from(document.querySelectorAll<HTMLImageElement>('.journey-content img'))
+  const pendingImages = images
+    .filter(image => !image.complete)
+    .map(image => new Promise<void>((resolve) => {
+      image.addEventListener('load', () => resolve(), { once: true })
+      image.addEventListener('error', () => resolve(), { once: true })
+    }))
+
+  if (!pendingImages.length) return
+  await Promise.race([
+    Promise.all(pendingImages),
+    new Promise<void>(resolve => window.setTimeout(resolve, 3000))
+  ])
+}
+
 const downloadItinerary = async () => {
   if (!import.meta.client) return
   openDaysBeforePrint.value = new Set(openDays.value)
   openDays.value = new Set(detail.value.days.map(day => day.dayNo))
   await nextTick()
+  await waitForPrintImages()
   await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
   window.print()
 }
@@ -592,6 +615,8 @@ onBeforeUnmount(() => {
   border-top: 0;
   content: '';
 }
+
+.print-gallery { display: none; }
 
 .itinerary { margin-top: 41px; }
 .itinerary__title-row h2 { margin: 0; color: #1d3029; font: 700 24px/1.2 'Inter', sans-serif; }
@@ -848,14 +873,13 @@ onBeforeUnmount(() => {
 }
 
 @media print {
-  @page { size: A4 portrait; margin: 14mm; }
+  @page { size: A4 portrait; margin: 12mm; }
 
   :global(.navbar),
   :global(.footer),
   :global(.mobile-menu-backdrop),
   :global(.mobile-menu-drawer),
   .breadcrumbs,
-  .journey-heading,
   .gallery,
   .booking-panel,
   .itinerary__actions,
@@ -864,14 +888,34 @@ onBeforeUnmount(() => {
   .journey-page { min-height: 0; padding: 0; background: #fff; }
   .journey-container { width: 100%; margin: 0; }
   .journey-shell { display: block; min-height: 0; }
-  .journey-content { min-height: 0; padding: 0; border: 0; border-radius: 0; }
+  .journey-content { min-height: 0; padding: 0; overflow: visible; border: 0; border-radius: 0; }
+  .journey-heading { display: block !important; margin: 0 0 6mm; }
+  .journey-heading h1 { font-size: 20pt; line-height: 1.3; }
+  .journey-heading p { margin-top: 3mm; font-size: 8.5pt; line-height: 1.4; }
+
+  .print-gallery {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 3mm;
+    margin: 0 0 9mm;
+  }
+  .print-gallery figure { min-width: 0; margin: 0; break-inside: avoid; page-break-inside: avoid; }
+  .print-gallery figure:first-child { grid-column: 1 / -1; }
+  .print-gallery img { width: 100%; height: 45mm; display: block; border-radius: 2mm; object-fit: cover; }
+  .print-gallery figure:first-child img { height: 78mm; }
+
   .itinerary { margin: 0; }
-  .itinerary__title-row { margin-bottom: 8mm; }
-  .itinerary__title-row h2 { font-size: 22px; }
-  .day-item { break-inside: avoid-page; page-break-inside: avoid; }
-  .day-item__heading { cursor: default; }
+  .itinerary__title-row { margin-bottom: 4mm; }
+  .itinerary__title-row h2 { font-size: 17pt; }
+  .day-list { margin-top: 0; }
+  .day-item { break-inside: auto; page-break-inside: auto; }
+  .day-item__heading { min-height: 13mm; cursor: default; break-after: avoid-page; page-break-after: avoid; }
   .day-item__heading > i { display: none; }
-  .activity-card { break-inside: avoid; page-break-inside: avoid; }
+  .day-item__content { display: block !important; padding-bottom: 6mm; }
+  .schedule-item { break-inside: avoid-page; page-break-inside: avoid; }
+  .activity-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .activity-card { display: block !important; break-inside: avoid; page-break-inside: avoid; }
+  .activity-cards img { height: 31mm; }
   .activity-card:hover img { transform: none; }
 }
 </style>
