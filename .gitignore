@@ -8,3 +8,7 @@ web.conf
 deploy/
 docs/
 
+# Local source masters; production uses the optimized *-1080.mp4 files.
+public/videos/home/MeetAWish.mp4
+public/videos/home/MeetCuriosity.mp4
+public/videos/home/MeetRegret.mp4

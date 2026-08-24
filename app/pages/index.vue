@@ -75,7 +75,7 @@
 
         <div class="audience-grid">
           <article v-for="item in audienceCards" :key="item.title" class="audience-card">
-            <img :src="item.image" :alt="item.alt" width="1000" height="1000" loading="lazy" decoding="async">
+            <img :src="item.image" :alt="item.alt" width="410" height="420" loading="lazy" decoding="async">
             <div class="audience-card__shade" />
             <div class="audience-card__content">
               <h3>{{ item.title }}</h3>
@@ -239,8 +239,15 @@
         </header>
 
         <div class="story-grid">
-          <NuxtLink v-for="story in stories" :key="story.title" to="/encounters" class="story-card">
-            <img :src="story.image" :alt="story.alt" width="1000" height="1000" loading="lazy" decoding="async">
+          <button
+            v-for="story in stories"
+            :key="story.title"
+            type="button"
+            class="story-card"
+            :aria-label="`Play ${story.title}`"
+            @click="openStoryVideo(story, $event)"
+          >
+            <img :src="story.image" :alt="story.alt" width="400" height="480" loading="lazy" decoding="async">
             <div class="story-card__shade" />
             <span class="story-card__play" aria-hidden="true">
               <font-awesome-icon :icon="['fas', 'play']" />
@@ -253,7 +260,7 @@
                 Learn more
               </span>
             </div>
-          </NuxtLink>
+          </button>
         </div>
 
         <div class="stories-section__more">
@@ -321,6 +328,44 @@
       </div>
     </section>
   </main>
+
+  <Teleport to="body">
+    <Transition name="story-video">
+      <div
+        v-if="activeStory"
+        class="story-video-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="story-video-title"
+        @click.self="closeStoryVideo"
+      >
+        <div class="story-video-modal__dialog">
+          <h2 id="story-video-title" class="sr-only">{{ activeStory.title }}</h2>
+          <button
+            ref="storyCloseButton"
+            type="button"
+            class="story-video-modal__close"
+            aria-label="Close video"
+            @click="closeStoryVideo"
+          >
+            <font-awesome-icon :icon="['fas', 'xmark']" aria-hidden="true" />
+          </button>
+          <video
+            :key="activeStory.video"
+            class="story-video-modal__video"
+            controls
+            autoplay
+            playsinline
+            preload="metadata"
+            :poster="activeStory.image"
+          >
+            <source :src="activeStory.video" type="video/mp4">
+            Your browser does not support HTML video.
+          </video>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -340,18 +385,18 @@ type HomeHeroSlide = {
 
 const homeHeroSlides: HomeHeroSlide[] = [
   {
-    id: 'xian-friends',
+    id: 'xian-city-wall',
     index: 0,
     fallback: '/images/home-v2/banner-1-1440.webp',
     width: 1440,
-    height: 810,
+    height: 780,
     mobileWebpSrcset: '/images/home-v2/banner-1-768.webp 768w',
     webpSrcset: '/images/home-v2/banner-1-768.webp 768w, /images/home-v2/banner-1-1440.webp 1440w',
     wideWebpSrcset: '/images/home-v2/banner-1-1440.webp 1440w',
-    alt: "Four friends with bicycles on Xi'an city wall"
+    alt: "Xi'an city wall surrounded by water at sunset"
   },
   {
-    id: 'xian-cyclists',
+    id: 'xian-pagoda',
     index: 1,
     fallback: '/images/home-v2/banner-2-1440.webp',
     width: 1440,
@@ -359,10 +404,10 @@ const homeHeroSlides: HomeHeroSlide[] = [
     mobileWebpSrcset: '/images/home-v2/banner-2-768.webp 768w',
     webpSrcset: '/images/home-v2/banner-2-768.webp 768w, /images/home-v2/banner-2-1440.webp 1440w',
     wideWebpSrcset: '/images/home-v2/banner-2-1440.webp 1440w',
-    alt: "Travelers cycling together on Xi'an city wall"
+    alt: "Xi'an pagoda beside a star-lit modern facade at dusk"
   },
   {
-    id: 'chengdu-opera',
+    id: 'xian-city-gate',
     index: 2,
     fallback: '/images/home-v2/banner-3-1440.webp',
     width: 1440,
@@ -370,7 +415,18 @@ const homeHeroSlides: HomeHeroSlide[] = [
     mobileWebpSrcset: '/images/home-v2/banner-3-768.webp 768w',
     webpSrcset: '/images/home-v2/banner-3-768.webp 768w, /images/home-v2/banner-3-1440.webp 1440w',
     wideWebpSrcset: '/images/home-v2/banner-3-1440.webp 1440w',
-    alt: 'A traveler greeting a Sichuan opera performer in Chengdu'
+    alt: "Xi'an city gate illuminated beneath an evening sky"
+  },
+  {
+    id: 'traditional-opera',
+    index: 3,
+    fallback: '/images/home-v2/banner-4-1440.webp',
+    width: 1440,
+    height: 780,
+    mobileWebpSrcset: '/images/home-v2/banner-4-768.webp 768w',
+    webpSrcset: '/images/home-v2/banner-4-768.webp 768w, /images/home-v2/banner-4-1440.webp 1440w',
+    wideWebpSrcset: '/images/home-v2/banner-4-1440.webp 1440w',
+    alt: 'Traditional Chinese opera performers beneath a dramatic ring of light'
   }
 ]
 
@@ -454,26 +510,64 @@ const wishRows = [
   ]
 ] as const
 
-const stories = [
+type HomeStory = {
+  title: string
+  description: string
+  image: string
+  alt: string
+  video: string
+}
+
+const stories: HomeStory[] = [
   {
-    title: 'Meet People',
-    description: 'Connect with locals and fellow travelers through authentic experiences.',
-    image: '/images/home-v2/story-people.webp',
-    alt: 'Travelers cycling together through a Beijing hutong'
+    title: 'Meet Regret',
+    description: 'Some love stories are remembered because they never had a happy ending.',
+    image: '/images/home-v2/story-meet-regret.webp',
+    alt: 'Traditional Chinese opera performers on a blue-lit stage',
+    video: '/videos/home/meet-regret-1080.mp4'
   },
   {
-    title: 'Meet Stories',
-    description: 'Discover hidden places, local traditions and stories beyond guidebooks.',
-    image: '/images/home-v2/story-stories.webp',
-    alt: 'Travelers sharing a story during an evening encounter'
+    title: 'Meet a Wish',
+    description: 'Local children, one bell, and a shared wish.',
+    image: '/images/home-v2/story-meet-a-wish.webp',
+    alt: 'An ancient pagoda rising above green trees',
+    video: '/videos/home/meet-a-wish-1080.mp4'
   },
   {
-    title: 'Meet Yourself',
-    description: 'Every encounter changes the way you see the world and yourself.',
-    image: '/images/home-v2/story-yourself.webp',
-    alt: 'A conservator restoring the Terracotta Warriors'
+    title: 'Meet Curiosity',
+    description: 'A small moment of wonder, found in the everyday.',
+    image: '/images/home-v2/story-meet-curiosity.webp',
+    alt: 'Travelers sharing a curious moment in a local restaurant',
+    video: '/videos/home/meet-curiosity-1080.mp4'
   }
-] as const
+]
+
+const activeStory = ref<HomeStory | null>(null)
+const storyCloseButton = ref<HTMLButtonElement | null>(null)
+let storyTriggerElement: HTMLElement | null = null
+let previousBodyOverflow = ''
+
+const openStoryVideo = async (story: HomeStory, event: Event) => {
+  storyTriggerElement = event.currentTarget as HTMLElement
+  previousBodyOverflow = document.body.style.overflow
+  activeStory.value = story
+  document.body.style.overflow = 'hidden'
+  await nextTick()
+  storyCloseButton.value?.focus()
+}
+
+const closeStoryVideo = async () => {
+  if (!activeStory.value) return
+  activeStory.value = null
+  document.body.style.overflow = previousBodyOverflow
+  await nextTick()
+  storyTriggerElement?.focus()
+  storyTriggerElement = null
+}
+
+const handleStoryKeydown = (event: KeyboardEvent) => {
+  if (event.key === 'Escape' && activeStory.value) closeStoryVideo()
+}
 
 const newsletterEmail = ref('')
 const newsletterState = ref<'idle' | 'submitting' | 'confirmation_sent' | 'already_subscribed' | 'error'>('idle')
@@ -596,6 +690,7 @@ const isEncountersInView = ref(false)
 let encountersObserver: IntersectionObserver | null = null
 
 onMounted(async () => {
+  window.addEventListener('keydown', handleStoryKeydown)
   await nextTick()
   const firstImage = heroImageElements[0]
   if (firstImage?.complete && firstImage.naturalWidth > 0) handleHeroLoad(0)
@@ -617,6 +712,8 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  window.removeEventListener('keydown', handleStoryKeydown)
+  document.body.style.overflow = previousBodyOverflow
   if (bgTimer) clearInterval(bgTimer)
   if (heroIdleHandle !== null) {
     if ('cancelIdleCallback' in window) window.cancelIdleCallback(heroIdleHandle)
@@ -1495,11 +1592,24 @@ onUnmounted(() => {
 
 .story-card {
   position: relative;
+  display: block;
+  width: 100%;
   aspect-ratio: 5 / 6;
+  padding: 0;
   overflow: hidden;
-  border-radius: 8px;
+  border: 0;
+  border-radius: 20px;
+  appearance: none;
   background: #27332e;
   color: #fff;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.story-card:focus-visible {
+  outline: 3px solid var(--home-lime);
+  outline-offset: 4px;
 }
 
 .story-card > img {
@@ -1589,6 +1699,79 @@ onUnmounted(() => {
   display: flex;
   justify-content: flex-end;
   margin-top: 22px;
+}
+
+.story-video-modal {
+  position: fixed;
+  z-index: 2000;
+  inset: 0;
+  display: grid;
+  padding: 24px;
+  place-items: center;
+  background: rgba(5, 12, 10, .9);
+  backdrop-filter: blur(10px);
+}
+
+.story-video-modal__dialog {
+  position: relative;
+  width: min(1100px, 100%);
+  max-height: calc(100svh - 48px);
+  overflow: hidden;
+  border-radius: 20px;
+  background: #000;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, .45);
+}
+
+.story-video-modal__video {
+  display: block;
+  width: 100%;
+  max-height: calc(100svh - 48px);
+  aspect-ratio: 16 / 9;
+  background: #000;
+  object-fit: contain;
+}
+
+.story-video-modal__close {
+  position: absolute;
+  z-index: 1;
+  top: 16px;
+  right: 16px;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, .7);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, .5);
+  color: #fff;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.story-video-modal__close:focus-visible {
+  outline: 3px solid var(--home-lime);
+  outline-offset: 3px;
+}
+
+.story-video-enter-active,
+.story-video-leave-active {
+  transition: opacity .2s ease;
+}
+
+.story-video-enter-active .story-video-modal__dialog,
+.story-video-leave-active .story-video-modal__dialog {
+  transition: transform .2s ease;
+}
+
+.story-video-enter-from,
+.story-video-leave-to {
+  opacity: 0;
+}
+
+.story-video-enter-from .story-video-modal__dialog,
+.story-video-leave-to .story-video-modal__dialog {
+  transform: translateY(12px) scale(.98);
 }
 
 .see-more-button {
@@ -2057,6 +2240,20 @@ onUnmounted(() => {
     left: 28px;
   }
 
+  .story-video-modal {
+    padding: 12px;
+  }
+
+  .story-video-modal__dialog,
+  .story-video-modal__video {
+    max-height: calc(100svh - 24px);
+  }
+
+  .story-video-modal__close {
+    top: 10px;
+    right: 10px;
+  }
+
   .stories-section__more {
     margin-top: 18px;
   }
@@ -2075,6 +2272,13 @@ onUnmounted(() => {
 @media (prefers-reduced-motion: reduce) {
   .home-wish-row__track {
     animation-play-state: paused;
+  }
+
+  .story-video-enter-active,
+  .story-video-leave-active,
+  .story-video-enter-active .story-video-modal__dialog,
+  .story-video-leave-active .story-video-modal__dialog {
+    transition: none;
   }
 
   .home-v2 *,
