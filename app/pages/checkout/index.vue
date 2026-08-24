@@ -4,7 +4,8 @@
     <div v-else-if="error" class="checkout-state error">{{ error }} <button type="button" @click="load">Try again</button></div>
     <section v-else class="checkout-layout">
       <div class="checkout-panel">
-        <label>People<input v-model.number="quantity" type="number" min="1" step="1" @change="refreshQuote"></label>
+        <label>Adults<input v-model.number="adultCount" type="number" min="1" step="1" @change="refreshQuote"></label>
+        <label>Children<input v-model.number="childCount" type="number" min="0" step="1" @change="refreshQuote"></label>
         <label>Departure date<input v-model="startDate" type="date" :min="earliestStartDate" required @change="refreshQuote"></label>
         <label v-if="isLoggedIn">Coupon
           <select v-model="selectedCouponId" @change="refreshQuote">
@@ -36,7 +37,6 @@ const commerce = useTourCommerce()
 const auth = useMemberAuth()
 const isLoggedIn = computed(() => Boolean(auth.token.value))
 const productCode = computed(() => String(route.query.product || ''))
-const quantity = ref(1)
 const dateAfter = (days: number) => {
   const date = new Date()
   date.setHours(12, 0, 0, 0)
@@ -46,8 +46,11 @@ const dateAfter = (days: number) => {
   const day = String(date.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
 }
-const earliestStartDate = dateAfter(1)
-const startDate = ref(earliestStartDate)
+const earliestStartDate = ref(dateAfter(1))
+const adultCount = ref(Math.max(1, Number(route.query.adultCount || 1)))
+const childCount = ref(Math.max(0, Number(route.query.childCount || 0)))
+const requestedDate = typeof route.query.date === 'string' ? route.query.date : ''
+const startDate = ref(requestedDate >= earliestStartDate.value ? requestedDate : earliestStartDate.value)
 const selectedCouponId = ref<number | undefined>(undefined)
 const coupons = ref<MemberCouponView[]>([])
 const quote = ref<OrderPricingQuote | null>(null)
@@ -63,13 +66,17 @@ const refreshQuote = async () => {
   if (!productCode.value) { error.value = 'A product is required.'; return }
   if (!startDate.value) { error.value = 'A departure date is required.'; quote.value = null; return }
   try {
-    quote.value = await commerce.previewStandardOrder(productCode.value, Math.max(1, quantity.value), startDate.value, selectedCouponId.value)
+    quote.value = await commerce.previewStandardOrder(productCode.value, Math.max(1, adultCount.value), Math.max(0, childCount.value), startDate.value, selectedCouponId.value)
     error.value = ''
   } catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not calculate the price.' }
 }
 const load = async () => {
   loading.value = true
   try {
+    if (!productCode.value) throw new Error('A product is required.')
+    const catalog = await commerce.getCatalogProduct(productCode.value)
+    earliestStartDate.value = dateAfter(Math.max(1, Number(catalog.product.minimumAdvanceDays || 1)))
+    if (!requestedDate || requestedDate < earliestStartDate.value) startDate.value = earliestStartDate.value
     if (isLoggedIn.value) coupons.value = await commerce.listCoupons()
     await refreshQuote()
   } catch (caught) {
@@ -91,7 +98,7 @@ const submit = async () => {
   if (!startDate.value) { error.value = 'A departure date is required.'; return }
   submitting.value = true
   try {
-    const order = await commerce.createStandardOrder(productCode.value, Math.max(1, quantity.value), startDate.value, selectedCouponId.value)
+    const order = await commerce.createStandardOrder(productCode.value, Math.max(1, adultCount.value), Math.max(0, childCount.value), startDate.value, selectedCouponId.value)
     await navigateTo(order.order.status === 'COMPLETED'
       ? (isLoggedIn.value ? '/trips' : '/encounters')
       : `/orders/${encodeURIComponent(order.order.orderNo)}/pay`)

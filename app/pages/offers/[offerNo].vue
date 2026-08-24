@@ -14,8 +14,9 @@
           <div><dt>Price per person</dt><dd>{{ formatMoney(offer.unitSubtotal) }}</dd></div>
           <div v-if="Number(offer.unitDiscountAmount) > 0"><dt>Discount per person</dt><dd>- {{ formatMoney(offer.unitDiscountAmount) }}</dd></div>
           <div v-if="Number(offer.unitTaxAmount) > 0"><dt>Tax per person</dt><dd>{{ formatMoney(offer.unitTaxAmount) }}</dd></div>
-          <div><dt>Travelers</dt><dd><input v-model.number="travelerCount" class="traveler-input" type="number" min="1" step="1"></dd></div>
-          <div class="total-row"><dt>Total to pay</dt><dd>{{ formatMoney(Number(offer.unitTotalAmount) * Math.max(1, travelerCount)) }}</dd></div>
+          <div><dt>Adults</dt><dd><input v-model.number="adultCount" class="traveler-input" type="number" min="1" step="1"></dd></div>
+          <div><dt>Children</dt><dd><input v-model.number="childCount" class="traveler-input" type="number" min="0" step="1"></dd></div>
+          <div class="total-row"><dt>Total to pay</dt><dd>{{ formatMoney(Number(offer.unitTotalAmount) * (Math.max(1, adultCount) + Math.max(0, childCount))) }}</dd></div>
           <div v-if="offer.validUntil"><dt>Valid until</dt><dd>{{ formatDateTime(offer.validUntil) }}</dd></div>
         </dl>
         <button v-if="canConfirm" type="button" :disabled="submitting" @click="confirmOffer">
@@ -57,7 +58,8 @@ const submitting = ref(false)
 const revisionSubmitting = ref(false)
 const revisionOpen = ref(false)
 const revisionContent = ref('')
-const travelerCount = ref(1)
+const adultCount = ref(1)
+const childCount = ref(0)
 const error = ref('')
 const offer = computed(() => confirmation.value?.offer as CustomOfferView)
 const itinerary = computed(() => confirmation.value?.itinerary as TourConfirmationView)
@@ -79,7 +81,7 @@ const formatDate = (value?: string) => {
 }
 const formatDateTime = (value: string) => new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
 const load = async () => { loading.value = true; error.value = ''; try { confirmation.value = await commerce.getOffer(String(route.params.offerNo)) } catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not load this offer.' } finally { loading.value = false } }
-const confirmOffer = async () => { submitting.value = true; error.value = ''; try { const order = await commerce.confirmOffer(String(route.params.offerNo), Math.max(1, travelerCount.value)); await navigateTo(order.order.status === 'COMPLETED' ? '/trips' : `/orders/${encodeURIComponent(order.order.orderNo)}/pay`) } catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not confirm this offer.' } finally { submitting.value = false } }
+const confirmOffer = async () => { submitting.value = true; error.value = ''; try { const order = await commerce.confirmOffer(String(route.params.offerNo), Math.max(1, adultCount.value), Math.max(0, childCount.value)); await navigateTo(order.order.status === 'COMPLETED' ? '/trips' : `/orders/${encodeURIComponent(order.order.orderNo)}/pay`) } catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not confirm this offer.' } finally { submitting.value = false } }
 const requestRevision = async () => { revisionSubmitting.value = true; error.value = ''; try { await commerce.requestRevision(String(route.params.offerNo), revisionContent.value.trim()); revisionOpen.value = false; await load() } catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not send the revision request.' } finally { revisionSubmitting.value = false } }
 onMounted(async () => { if (await initializeAccount()) await load() })
 </script>

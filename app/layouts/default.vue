@@ -1,5 +1,5 @@
 <template>
-  <div class="app-layout" :class="{ 'app-layout--wish': isWishExperience }">
+  <div class="app-layout" :class="{ 'app-layout--wish': isWishExperience, 'app-layout--encounters': isEncountersExperience }">
     <!-- Header / Navigation -->
     <header class="navbar" :class="{ 'scrolled': isScrolled }">
       <div class="nav-container">
@@ -14,7 +14,7 @@
         <nav class="nav-links">
           <NuxtLink to="/#hero" :class="{ active: currentPath === '/' && activeSection === 'hero' }">Home</NuxtLink>
           <NuxtLink to="/wish" :class="{ active: currentPath.startsWith('/wish') }">Wish</NuxtLink>
-          <NuxtLink to="/encounters" :class="{ active: currentPath === '/encounters' }">Encounters</NuxtLink>
+          <NuxtLink to="/encounters" :class="{ active: currentPath.startsWith('/encounters') }">Encounters</NuxtLink>
           <div class="nav-item-dropdown">
             <a href="javascript:void(0)" @click.prevent :class="{ active: currentPath.startsWith('/cities') }">Cities</a>
             <div class="dropdown-menu">
@@ -100,7 +100,7 @@
           <nav class="mobile-nav-links">
             <NuxtLink to="/#hero" class="mobile-nav-item" :class="{ active: currentPath === '/' && activeSection === 'hero' }" @click="handleNavClick('/#hero')">Home</NuxtLink>
             <NuxtLink to="/wish" class="mobile-nav-item" :class="{ active: currentPath === '/wish' }" @click="handleNavClick('/wish')">Wish</NuxtLink>
-            <NuxtLink to="/encounters" class="mobile-nav-item" :class="{ active: currentPath === '/encounters' }" @click="handleNavClick('/encounters')">Encounters</NuxtLink>
+            <NuxtLink to="/encounters" class="mobile-nav-item" :class="{ active: currentPath.startsWith('/encounters') }" @click="handleNavClick('/encounters')">Encounters</NuxtLink>
 
             <!-- Submenu: Cities -->
             <div class="mobile-nav-item-accordion">
@@ -262,7 +262,8 @@ const currentPath = computed(() => {
   return path.length > 1 ? path.replace(/\/+$/, '') : path
 })
 const isWishExperience = computed(() => currentPath.value === '/wish' || currentPath.value === '/wish/my')
-const hidesFooter = computed(() => isWishExperience.value || currentPath.value === '/wish/create')
+const isEncountersExperience = computed(() => currentPath.value === '/encounters' || currentPath.value.startsWith('/encounters/'))
+const hidesFooter = computed(() => isWishExperience.value || isEncountersExperience.value || currentPath.value === '/wish/create')
 const activeSection = ref('hero')
 // Keep the first client render identical to SSR; sync scroll state after mount.
 const isScrolled = ref(false)

@@ -29,7 +29,7 @@
     <div v-else class="trip-grid">
       <article v-for="trip in filteredTrips" :key="trip.itineraryNo" class="trip-card">
         <div class="trip-media">
-          <img v-if="trip.coverImageUrl" :src="trip.coverImageUrl" :alt="trip.cityLabel || trip.title">
+          <img v-if="trip.imageUrls[0]" :src="trip.imageUrls[0]" :alt="trip.cityLabel || trip.title">
           <div v-else class="trip-placeholder"><font-awesome-icon :icon="['fas', 'compass']" /><span>{{ trip.cityLabel || 'China' }}</span></div>
           <span class="trip-status" :class="tripStatusClass(trip.status)">{{ trip.statusName }}</span>
         </div>
@@ -92,7 +92,7 @@ interface TripItemDetail { id: number; projectTypeLabel?: string; title: string;
 interface TripDay { id: number; dayNo: number; title: string; summary?: string; items: TripItemDetail[] }
 interface Trip {
   itineraryNo: string; itineraryType: 'STANDARD_PURCHASE' | 'CUSTOM_SERVICE'; sourceType: 'STANDARD_PRODUCT' | 'WISH' | 'MANUAL'; wishId?: number; wishNo?: string; orderNo?: string; status: string; statusName: string; versionNo: number; travelerCount?: number; startDate?: string; endDate?: string
-  itineraryTypeLabel: string; sourceLabel: string; title: string; cityLabel: string; coverImageUrl?: string; dateText?: string
+  itineraryTypeLabel: string; sourceLabel: string; title: string; cityLabel: string; imageUrls: string[]; dateText?: string
   summary?: string; designerMessage?: string; days: TripDay[]
 }
 
@@ -136,7 +136,7 @@ const fetchTrips = async () => {
         sourceLabel,
         title: content?.title || instance.title,
         cityLabel: instance.cityLabel || instance.cityCode || content?.cityCode || '',
-        coverImageUrl: content?.coverImageUrl || instance.coverImageUrl,
+        imageUrls: Array.isArray(content?.imageUrls) ? content.imageUrls : (instance.imageUrls || []),
         dateText: instance.startDate
           ? `${instance.startDate}${instance.endDate ? ` - ${instance.endDate}` : ''}`
           : content?.dateText,

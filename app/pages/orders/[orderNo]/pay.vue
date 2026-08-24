@@ -28,7 +28,7 @@
       </section>
       <aside class="payment-summary">
         <p>Amount due</p><strong>{{ order.order.currency }} {{ order.order.totalAmount }}</strong>
-        <dl><div><dt>Journey</dt><dd>{{ order.items[0]?.snapshot?.title || 'Lvyv journey' }}</dd></div><div><dt>Travelers</dt><dd>{{ order.items[0]?.item.quantity || 1 }}</dd></div></dl>
+        <dl><div><dt>Journey</dt><dd>{{ order.items[0]?.snapshot?.title || 'Lvyv journey' }}</dd></div><div><dt>Adults</dt><dd>{{ order.items[0]?.item.adultCount || 1 }}</dd></div><div><dt>Children</dt><dd>{{ order.items[0]?.item.childCount || 0 }}</dd></div></dl>
         <button :disabled="submitting || !channel || !channels.length">{{ submitting ? 'Connecting securely...' : 'Continue to secure payment' }}</button>
         <small>Card and wallet details are entered only on Oceanpayment. Lvyv never receives your card number or security code.</small>
       </aside>
