@@ -351,6 +351,7 @@
             <font-awesome-icon :icon="['fas', 'xmark']" aria-hidden="true" />
           </button>
           <video
+            ref="storyVideo"
             :key="activeStory.video"
             class="story-video-modal__video"
             controls
@@ -543,6 +544,7 @@ const stories: HomeStory[] = [
 ]
 
 const activeStory = ref<HomeStory | null>(null)
+const storyVideo = ref<HTMLVideoElement | null>(null)
 const storyCloseButton = ref<HTMLButtonElement | null>(null)
 let storyTriggerElement: HTMLElement | null = null
 let previousBodyOverflow = ''
@@ -553,11 +555,23 @@ const openStoryVideo = async (story: HomeStory, event: Event) => {
   activeStory.value = story
   document.body.style.overflow = 'hidden'
   await nextTick()
+  const video = storyVideo.value
+  if (video) {
+    video.currentTime = 0
+    video.muted = false
+    try {
+      await video.play()
+    } catch {
+      video.muted = true
+      await video.play().catch(() => undefined)
+    }
+  }
   storyCloseButton.value?.focus()
 }
 
 const closeStoryVideo = async () => {
   if (!activeStory.value) return
+  storyVideo.value?.pause()
   activeStory.value = null
   document.body.style.overflow = previousBodyOverflow
   await nextTick()
