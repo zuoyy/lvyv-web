@@ -136,7 +136,7 @@
                 :aria-label="calendarAriaLabel(day)"
                 @click="selectCalendarDay(day)"
               >
-                {{ day }}
+                <span>{{ day }}</span>
               </button>
             </div>
           </div>
@@ -762,23 +762,38 @@ onBeforeUnmount(() => {
 .calendar__weekdays,
 .calendar__days { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; }
 .calendar__weekdays { margin-top: 18px; color: #87918d; font: 400 9px/1 'Inter', sans-serif; }
-.calendar__days { margin-top: 12px; row-gap: 8px; }
+.calendar__days { margin-top: 12px; row-gap: 6px; }
 
 .calendar__days button,
 .calendar__days > span {
-  height: 34px;
+  height: 44px;
   border: 0;
   background: transparent;
   color: #34483f;
   font: 400 10px/1 'Inter', sans-serif;
 }
 
-.calendar__days button { cursor: pointer; }
+.calendar__days button { position: relative; z-index: 0; padding: 0; cursor: pointer; }
+.calendar__days button > span { position: relative; z-index: 2; }
 .calendar__days button:disabled { color: #c3cac6; cursor: not-allowed; }
-.calendar__days button.in-range { background: #dff0c8; }
+.calendar__days button.in-range { background: #d8f3bf; }
+.calendar__days button.range-start { background: linear-gradient(to right, transparent 0 50%, #d8f3bf 50% 100%); }
+.calendar__days button.range-end { background: linear-gradient(to right, #d8f3bf 0 50%, transparent 50% 100%); }
 .calendar__days button.range-start,
-.calendar__days button.range-end { border-radius: 50%; background: #325c4c; color: #fff; font-weight: 700; }
-.calendar__days button.range-start + .in-range { box-shadow: -10px 0 0 #dff0c8; }
+.calendar__days button.range-end { color: #fff; font-weight: 700; }
+.calendar__days button.range-start::after,
+.calendar__days button.range-end::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #3a654f;
+  content: '';
+  transform: translate(-50%, -50%);
+}
 
 .traveler-row {
   min-height: 64px;
