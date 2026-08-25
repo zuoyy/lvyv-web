@@ -215,7 +215,7 @@
           <div v-for="(row, rowIndex) in wishRows" :key="rowIndex" class="home-wish-row" :class="`home-wish-row--${rowIndex === 0 ? 'left' : 'right'}`">
             <div class="home-wish-row__track">
               <div v-for="copy in 2" :key="copy" class="home-wish-row__group" :aria-hidden="copy === 2 ? 'true' : undefined">
-                <article v-for="wish in row" :key="`${copy}-${wish.text}`" class="home-wish-bubble" :class="`home-wish-bubble--${wish.style}`">
+                <article v-for="wish in row" :key="`${copy}-${wish.id}`" class="home-wish-bubble" :class="`home-wish-bubble--${wish.style}`">
                   <p>{{ wish.text }}</p>
                   <span>{{ wish.passenger }}</span>
                 </article>
@@ -370,6 +370,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
+import homeWishPool from '~/data/home-wish-pool.json'
 
 type HomeHeroSlide = {
   id: string
@@ -496,19 +497,14 @@ const journeySteps = [
   }
 ] as const
 
-const wishRows = [
-  [
-    { text: 'I wish to learn traditional Chinese calligraphy.', passenger: 'Sophie · Germany', style: 'grass' },
-    { text: 'I wish someone could show me their favorite cafe.', passenger: 'Lucas · France', style: 'forest' },
-    { text: 'I wish to cook with a local family.', passenger: 'Noah · Australia', style: 'outline' }
-  ],
-  [
-    { text: 'I wish to learn Tai Chi in a local park at sunrise.', passenger: 'Mark · USA', style: 'forest' },
-    { text: 'I wish to celebrate Mid-Autumn Festival with locals.', passenger: 'Mia · Canada', style: 'outline' },
-    { text: 'I wish to learn Chinese calligraphy from a master.', passenger: 'Emma · UK', style: 'teal' },
-    { text: 'I wish to find a tea house hidden in an old street.', passenger: 'Lena · Sweden', style: 'grass' }
-  ]
-] as const
+type HomeWish = {
+  id: string
+  text: string
+  passenger: string
+  style: 'grass' | 'forest' | 'outline' | 'teal'
+}
+
+const wishRows = homeWishPool.rows as HomeWish[][]
 
 type HomeStory = {
   title: string
@@ -1467,11 +1463,11 @@ onUnmounted(() => {
 }
 
 .home-wish-row--left .home-wish-row__track {
-  animation: homeWishLeft 38s linear infinite;
+  animation: homeWishLeft 96s linear infinite;
 }
 
 .home-wish-row--right .home-wish-row__track {
-  animation: homeWishRight 44s linear infinite;
+  animation: homeWishRight 104s linear infinite;
 }
 
 .home-wish-row__track:hover {
