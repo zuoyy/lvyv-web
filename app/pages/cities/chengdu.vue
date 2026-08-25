@@ -39,7 +39,7 @@
       <div class="city-chengdu__cta-content">
         <h2 id="cta-title">Ready for your<br>Cheng'du encounter?</h2>
         <NuxtLink to="/wish" class="city-chengdu__cta-button">
-          <img src="/images/home-v2/magic-wand.svg" alt="" aria-hidden="true">
+          <img src="/images/home/magic-wand.svg" alt="" aria-hidden="true">
           <span>Start Your Wish</span>
         </NuxtLink>
       </div>

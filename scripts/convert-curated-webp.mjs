@@ -3,7 +3,7 @@ import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const dir = resolve(__dirname, '../public/images/home-v2')
+const dir = resolve(__dirname, '../public/images/home')
 
 const files = [
   'encounter-beijing-582',

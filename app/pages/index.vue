@@ -29,7 +29,7 @@
         <h1 id="home-title" class="sr-only">Go, meet someone.</h1>
         <img
           class="hero-v2__title"
-          src="/images/home-v2/banner-text.svg"
+          src="/images/home/banner-text.svg"
           alt="Go, meet someone."
           width="723"
           height="171"
@@ -98,7 +98,7 @@
 
         <img
           class="journey-section__art"
-          src="/images/home-v2/bumps-up-figma.png"
+          src="/images/home/bumps-up-figma.png"
           alt=""
           width="500"
           height="680"
@@ -110,7 +110,7 @@
           <NuxtLink v-for="step in journeySteps" :key="step.title" :to="step.to" class="journey-step">
             <div class="journey-step__title">
               <h3>{{ step.title }}</h3>
-              <img src="/images/home-v2/journey-arrow.svg" alt="" aria-hidden="true">
+              <img src="/images/home/journey-arrow.svg" alt="" aria-hidden="true">
             </div>
             <p>{{ step.description }}</p>
           </NuxtLink>
@@ -149,9 +149,9 @@
             aria-label="Explore BEIJING"
           >
             <picture>
-              <source type="image/webp" srcset="/images/home-v2/encounter-beijing-582.webp">
+              <source type="image/webp" srcset="/images/home/encounter-beijing-582.webp">
               <img
-                src="/images/home-v2/encounter-beijing-582.png"
+                src="/images/home/encounter-beijing-582.png"
                 alt="BEIJING 北京"
                 width="278"
                 height="389"
@@ -167,9 +167,9 @@
             aria-label="Explore CHENGDU"
           >
             <picture>
-              <source type="image/webp" srcset="/images/home-v2/encounter-chengdu-582.webp">
+              <source type="image/webp" srcset="/images/home/encounter-chengdu-582.webp">
               <img
-                src="/images/home-v2/encounter-chengdu-582.png"
+                src="/images/home/encounter-chengdu-582.png"
                 alt="CHENGDU 成都"
                 width="278"
                 height="389"
@@ -185,9 +185,9 @@
             aria-label="Explore XI'AN"
           >
             <picture>
-              <source type="image/webp" srcset="/images/home-v2/encounter-xian-582.webp">
+              <source type="image/webp" srcset="/images/home/encounter-xian-582.webp">
               <img
-                src="/images/home-v2/encounter-xian-582.png"
+                src="/images/home/encounter-xian-582.png"
                 alt="XI'AN 西安"
                 width="278"
                 height="389"
@@ -388,45 +388,45 @@ const homeHeroSlides: HomeHeroSlide[] = [
   {
     id: 'xian-city-wall',
     index: 0,
-    fallback: '/images/home-v2/banner-1-1440.webp',
-    width: 1440,
-    height: 780,
-    mobileWebpSrcset: '/images/home-v2/banner-1-768.webp 768w',
-    webpSrcset: '/images/home-v2/banner-1-768.webp 768w, /images/home-v2/banner-1-1440.webp 1440w',
-    wideWebpSrcset: '/images/home-v2/banner-1-1440.webp 1440w',
+    fallback: '/images/home/banner-1-1440.webp',
+    width: 2880,
+    height: 1560,
+    mobileWebpSrcset: '/images/home/banner-1-768.webp 768w',
+    webpSrcset: '/images/home/banner-1-768.webp 768w, /images/home/banner-1-1440.webp 1440w, /images/home/banner-1-2880.webp 2880w',
+    wideWebpSrcset: '/images/home/banner-1-2880.webp 2880w',
     alt: "Xi'an city wall surrounded by water at sunset"
   },
   {
     id: 'xian-pagoda',
     index: 1,
-    fallback: '/images/home-v2/banner-2-1440.webp',
-    width: 1440,
-    height: 780,
-    mobileWebpSrcset: '/images/home-v2/banner-2-768.webp 768w',
-    webpSrcset: '/images/home-v2/banner-2-768.webp 768w, /images/home-v2/banner-2-1440.webp 1440w',
-    wideWebpSrcset: '/images/home-v2/banner-2-1440.webp 1440w',
+    fallback: '/images/home/banner-2-1440.webp',
+    width: 2880,
+    height: 1560,
+    mobileWebpSrcset: '/images/home/banner-2-768.webp 768w',
+    webpSrcset: '/images/home/banner-2-768.webp 768w, /images/home/banner-2-1440.webp 1440w, /images/home/banner-2-2880.webp 2880w',
+    wideWebpSrcset: '/images/home/banner-2-2880.webp 2880w',
     alt: "Xi'an pagoda beside a star-lit modern facade at dusk"
   },
   {
     id: 'xian-city-gate',
     index: 2,
-    fallback: '/images/home-v2/banner-3-1440.webp',
-    width: 1440,
-    height: 780,
-    mobileWebpSrcset: '/images/home-v2/banner-3-768.webp 768w',
-    webpSrcset: '/images/home-v2/banner-3-768.webp 768w, /images/home-v2/banner-3-1440.webp 1440w',
-    wideWebpSrcset: '/images/home-v2/banner-3-1440.webp 1440w',
+    fallback: '/images/home/banner-3-1440.webp',
+    width: 2880,
+    height: 1560,
+    mobileWebpSrcset: '/images/home/banner-3-768.webp 768w',
+    webpSrcset: '/images/home/banner-3-768.webp 768w, /images/home/banner-3-1440.webp 1440w, /images/home/banner-3-2880.webp 2880w',
+    wideWebpSrcset: '/images/home/banner-3-2880.webp 2880w',
     alt: "Xi'an city gate illuminated beneath an evening sky"
   },
   {
     id: 'traditional-opera',
     index: 3,
-    fallback: '/images/home-v2/banner-4-1440.webp',
-    width: 1440,
-    height: 780,
-    mobileWebpSrcset: '/images/home-v2/banner-4-768.webp 768w',
-    webpSrcset: '/images/home-v2/banner-4-768.webp 768w, /images/home-v2/banner-4-1440.webp 1440w',
-    wideWebpSrcset: '/images/home-v2/banner-4-1440.webp 1440w',
+    fallback: '/images/home/banner-4-1440.webp',
+    width: 2880,
+    height: 1560,
+    mobileWebpSrcset: '/images/home/banner-4-768.webp 768w',
+    webpSrcset: '/images/home/banner-4-768.webp 768w, /images/home/banner-4-1440.webp 1440w, /images/home/banner-4-2880.webp 2880w',
+    wideWebpSrcset: '/images/home/banner-4-2880.webp 2880w',
     alt: 'Traditional Chinese opera performers beneath a dramatic ring of light'
   }
 ]
@@ -438,7 +438,7 @@ useLvyvSeo({
   title: homeTitle,
   description: homeDescription,
   path: '/',
-  image: '/images/home-v2/banner-1-1440.webp',
+  image: '/images/home/banner-1-2880.webp',
   jsonLd: [
     organizationJsonLd(),
     websiteJsonLd(),
@@ -451,8 +451,8 @@ useHead({
     rel: 'preload',
     as: 'image',
     type: 'image/webp',
-    href: '/images/home-v2/banner-1-1440.webp',
-    imagesrcset: '/images/home-v2/banner-1-768.webp 768w, /images/home-v2/banner-1-1440.webp 1440w',
+    href: '/images/home/banner-1-1440.webp',
+    imagesrcset: '/images/home/banner-1-768.webp 768w, /images/home/banner-1-1440.webp 1440w, /images/home/banner-1-2880.webp 2880w',
     imagesizes: '100vw',
     fetchpriority: 'high'
   }]
@@ -462,19 +462,19 @@ const audienceCards = [
   {
     title: 'No Packaged Tours',
     description: "You're not a tourist. You're an explorer.",
-    image: '/images/home-v2/audience-no-tours.webp',
+    image: '/images/home/audience-no-tours.webp',
     alt: 'Travelers setting out on a cycling trip in Xi\'an'
   },
   {
     title: 'Real Encounters',
     description: 'Meet locals, hear their stories, eat where they eat.',
-    image: '/images/home-v2/audience-encounters.webp',
+    image: '/images/home/audience-encounters.webp',
     alt: 'Local and international friends meeting in Xi\'an'
   },
   {
     title: 'Beyond Google',
     description: 'Handcrafted trips by people who know the hidden corners.',
-    image: '/images/home-v2/audience-beyond-google.webp',
+    image: '/images/home/audience-beyond-google.webp',
     alt: 'Travelers discovering the Terracotta Warriors'
   }
 ] as const
@@ -523,21 +523,21 @@ const stories: HomeStory[] = [
   {
     title: 'Meet Regret',
     description: 'Some love stories are remembered because they never had a happy ending.',
-    image: '/images/home-v2/story-meet-regret.webp',
+    image: '/images/home/story-meet-regret.webp',
     alt: 'Traditional Chinese opera performers on a blue-lit stage',
     video: '/videos/home/meet-regret-1080.mp4'
   },
   {
     title: 'Meet a Wish',
     description: 'Local children, one bell, and a shared wish.',
-    image: '/images/home-v2/story-meet-a-wish.webp',
+    image: '/images/home/story-meet-a-wish.webp',
     alt: 'An ancient pagoda rising above green trees',
     video: '/videos/home/meet-a-wish-1080.mp4'
   },
   {
     title: 'Meet Curiosity',
     description: 'A small moment of wonder, found in the everyday.',
-    image: '/images/home-v2/story-meet-curiosity.webp',
+    image: '/images/home/story-meet-curiosity.webp',
     alt: 'Travelers sharing a curious moment in a local restaurant',
     video: '/videos/home/meet-curiosity-1080.mp4'
   }
