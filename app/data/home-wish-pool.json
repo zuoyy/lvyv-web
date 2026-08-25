@@ -3,61 +3,61 @@
     [
       {
         "id": "learn-biangbiang-noodles-xian",
-        "text": "I wish to learn how to make biangbiang noodles with a Xi'an family.",
+        "text": "I'd love to make biangbiang noodles with a Xi'an family.",
         "passenger": "Amelia · Australia",
         "style": "grass"
       },
       {
         "id": "cycle-xian-city-wall",
-        "text": "I wish to cycle the Xi'an City Wall just before sunset.",
+        "text": "Cycling the Xi'an City Wall at sunset is at the top of my list.",
         "passenger": "Jonas · Germany",
         "style": "forest"
       },
       {
         "id": "chengdu-neighborhood-teahouse",
-        "text": "I wish to spend an unhurried afternoon in a neighborhood teahouse in Chengdu.",
+        "text": "Could someone take me to their favorite neighborhood teahouse in Chengdu?",
         "passenger": "Claire · France",
         "style": "outline"
       },
       {
         "id": "beijing-hutong-breakfast",
-        "text": "I wish to taste a traditional Beijing breakfast in a quiet hutong.",
+        "text": "A quiet hutong breakfast in Beijing sounds like my perfect morning.",
         "passenger": "Ethan · Canada",
         "style": "teal"
       },
       {
         "id": "terracotta-restoration-story",
-        "text": "I wish to hear how the Terracotta Warriors are restored and protected.",
+        "text": "I'm fascinated by how the Terracotta Warriors are restored and protected.",
         "passenger": "Sofia · Italy",
         "style": "grass"
       },
       {
         "id": "chengdu-mahjong-lesson",
-        "text": "I wish to learn a friendly game of mahjong from Chengdu locals.",
+        "text": "Hoping a Chengdu local can teach me mahjong over tea and conversation.",
         "passenger": "Oliver · United Kingdom",
         "style": "forest"
       },
       {
         "id": "paper-cutting-workshop",
-        "text": "I wish to try Chinese paper-cutting in a small family workshop.",
+        "text": "I've always wanted to try Chinese paper-cutting in a family workshop.",
         "passenger": "Maya · United States",
         "style": "outline"
       },
       {
         "id": "xian-morning-market",
-        "text": "I wish to walk through a Xi'an morning market and try the local breakfast.",
+        "text": "My perfect Xi'an morning: a busy market and whatever locals eat for breakfast.",
         "passenger": "Lars · Denmark",
         "style": "teal"
       },
       {
         "id": "beijing-opera-backstage",
-        "text": "I wish to see how a Peking Opera performer prepares their makeup.",
+        "text": "Would love to watch a Peking Opera performer prepare their stage makeup.",
         "passenger": "Hannah · New Zealand",
         "style": "grass"
       },
       {
         "id": "family-recipe-dumplings",
-        "text": "I wish to fold dumplings and exchange family recipes around the table.",
+        "text": "Dumplings, family recipes, and stories around the table — that's my kind of trip.",
         "passenger": "Mateo · Spain",
         "style": "forest"
       }
@@ -65,61 +65,61 @@
     [
       {
         "id": "tai-chi-park-sunrise",
-        "text": "I wish to join a Tai Chi practice in a local park at sunrise.",
+        "text": "Tai Chi in a local park at sunrise would be an unforgettable start to the day.",
         "passenger": "Ava · Ireland",
         "style": "forest"
       },
       {
         "id": "chinese-calligraphy-name",
-        "text": "I wish to learn the brush strokes used to write my name in Chinese.",
+        "text": "I want to learn the brush strokes behind writing my name in Chinese.",
         "passenger": "Noah · Netherlands",
         "style": "outline"
       },
       {
         "id": "chengdu-sichuan-cooking",
-        "text": "I wish to shop at a Chengdu market before cooking a Sichuan meal.",
+        "text": "Take me through a Chengdu market, then let's cook a proper Sichuan meal.",
         "passenger": "Emma · Sweden",
         "style": "teal"
       },
       {
         "id": "beijing-kite-maker",
-        "text": "I wish to meet a Beijing kite maker and build one of my own.",
+        "text": "Could I meet a Beijing kite maker and build one of my own?",
         "passenger": "Lucas · Brazil",
         "style": "grass"
       },
       {
         "id": "longjing-tea-harvest",
-        "text": "I wish to pick tea leaves and learn how Longjing tea is roasted.",
+        "text": "Picking tea leaves and seeing Longjing roasted by hand would be incredible.",
         "passenger": "Elise · Belgium",
         "style": "forest"
       },
       {
         "id": "xian-shadow-puppetry",
-        "text": "I wish to meet a Xi'an shadow-puppet artist and try moving the figures.",
+        "text": "I'd be thrilled to meet a Xi'an shadow-puppet artist and try the figures myself.",
         "passenger": "Daniel · Switzerland",
         "style": "outline"
       },
       {
         "id": "chengdu-bamboo-weaving",
-        "text": "I wish to learn the first steps of bamboo weaving from a Chengdu artisan.",
+        "text": "Learning a few bamboo-weaving techniques from a Chengdu artisan would make my trip.",
         "passenger": "Nora · Norway",
         "style": "teal"
       },
       {
         "id": "courtyard-family-dinner",
-        "text": "I wish to share a home-cooked dinner in a traditional courtyard.",
+        "text": "A home-cooked dinner in a traditional courtyard is the memory I want to bring home.",
         "passenger": "James · Singapore",
         "style": "grass"
       },
       {
         "id": "small-town-train-journey",
-        "text": "I wish to take a slow train and spend a day in a small Chinese town.",
+        "text": "I'd love to slow down, take a local train, and spend the day in a small town.",
         "passenger": "Ines · Portugal",
         "style": "forest"
       },
       {
         "id": "old-street-photography",
-        "text": "I wish to photograph an old street as the neighborhood wakes up.",
+        "text": "Just my camera, an old street, and the neighborhood waking up around me.",
         "passenger": "Kenji · Japan",
         "style": "outline"
       }
