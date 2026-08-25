@@ -1952,33 +1952,47 @@ onUnmounted(() => {
 }
 
 @media (max-width: 767px) {
+  .home-v2 {
+    padding-top: var(--mobile-navbar-height, 60px);
+  }
+
   .home-shell {
     width: min(100% - 32px, 560px);
   }
 
   .hero-v2 {
-    height: 100svh;
+    height: auto;
+    min-height: 0;
+    aspect-ratio: 1440 / 780;
+  }
+
+  .hero-v2__slide img {
+    object-fit: contain;
+    object-position: center top;
   }
 
   .hero-v2__content {
-    justify-content: flex-end;
-    padding: 0 20px 86px;
+    justify-content: flex-start;
+    padding: 18.611vw 20px 0;
   }
 
   .hero-v2__title {
-    width: min(92vw, 520px);
+    width: 50.208vw;
     height: auto;
   }
 
   .hero-v2__content > p {
-    margin-top: 20px;
-    font-size: 15px;
+    width: 50.417vw;
+    height: auto;
+    margin-top: 0;
+    font-size: clamp(8px, 1.806vw, 14px);
+    line-height: 1;
   }
 
   .hero-v2__actions {
-    width: min(100%, 360px);
-    gap: 12px;
-    margin-top: 26px;
+    width: auto;
+    gap: clamp(8px, 1.389vw, 11px);
+    margin-top: clamp(5px, 1.389vw, 11px);
   }
 
   .home-button {
@@ -1988,11 +2002,22 @@ onUnmounted(() => {
     font-size: 13px;
   }
 
-  .hero-v2__actions .home-button--primary,
-  .hero-v2__actions .home-button--outline {
-    width: auto;
+  .hero-v2 .home-button {
+    min-height: clamp(28px, 4.167vw, 32px);
+    gap: clamp(4px, .833vw, 7px);
+    padding: 0 8px;
+    border-radius: clamp(5px, .694vw, 8px);
+    font-size: clamp(9px, 2vw, 14px);
+  }
+
+  .hero-v2__actions .home-button--primary {
+    width: clamp(112px, 28vw, 220px);
     min-width: 0;
-    flex: 1;
+  }
+
+  .hero-v2__actions .home-button--outline {
+    width: clamp(92px, 22vw, 170px);
+    min-width: 0;
   }
 
   .home-button img,
@@ -2001,8 +2026,24 @@ onUnmounted(() => {
     height: 20px;
   }
 
+  .hero-v2 .home-button img,
+  .hero-v2 .home-button svg {
+    width: clamp(12px, 3vw, 24px);
+    height: clamp(12px, 3vw, 24px);
+  }
+
   .hero-v2__dots {
-    bottom: 18px;
+    bottom: clamp(6px, 1.389vw, 11px);
+    gap: 4px;
+  }
+
+  .hero-v2__dots button {
+    width: clamp(6px, .833vw, 7px);
+    height: clamp(6px, .833vw, 7px);
+  }
+
+  .hero-v2__dots button.is-active {
+    width: clamp(10px, 1.389vw, 11px);
   }
 
   .audience-section {

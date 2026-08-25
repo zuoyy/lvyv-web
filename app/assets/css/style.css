@@ -2379,7 +2379,7 @@ html {
 
 @media (max-width: 991px) {
   html {
-    scroll-padding-top: 72px;
+    scroll-padding-top: var(--mobile-navbar-height, 60px);
   }
 }
 
@@ -2391,6 +2391,6 @@ section,
 @media (max-width: 991px) {
   section,
   [id] {
-    scroll-margin-top: 72px;
+    scroll-margin-top: var(--mobile-navbar-height, 60px);
   }
 }

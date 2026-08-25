@@ -6,6 +6,7 @@
   --color-dark: #203d33;
   --color-slate-violet: #161c2d;
   --color-wish-bg: #fdfff3;
+  --mobile-navbar-height: 60px;
 }
 
 .sr-only {
@@ -1259,7 +1260,7 @@ a {
   }
 
   .navbar {
-    height: 72px;
+    height: var(--mobile-navbar-height);
     background: rgba(255, 255, 255, 0.6);
     border-bottom: 0;
     backdrop-filter: blur(5px);
@@ -1279,7 +1280,7 @@ a {
   }
 
   .brand-logo {
-    width: 106px;
+    width: 98px;
     height: auto;
   }
 
