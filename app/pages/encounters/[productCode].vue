@@ -727,7 +727,18 @@ onBeforeUnmount(() => {
 
 .activity-card { min-width: 0; margin: 0; padding: 0; overflow: hidden; border: 1px solid #e1e5e3; border-radius: 6px; background: #fff; cursor: pointer; }
 .activity-cards img { width: 100%; height: 132px; display: block; object-fit: cover; }
-.activity-card > span { display: block; overflow: hidden; padding: 9px 8px; color: #42544d; font: 400 10px/1 'Inter', sans-serif; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+.activity-card > span {
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  color: #42544d;
+  font: 400 10px/1.4 'Inter', sans-serif;
+  overflow-wrap: anywhere;
+  text-align: center;
+  white-space: normal;
+}
 .activity-card:hover img { transform: scale(1.025); }
 .activity-card img { transition: transform .25s ease; }
 .empty-day { margin: 0; color: #728079; font: 400 11px/1.5 'Inter', sans-serif; }
@@ -876,8 +887,7 @@ onBeforeUnmount(() => {
   .itinerary__title-row h2 { font-size: 21px; }
   .day-item__heading { grid-template-columns: 48px minmax(0, 1fr) 12px; gap: 8px; }
   .day-item__content { padding-left: 48px; }
-  .activity-cards { grid-template-columns: 1fr 1fr; margin-left: 0; }
-  .activity-card:last-child { display: none; }
+  .activity-cards { grid-template-columns: 1fr 1fr; margin-left: 32px; }
   .activity-cards img { height: 116px; }
   .photo-modal { padding: 60px 54px; }
   .photo-modal img { max-width: calc(100vw - 108px); max-height: calc(100vh - 120px); }
