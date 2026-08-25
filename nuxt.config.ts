@@ -15,6 +15,8 @@ export default defineNuxtConfig({
   // 本地开发时直连 lvyv-server；生产静态站点仍由 Nginx 代理 /web-api。
   nitro: {
     routeRules: {
+      '/encounters': { swr: 30 },
+      '/encounters/**': { swr: 30 },
       '/faq/**': { swr: 60 },
       '/en/faq/**': { swr: 60 },
       '/zh/faq/**': { swr: 60 },
@@ -39,6 +41,9 @@ export default defineNuxtConfig({
       ignore: [
         '/badges',
         '/trips',
+        '/encounters',
+        '/encounters/',
+        '/encounters/**',
         '/faq',
         '/faq/',
         '/faq/**',
