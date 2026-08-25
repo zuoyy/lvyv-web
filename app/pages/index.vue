@@ -352,15 +352,14 @@
           </button>
           <video
             ref="storyVideo"
-            :key="activeStory.video"
             class="story-video-modal__video"
+            :src="activeStory.video"
             controls
             autoplay
             playsinline
-            preload="metadata"
+            preload="auto"
             :poster="activeStory.image"
           >
-            <source :src="activeStory.video" type="video/mp4">
             Your browser does not support HTML video.
           </video>
         </div>
