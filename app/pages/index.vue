@@ -2047,7 +2047,7 @@ onUnmounted(() => {
   }
 
   .audience-section {
-    padding: 112px 0 36px !important;
+    padding: 64px 0 36px !important;
   }
 
   .home-eyebrow {
@@ -2263,7 +2263,7 @@ onUnmounted(() => {
   }
 
   .stories-section {
-    padding: 112px 0 8px !important;
+    padding: 64px 0 8px !important;
   }
 
   .stories-section__header h2 {
