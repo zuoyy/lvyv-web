@@ -365,14 +365,23 @@ const applyCatalog = (catalog: import('~/composables/useTourCommerce').CatalogPr
   }
 }
 
-const { data: catalogData, status: catalogStatus } = await useAsyncData(
+const { data: catalogData, status: catalogStatus, refresh: refreshCatalog } = await useAsyncData(
   'encounters-catalog-products',
   () => commerce.listCatalogProducts(),
-  { default: () => [] }
+  {
+    default: () => [],
+    getCachedData: (key, nuxtApp) => nuxtApp.isHydrating ? nuxtApp.payload.data[key] : undefined
+  }
 )
 const loading = computed(() => catalogStatus.value === 'idle' || catalogStatus.value === 'pending')
 const loadWarning = computed(() => catalogStatus.value === 'error')
 watch(catalogData, value => applyCatalog(value || []), { immediate: true })
+
+const refreshCatalogOnFocus = () => {
+  void refreshCatalog()
+}
+onMounted(() => window.addEventListener('focus', refreshCatalogOnFocus))
+onBeforeUnmount(() => window.removeEventListener('focus', refreshCatalogOnFocus))
 
 const explore = async (productCode: string) => {
   await navigateTo(`/encounters/${encodeURIComponent(productCode)}`)
