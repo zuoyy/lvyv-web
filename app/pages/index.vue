@@ -2121,7 +2121,7 @@ onUnmounted(() => {
     inset: auto;
     top: 82px;
     left: 50%;
-    width: 1280px;
+    width: 1440px;
     height: 760px;
     transform: translateX(-50%) scale(0.62);
     transform-origin: top center;
