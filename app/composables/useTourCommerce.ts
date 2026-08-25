@@ -76,6 +76,32 @@ export interface CatalogProductView {
   }
 }
 
+export interface CatalogProductListView {
+  id: number
+  productCode: string
+  name: string
+  summary?: string
+  destinationName?: string
+  travelType?: string
+  themes: string[]
+  serviceLanguages: string[]
+  guaranteedDeparture: boolean
+  shoppingPolicy?: string
+  priceNote?: string
+  standardItineraryVersionId: number
+  itineraryCode: string
+  itineraryVersionId: number
+  itineraryTitle: string
+  cityCode: string
+  imageUrls: string[]
+  dateText?: string
+  dayCount: number
+  currency: string
+  listPrice: string | number
+  salePrice: string | number
+  promoted: boolean
+}
+
 export interface ItineraryInstance {
   id: number
   itineraryNo: string
@@ -236,7 +262,7 @@ export const useTourCommerce = () => {
   return {
     listItineraries: () => auth.request<ItineraryInstance[]>('/tour/itineraries', undefined, 'GET'),
     getItinerary: (itineraryNo: string) => auth.request<ItineraryInstance>(`/tour/itineraries/${encodeURIComponent(itineraryNo)}`, undefined, 'GET'),
-    listCatalogProducts: () => auth.request<CatalogProductView[]>('/commerce/catalog/products', undefined, 'GET'),
+    listCatalogProducts: () => auth.publicRequest<CatalogProductListView[]>('/commerce/catalog/products'),
     getCatalogProduct: (productCode: string) => auth.request<CatalogProductView>(`/commerce/catalog/products/${encodeURIComponent(productCode)}`, undefined, 'GET'),
     listCoupons: () => auth.request<MemberCouponView[]>('/commerce/coupons?status=AVAILABLE', undefined, 'GET'),
     redeemCoupon: (redeemCode: string) => auth.request<MemberCouponView>('/commerce/coupons/redeem', { redeemCode }),

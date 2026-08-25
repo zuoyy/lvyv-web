@@ -222,8 +222,6 @@ const activeCity = ref('all')
 const activeDuration = ref('all')
 const selectedThemes = ref(new Set(['all']))
 const sortBy = ref('recommended')
-const loading = ref(true)
-const loadWarning = ref(false)
 const visibleCount = ref(5)
 const priceFloor = ref(0)
 const priceCeiling = ref(0)
@@ -331,57 +329,55 @@ const showMore = () => {
   if (hasMore.value) visibleCount.value += 5
 }
 
-const load = async () => {
-  loading.value = true
-  loadWarning.value = false
-  try {
-    const catalog = await commerce.listCatalogProducts()
-    products.value = catalog.map((item) => {
-        const listPrice = Number(item.pricing?.listUnitPrice ?? item.price?.listPrice ?? 0)
-        const salePrice = Number(item.pricing?.saleUnitPrice ?? item.price?.salePrice ?? listPrice)
+const applyCatalog = (catalog: import('~/composables/useTourCommerce').CatalogProductListView[]) => {
+  products.value = catalog.map((item) => {
+        const listPrice = Number(item.listPrice ?? 0)
+        const salePrice = Number(item.salePrice ?? listPrice)
         const features = [
           ...(item.serviceLanguages || []),
-          item.product.guaranteedDeparture ? 'Guaranteed Departure' : '',
-          item.product.shoppingPolicy,
-          item.product.travelType
+          item.guaranteedDeparture ? 'Guaranteed Departure' : '',
+          item.shoppingPolicy,
+          item.travelType
         ].filter((value): value is string => Boolean(value?.trim()))
         return {
-          productCode: item.product.productCode,
-          title: item.product.name,
-          cityCode: item.itinerary.cityCode,
-          destinationName: item.product.destinationName,
-          imageUrls: item.itinerary.imageUrls || [],
-          duration: durationLabel(item.itinerary.dateText, item.itinerary.days.length),
-          days: item.itinerary.days.length,
-          currency: item.price?.currency || 'USD',
+          productCode: item.productCode,
+          title: item.name,
+          cityCode: item.cityCode,
+          destinationName: item.destinationName,
+          imageUrls: item.imageUrls || [],
+          duration: durationLabel(item.dateText, item.dayCount),
+          days: item.dayCount,
+          currency: item.currency || 'USD',
           listPrice,
           salePrice,
           themes: item.themes || [],
           features,
-          reviewCount: generatedReviewCount(item.product.productCode),
-          priceNote: item.product.priceNote
+          reviewCount: generatedReviewCount(item.productCode),
+          priceNote: item.priceNote
         }
       }).filter(product => product.imageUrls.length > 0)
-    if (products.value.length) {
-      const prices = products.value.map(product => product.salePrice)
-      priceFloor.value = Math.floor(Math.min(...prices) / 10) * 10
-      priceCeiling.value = Math.max(priceFloor.value + 10, Math.ceil(Math.max(...prices) / 10) * 10)
-      priceMin.value = priceFloor.value
-      priceMax.value = priceCeiling.value
-    }
-  } catch {
-    products.value = []
-    loadWarning.value = true
-  } finally {
-    loading.value = false
+  if (products.value.length) {
+    const prices = products.value.map(product => product.salePrice)
+    priceFloor.value = Math.floor(Math.min(...prices) / 10) * 10
+    priceCeiling.value = Math.max(priceFloor.value + 10, Math.ceil(Math.max(...prices) / 10) * 10)
+    priceMin.value = priceFloor.value
+    priceMax.value = priceCeiling.value
   }
 }
+
+const { data: catalogData, status: catalogStatus } = await useAsyncData(
+  'encounters-catalog-products',
+  () => commerce.listCatalogProducts(),
+  { default: () => [] }
+)
+const loading = computed(() => catalogStatus.value === 'idle' || catalogStatus.value === 'pending')
+const loadWarning = computed(() => catalogStatus.value === 'error')
+watch(catalogData, value => applyCatalog(value || []), { immediate: true })
 
 const explore = async (productCode: string) => {
   await navigateTo(`/encounters/${encodeURIComponent(productCode)}`)
 }
 
-onMounted(load)
 </script>
 
 <style scoped>

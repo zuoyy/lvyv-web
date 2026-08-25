@@ -385,6 +385,7 @@ onBeforeUnmount(() => {
   width: 120px;
   height: 41px;
   flex: 0 0 120px;
+  line-height: 0;
 }
 
 .app-layout--wish .wish-brand-logo {
@@ -433,10 +434,8 @@ onBeforeUnmount(() => {
   display: none;
 }
 
-@media (min-width: 992px) {
-  .app-layout--wish .nav-links {
-    gap: 36px;
-  }
+.app-layout--wish .mobile-nav-toggle .hamburger-line {
+  background-color: #fff;
 }
 
 @media (max-width: 991px) {

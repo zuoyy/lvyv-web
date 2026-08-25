@@ -29,15 +29,16 @@ export const useMemberAuth = () => {
   const token = useCookie<string | null>('token', { sameSite: 'lax', secure: import.meta.env.PROD })
   const member = useState<MemberProfile | null>('member-profile', () => null)
 
-  const request = async <T>(path: string, body?: Record<string, unknown>, method: 'GET' | 'POST' | 'PUT' = 'POST') => {
+  const executeRequest = async <T>(path: string, body: Record<string, unknown> | undefined,
+    method: 'GET' | 'POST' | 'PUT', authenticated: boolean) => {
     try {
       const response = await $fetch<ApiResult<T>>(path, {
-        baseURL: config.public.apiBase as string,
+        baseURL: (import.meta.server && !authenticated ? config.contentApiBase : config.public.apiBase) as string,
         method,
         body: method === 'GET' ? undefined : body,
         headers: {
           'X-Time-Zone': detectMemberTimeZone(),
-          ...(token.value ? { Authorization: `Bearer ${token.value}` } : {}),
+          ...(authenticated && token.value ? { Authorization: `Bearer ${token.value}` } : {}),
         },
       })
       if (response.code !== 200) throw new ApiRequestError(response.code, response.msg || 'Request failed')
@@ -49,6 +50,12 @@ export const useMemberAuth = () => {
       throw new ApiRequestError(code, message || 'Request failed')
     }
   }
+
+  const request = <T>(path: string, body?: Record<string, unknown>, method: 'GET' | 'POST' | 'PUT' = 'POST') =>
+    executeRequest<T>(path, body, method, true)
+
+  const publicRequest = <T>(path: string, method: 'GET' = 'GET') =>
+    executeRequest<T>(path, undefined, method, false)
 
   const loadMember = async () => {
     if (!token.value) {
@@ -91,6 +98,7 @@ export const useMemberAuth = () => {
 
   return {
     request,
+    publicRequest,
     token,
     member,
     login,
