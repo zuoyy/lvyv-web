@@ -1,10 +1,15 @@
 <template>
   <main class="city-xian">
-    <section class="city-xian__hero" aria-labelledby="xian-title">
-      <img class="city-xian__hero-image" src="/images/cities/xian/hero.webp" alt="Friends at Xi'an's ancient city gate">
-      <div class="city-xian__hero-shade" />
+    <!-- Hero Section -->
+    <section class="city-xian__hero" aria-labelledby="xian-hero-title">
+      <img
+        class="city-xian__hero-image"
+        src="/images/cities/xian/hero.webp"
+        alt="Friends enjoying the ancient view of Xi'an"
+      >
+      <div class="city-xian__hero-shade" aria-hidden="true" />
       <div class="city-xian__hero-copy">
-        <h1 id="xian-title">Xi'an</h1>
+        <h1 id="xian-hero-title">Xi'an</h1>
         <p>Ancient Echoes</p>
         <NuxtLink to="/wish" class="city-xian__hero-button">
           <span>Start Your Wish in Xi'an</span>
@@ -13,29 +18,52 @@
       </div>
     </section>
 
+    <!-- Encounters Section -->
     <section class="city-xian__encounters" aria-labelledby="encounters-title">
       <div class="city-xian__shell">
         <header class="city-xian__section-heading">
           <h2 id="encounters-title">WHAT YOU'LL ENCOUNTER</h2>
-          <p>This is not sightseeing. This is encountering</p>
+          <p class="city-xian__section-subheading">
+            Xi’an is where ancient China begins.<br>
+            Walk along walls built centuries ago. Meet the stories behind the warriors.<br>
+            Step into the world of Tang Chang’an. And, somewhere along the way, meet the people who call Xi’an home.<br>
+            This is not a tour of Xi’an. It is your story in Xi’an.
+          </p>
         </header>
+
         <div class="city-xian__encounter-grid">
-          <article v-for="item in encounters" :key="item.title" class="city-xian__encounter-card">
-            <div class="city-xian__encounter-image">
-              <img :src="item.image" :alt="item.title">
+          <article
+            v-for="item in encounters"
+            :key="item.id"
+            class="city-xian__encounter-card"
+          >
+            <div class="city-xian__encounter-image-wrapper">
+              <img
+                :src="item.image"
+                :alt="item.imageAlt"
+                :style="{ objectPosition: item.objectPosition || 'center center' }"
+                loading="lazy"
+              >
             </div>
-            <h3>{{ item.title }}</h3>
-            <p>{{ item.description }}</p>
+            <div class="city-xian__encounter-header">
+              <span class="city-xian__encounter-tag">{{ item.tag }}</span>
+              <h3 class="city-xian__encounter-title">{{ item.title }}</h3>
+            </div>
+            <p class="city-xian__encounter-desc">{{ item.description }}</p>
           </article>
         </div>
       </div>
     </section>
 
+    <!-- Bottom CTA Section -->
     <section class="city-xian__cta" aria-labelledby="cta-title">
-      <picture>
-        <source type="image/webp" srcset="/images/cities/xian/skyline.webp">
-        <img class="city-xian__skyline" src="/images/cities/xian/skyline.png" alt="" aria-hidden="true">
-      </picture>
+      <img
+        class="city-xian__skyline"
+        src="/images/cities/xian/cta-skyline.webp"
+        alt=""
+        aria-hidden="true"
+        loading="lazy"
+      >
       <div class="city-xian__cta-word" aria-hidden="true">XI'AN</div>
       <div class="city-xian__cta-content">
         <h2 id="cta-title">Ready for your<br>Xi'an encounter?</h2>
@@ -49,20 +77,75 @@
 </template>
 
 <script setup lang="ts">
-const encounters = [
-  { title: 'Cycle on Ancient Walls', description: 'Ride where empires once stood, at sunset.', image: '/images/cities/xian/cycle.webp' },
-  { title: 'Midnight Food Quest', description: 'Follow the sizzling sounds into the Muslim Quarter.', image: '/images/cities/xian/food.webp' },
-  { title: 'Midnight Food Quest', description: "Hear the roar of China's oldest opera in a hidden theater.", image: '/images/cities/xian/opera.webp' }
+interface XianEncounter {
+  id: string
+  tag: string
+  title: string
+  description: string
+  image: string
+  imageAlt: string
+  objectPosition?: string
+}
+
+const encounters: XianEncounter[] = [
+  {
+    id: 'city-wall',
+    tag: 'Meet the City',
+    title: 'Ride Through 1,400 Years',
+    description: 'Instead of looking at Xi’an from behind a window, get on a bicycle and ride across its ancient walls. Feel the city open beneath you. A city once built for emperors. Now, yours to explore.',
+    image: '/images/cities/xian/encounter-city-wall.webp',
+    imageAlt: "Cycling along the ancient Xi'an city wall at sunset",
+    objectPosition: 'center 50%'
+  },
+  {
+    id: 'warriors',
+    tag: 'Meet the Story',
+    title: "The Emperor's Secret",
+    description: 'Thousands of warriors. One emperor. One mystery. Look closer. Why are no two faces exactly alike? Why were they buried here? History becomes different when you have a question to answer.',
+    image: '/images/cities/xian/encounter-warriors.webp',
+    imageAlt: 'Terracotta Warriors in Xi’an pit',
+    objectPosition: 'center 40%'
+  },
+  {
+    id: 'tang-changan',
+    tag: 'Meet Someone',
+    title: 'Become Someone in Tang Chang’an',
+    description: "For one evening, you don't just visit Tang China. You become part of it. Dress the part. Walk the streets. Meet the people. For a moment, history is no longer behind glass.",
+    image: '/images/cities/xian/encounter-tang-changan.webp',
+    imageAlt: 'Experience the Tang Chang’an immersive world',
+    objectPosition: 'center 45%'
+  },
+  {
+    id: 'breakfast',
+    tag: 'Meet the Real Xi’an',
+    title: 'Breakfast Like a Local',
+    description: 'Forget the hotel buffet. Follow us into the morning streets of Xi’an. Choose something you\'ve never tried. Ask what it is. Take a bite. The best way to understand a city is sometimes to eat what its people eat.',
+    image: '/images/cities/xian/encounter-breakfast.webp',
+    imageAlt: 'Traditional Xi’an breakfast and food street',
+    objectPosition: 'center 35%'
+  },
+  {
+    id: 'craftsman',
+    tag: 'Meet the Maker',
+    title: 'A Story Made by Hand',
+    description: 'Meet a local craftsman. Watch their hands. Learn the story. Try it yourself. And take home something you didn\'t buy—something you made.',
+    image: '/images/cities/xian/encounter-craftsman.webp',
+    imageAlt: 'Local artisan shadow puppet crafting',
+    objectPosition: 'center 30%'
+  },
+  {
+    id: 'luck',
+    tag: 'Meet Your Luck',
+    title: 'One Last Surprise',
+    description: 'Before you leave Xi’an, there is one last thing waiting for you. A small envelope. Inside is a wish, a message, or perhaps a little piece of luck. Some journeys end with a goodbye. Ours ends with a wish. What will yours say?',
+    image: '/images/cities/xian/encounter-luck.webp',
+    imageAlt: 'Xi’an grand Tang night city illumination',
+    objectPosition: 'center 50%'
+  }
 ]
 
-const missions = [
-  { title: 'Start selling', description: 'Are you a restaurant owner looking to grow your business? Reach new customers when you join our network.', image: '/images/cities/xian/mission-sell.webp', icon: '/images/cities/xian/icons/mission-sell.svg' },
-  { title: 'Deliver happiness', description: 'Join our elite league of delivery riders delivering happiness to customers and earn to achieve your dreams while at it.', image: '/images/cities/xian/mission-deliver.webp', icon: '/images/cities/xian/icons/mission-deliver.svg' },
-  { title: 'Behind the scenes', description: 'If you are passionate about helping us achieve our goal to deliver meals seamlessly, come join the team.', image: '/images/cities/xian/mission-scenes.webp', icon: '/images/cities/xian/icons/mission-scenes.svg' }
-]
-
-const title = "Xi'an | Lvyv"
-const description = "Explore Xi'an with Lvyv and discover local encounters beyond ordinary sightseeing."
+const title = "Xi'an · Ancient Echoes | Lvyv Handcrafted Encounters"
+const description = "Explore Xi'an with Lvyv. Ride along 1,400-year-old walls, uncover the secrets of the Terracotta Army, step into Tang Chang'an, and craft your handcrafted China encounter."
 
 useLvyvSeo({
   title,
@@ -72,107 +155,419 @@ useLvyvSeo({
     webPageJsonLd(title, description, '/cities/xian'),
     breadcrumbJsonLd([
       { name: 'Home', path: '/' },
+      { name: 'Cities', path: '/cities' },
       { name: "Xi'an", path: '/cities/xian' }
     ])
   ]
 })
 </script>
 
-<style>
+<style scoped>
 .city-xian {
   --xian-ink: #203d33;
   --xian-forest: #105446;
   --xian-lime: #c0f177;
+  --xian-lime-accent: #cff380;
   --xian-cream: #fdfff3;
+  --xian-cta-bg: #eef3ef;
   color: var(--xian-ink);
   background: #fff;
   overflow: hidden;
   padding-top: 80px;
 }
 
-.city-xian__shell { width: min(1280px, calc(100% - 160px)); margin: 0 auto; }
-.city-xian__hero { position: relative; height: 600px; overflow: hidden; }
-.city-xian__hero-image { position: absolute; top: -182px; left: 0; width: 100%; height: 962px; object-fit: cover; object-position: center; }
-.city-xian__hero-shade { position: absolute; inset: 0; background: rgba(0, 0, 0, .2); }
-.city-xian__hero-copy { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; padding-top: 160px; text-align: center; }
-.city-xian__hero-copy h1 { margin: 0; color: var(--xian-lime); font: 700 64px/1 'Philosopher', Georgia, serif; }
-.city-xian__hero-copy p { margin: 7px 0 121px; color: #fff; font: 56px/1.2 'Didot', 'Playfair Display', Georgia, serif; }
-.city-xian__hero-button, .city-xian__cta-button { display: inline-flex; align-items: center; justify-content: center; gap: 20px; border-radius: 10px; background: var(--xian-forest); color: var(--xian-lime); transition: transform .2s ease, background .2s ease; }
-.city-xian__hero-button { width: 260px; height: 60px; font: 16px/1 'Inter', sans-serif; }
-.city-xian__hero-button:hover, .city-xian__cta-button:hover { background: #0b4035; transform: translateY(-2px); }
-.city-xian__arrow { font-size: 24px; line-height: 1; }
-
-.city-xian__encounters { min-height: 749px; padding: 105px 0 80px; background: var(--xian-cream); }
-.city-xian__section-heading h2, .city-xian__missions-heading h2 { margin: 0; font: 700 48px/1.1 'Didot', 'Playfair Display', Georgia, serif; letter-spacing: 0; }
-.city-xian__section-heading p, .city-xian__missions-heading p { margin: -1px 0 0; font: 400 28px/40px 'Didot', 'Playfair Display', Georgia, serif; }
-.city-xian__encounter-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; margin-top: 29px; }
-.city-xian__encounter-card { min-width: 0; }
-.city-xian__encounter-image { height: 268px; overflow: hidden; border-radius: 0 48px 0 0; }
-.city-xian__encounter-image img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.city-xian__encounter-card:nth-child(1) img { object-position: center 52%; }
-.city-xian__encounter-card:nth-child(2) img { object-position: center 45%; }
-.city-xian__encounter-card:nth-child(3) img { object-position: center 51%; }
-.city-xian__encounter-card h3 { margin: 17px 0 4px; font: 20px/1.3 'Inter', sans-serif; color: #000; }
-.city-xian__encounter-card > p { margin: 0; color: #000; font: 16px/1.6 'Inter', sans-serif; }
-
-.city-xian__missions { min-height: 800px; padding: 80px 0; background: #fff; }
-.city-xian__missions-heading { display: flex; align-items: center; justify-content: space-between; height: 120px; }
-.city-xian__missions-heading h2 { font-weight: 700; }
-.city-xian__missions-link { display: inline-flex; align-items: center; gap: 10px; height: 40px; padding: 8px 8px 8px 16px; border-radius: 30px; background: var(--xian-ink); color: #fff; font: 500 14px/1 'Epilogue', 'Inter', sans-serif; }
-.city-xian__missions-link-icon { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: #fff; color: var(--xian-ink); font-size: 23px; line-height: 18px; }
-.city-xian__mission-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 36px; margin-top: 40px; }
-.city-xian__mission-card { height: 484px; overflow: hidden; border: 4px solid #000; border-radius: 16px; background: #fff; }
-.city-xian__mission-copy { position: relative; height: 290px; padding: 24px; color: #000; }
-.city-xian__mission-icon { display: block; width: 40px; height: 40px; object-fit: contain; object-position: left center; }
-.city-xian__mission-card:first-child .city-xian__mission-icon { width: 24px; height: 24px; }
-.city-xian__mission-copy h3 { margin: 24px 0 15px; font: 800 27px/1.05 'Plus Jakarta Sans', 'Inter', sans-serif; letter-spacing: -1px; }
-.city-xian__mission-copy p { margin: 0; max-width: 347px; font: 16px/1.5 'Plus Jakarta Sans', 'Inter', sans-serif; }
-.city-xian__mission-more { position: absolute; left: 24px; bottom: 41px; display: inline-flex; align-items: center; gap: 7px; color: #000; font: 800 14px/20px 'Plus Jakarta Sans', 'Inter', sans-serif; letter-spacing: 3px; }
-.city-xian__mission-art { height: 190px; background: #f3f4f6; }
-.city-xian__mission-art img { display: block; width: 100%; height: 100%; object-fit: cover; }
-
-.city-xian__cta { position: relative; height: 506px; overflow: hidden; background: #eef3ef; }
-.city-xian__skyline { position: absolute; left: 0; top: -50px; width: 100%; height: 576px; object-fit: cover; opacity: .6; }
-.city-xian__cta-word { position: absolute; top: 134px; right: 10%; color: #fff; opacity: .4; font: 180px/1 'Philosopher', Georgia, serif; }
-.city-xian__cta-content { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; padding-top: 105px; text-align: center; }
-.city-xian__cta-content h2 { margin: 0; color: var(--xian-ink); font: 64px/1.05 'Didot', 'Playfair Display', Georgia, serif; }
-.city-xian__cta-button { width: 240px; height: 60px; margin-top: 51px; font: 600 16px/1 'Inter', sans-serif; }
-.city-xian__cta-button img { width: 30px; height: 30px; }
-
-@media (max-width: 991px) {
-  .city-xian__shell { width: min(100% - 40px, 680px); }
-  .city-xian__hero { height: 560px; }
-  .city-xian__hero-image { top: 0; height: 100%; }
-  .city-xian__hero-copy { padding-top: 145px; }
-  .city-xian__hero-copy h1 { font-size: 52px; }
-  .city-xian__hero-copy p { font-size: 44px; margin-bottom: 55px; }
-  .city-xian__encounters { padding: 72px 0; }
-  .city-xian__encounter-grid, .city-xian__mission-grid { grid-template-columns: 1fr; }
-  .city-xian__encounter-grid { gap: 45px; }
-  .city-xian__encounter-image { height: min(62vw, 300px); }
-  .city-xian__missions { padding: 70px 0; }
-  .city-xian__missions-heading { height: auto; align-items: flex-start; gap: 24px; }
-  .city-xian__missions-link { flex-shrink: 0; }
-  .city-xian__mission-grid { max-width: 430px; margin: 40px auto 0; }
-  .city-xian__cta { height: 420px; }
-  .city-xian__cta-content { padding-top: 88px; }
-  .city-xian__cta-content h2 { font-size: 48px; }
-  .city-xian__cta-word { right: 2%; font-size: 100px; top: 160px; }
+.city-xian__shell {
+  width: min(1280px, calc(100% - 160px));
+  margin: 0 auto;
 }
 
-@media (max-width: 600px) {
-  .city-xian__hero { height: 500px; }
-  .city-xian__hero-image { object-position: 58% center; }
-  .city-xian__hero-copy { padding-top: 125px; }
-  .city-xian__hero-copy h1 { font-size: 46px; }
-  .city-xian__hero-copy p { font-size: 37px; margin-bottom: 50px; }
-  .city-xian__hero-button { width: min(260px, calc(100% - 40px)); }
-  .city-xian__section-heading h2, .city-xian__missions-heading h2 { font-size: 34px; }
-  .city-xian__section-heading p, .city-xian__missions-heading p { font-size: 22px; }
-  .city-xian__missions-heading { flex-direction: column; }
-  .city-xian__missions-link { align-self: flex-start; }
-  .city-xian__mission-card { height: 465px; }
-  .city-xian__mission-copy { height: 278px; }
-  .city-xian__cta-content h2 { font-size: 40px; }
+/* ==========================================================================
+   Hero Section
+   ========================================================================== */
+.city-xian__hero {
+  position: relative;
+  height: 580px;
+  overflow: hidden;
+}
+
+.city-xian__hero-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+}
+
+.city-xian__hero-shade {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.city-xian__hero-copy {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 150px;
+  text-align: center;
+}
+
+.city-xian__hero-copy h1 {
+  margin: 0;
+  color: var(--xian-lime-accent);
+  font-family: 'Philosopher', Georgia, serif;
+  font-size: 64px;
+  font-weight: 700;
+  line-height: 1.1;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.city-xian__hero-copy p {
+  margin: 8px 0 0;
+  color: #fff;
+  font-family: 'Didot', 'Playfair Display', Georgia, serif;
+  font-size: 56px;
+  font-weight: 400;
+  line-height: 1.2;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+.city-xian__hero-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 260px;
+  height: 60px;
+  margin-top: 86px;
+  border-radius: 10px;
+  background: var(--xian-forest);
+  color: var(--xian-lime);
+  font-family: var(--font-body, 'Inter', sans-serif);
+  font-size: 16px;
+  font-weight: 500;
+  text-decoration: none;
+  box-shadow: 0 4px 20px rgba(16, 84, 70, 0.3);
+  transition: transform 0.25s ease, background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.city-xian__hero-button:hover {
+  background: #0b4035;
+  color: #d6fba0;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(16, 84, 70, 0.45);
+}
+
+.city-xian__arrow {
+  font-size: 20px;
+  line-height: 1;
+  transition: transform 0.25s ease;
+}
+
+.city-xian__hero-button:hover .city-xian__arrow {
+  transform: translateX(4px);
+}
+
+/* ==========================================================================
+   Encounters Section
+   ========================================================================== */
+.city-xian__encounters {
+  padding: 100px 0 110px;
+  background: var(--xian-cream);
+}
+
+.city-xian__section-heading {
+  text-align: center;
+}
+
+.city-xian__section-heading h2 {
+  margin: 0;
+  color: var(--xian-ink);
+  font-family: 'Didot', 'Playfair Display', Georgia, serif;
+  font-size: 48px;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: 0.5px;
+}
+
+.city-xian__section-subheading {
+  max-width: 1080px;
+  margin: 20px auto 56px;
+  color: var(--xian-ink);
+  font-family: 'Philosopher', Georgia, serif;
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+.city-xian__encounter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  column-gap: 32px;
+  row-gap: 48px;
+}
+
+.city-xian__encounter-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.city-xian__encounter-image-wrapper {
+  height: 268px;
+  overflow: hidden;
+  border-radius: 0 48px 0 0;
+  background: #e2e7dc;
+}
+
+.city-xian__encounter-image-wrapper img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.city-xian__encounter-card:hover .city-xian__encounter-image-wrapper img {
+  transform: scale(1.05);
+}
+
+.city-xian__encounter-header {
+  margin-top: 20px;
+}
+
+.city-xian__encounter-tag {
+  display: block;
+  color: var(--xian-ink);
+  font-family: var(--font-body, 'Inter', sans-serif);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.city-xian__encounter-title {
+  margin: 2px 0 0;
+  color: var(--xian-ink);
+  font-family: var(--font-body, 'Inter', sans-serif);
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.city-xian__encounter-desc {
+  margin: 14px 0 0;
+  color: #000;
+  font-family: var(--font-body, 'Inter', sans-serif);
+  font-size: 15px;
+  line-height: 1.6;
+  opacity: 0.9;
+}
+
+/* ==========================================================================
+   Bottom CTA Section
+   ========================================================================== */
+.city-xian__cta {
+  position: relative;
+  height: 506px;
+  overflow: hidden;
+  background: var(--xian-cta-bg);
+}
+
+.city-xian__skyline {
+  position: absolute;
+  top: -50px;
+  left: 0;
+  width: 100%;
+  height: 576px;
+  object-fit: cover;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.city-xian__cta-word {
+  position: absolute;
+  right: 6%;
+  bottom: 30px;
+  color: #fff;
+  font-family: 'Philosopher', Georgia, serif;
+  font-size: 180px;
+  font-weight: 700;
+  line-height: 1;
+  opacity: 0.4;
+  pointer-events: none;
+  user-select: none;
+}
+
+.city-xian__cta-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0 20px;
+  text-align: center;
+}
+
+.city-xian__cta-content h2 {
+  margin: 0;
+  color: var(--xian-ink);
+  font-family: 'Didot', 'Playfair Display', Georgia, serif;
+  font-size: 64px;
+  font-weight: 400;
+  line-height: 1.1;
+}
+
+.city-xian__cta-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 240px;
+  height: 60px;
+  margin-top: 40px;
+  border-radius: 10px;
+  background: var(--xian-forest);
+  color: var(--xian-lime);
+  font-family: var(--font-body, 'Inter', sans-serif);
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 4px 20px rgba(16, 84, 70, 0.3);
+  transition: transform 0.25s ease, background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.city-xian__cta-button:hover {
+  background: #0b4035;
+  color: #d6fba0;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(16, 84, 70, 0.45);
+}
+
+.city-xian__cta-button img {
+  width: 28px;
+  height: 28px;
+}
+
+/* ==========================================================================
+   Responsive Breakpoints
+   ========================================================================== */
+@media (max-width: 1024px) {
+  .city-xian__shell {
+    width: min(100% - 64px, 860px);
+  }
+
+  .city-xian__encounter-grid {
+    grid-template-columns: repeat(2, 1fr);
+    column-gap: 24px;
+    row-gap: 40px;
+  }
+
+  .city-xian__cta-word {
+    font-size: 130px;
+    right: 3%;
+  }
+
+  .city-xian__cta-content h2 {
+    font-size: 52px;
+  }
+}
+
+@media (max-width: 767px) {
+  .city-xian {
+    padding-top: var(--mobile-navbar-height, 60px);
+  }
+
+  .city-xian__shell {
+    width: min(100% - 32px, 520px);
+  }
+
+  .city-xian__hero {
+    height: 480px;
+  }
+
+  .city-xian__hero-image {
+    top: 0;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .city-xian__hero-copy {
+    padding-top: 110px;
+  }
+
+  .city-xian__hero-copy h1 {
+    font-size: 48px;
+  }
+
+  .city-xian__hero-copy p {
+    font-size: 38px;
+    margin: 8px 0 0;
+  }
+
+  .city-xian__hero-button {
+    width: 230px;
+    height: 52px;
+    margin-top: 48px;
+    font-size: 15px;
+  }
+
+  .city-xian__encounters {
+    padding: 64px 0 72px;
+  }
+
+  .city-xian__section-heading h2 {
+    font-size: 36px;
+  }
+
+  .city-xian__section-subheading {
+    font-size: 16px;
+    line-height: 1.5;
+    margin: 16px auto 36px;
+  }
+
+  .city-xian__encounter-grid {
+    grid-template-columns: 1fr;
+    row-gap: 36px;
+  }
+
+  .city-xian__encounter-image-wrapper {
+    height: 220px;
+  }
+
+  .city-xian__encounter-tag,
+  .city-xian__encounter-title {
+    font-size: 18px;
+  }
+
+  .city-xian__encounter-desc {
+    font-size: 14px;
+  }
+
+  .city-xian__cta {
+    height: 420px;
+  }
+
+  .city-xian__cta-word {
+    font-size: 90px;
+    right: 2%;
+    bottom: 20px;
+  }
+
+  .city-xian__cta-content h2 {
+    font-size: 40px;
+  }
+
+  .city-xian__cta-button {
+    width: 210px;
+    height: 52px;
+    margin-top: 30px;
+    font-size: 15px;
+  }
 }
 </style>
