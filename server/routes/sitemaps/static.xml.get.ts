@@ -5,7 +5,8 @@ const STATIC_URLS = [
   { path: '/about', priority: '0.8' },
   { path: '/encounters', priority: '0.7' },
   { path: '/cities/xian', priority: '0.7' },
-  { path: '/cities/chengdu', priority: '0.7' }
+  { path: '/cities/chengdu', priority: '0.7' },
+  { path: '/cities/chongqing', priority: '0.7' }
 ]
 
 export default defineEventHandler((event) => {

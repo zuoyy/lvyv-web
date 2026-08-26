@@ -26,6 +26,10 @@
                 <span class="city-en">Chengdu</span>
                 <span class="city-zh">成都</span>
               </NuxtLink>
+              <NuxtLink to="/cities/chongqing" class="dropdown-item" :class="{ active: currentPath.startsWith('/cities/chongqin') }">
+                <span class="city-en">Chongqing</span>
+                <span class="city-zh">重庆</span>
+              </NuxtLink>
             </div>
           </div>
           <NuxtLink to="/about" :class="{ active: currentPath === '/about' }">About</NuxtLink>
@@ -117,6 +121,10 @@
                   <NuxtLink to="/cities/chengdu" class="mobile-subnav-item" :class="{ active: currentPath === '/cities/chengdu' }" @click="handleNavClick('/cities/chengdu')">
                     <span class="city-en">Chengdu</span>
                     <span class="city-zh">成都</span>
+                  </NuxtLink>
+                  <NuxtLink to="/cities/chongqing" class="mobile-subnav-item" :class="{ active: currentPath.startsWith('/cities/chongqin') }" @click="handleNavClick('/cities/chongqing')">
+                    <span class="city-en">Chongqing</span>
+                    <span class="city-zh">重庆</span>
                   </NuxtLink>
                 </div>
               </Transition>
