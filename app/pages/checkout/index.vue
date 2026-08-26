@@ -74,10 +74,13 @@ const load = async () => {
   loading.value = true
   try {
     if (!productCode.value) throw new Error('A product is required.')
-    const catalog = await commerce.getCatalogProduct(productCode.value)
+    const [catalog, availableCoupons] = await Promise.all([
+      commerce.getCatalogProduct(productCode.value),
+      isLoggedIn.value ? commerce.listCoupons() : Promise.resolve([]),
+    ])
     earliestStartDate.value = dateAfter(Math.max(1, Number(catalog.product.minimumAdvanceDays || 1)))
     if (!requestedDate || requestedDate < earliestStartDate.value) startDate.value = earliestStartDate.value
-    if (isLoggedIn.value) coupons.value = await commerce.listCoupons()
+    coupons.value = availableCoupons
     await refreshQuote()
   } catch (caught) {
     error.value = caught instanceof Error ? caught.message : 'Could not load checkout.'

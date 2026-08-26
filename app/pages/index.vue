@@ -391,7 +391,7 @@ const homeHeroSlides: HomeHeroSlide[] = [
     fallback: '/images/home/banner-1-1440.webp',
     width: 2880,
     height: 1560,
-    mobileWebpSrcset: '/images/home/banner-1-768.webp 768w',
+    mobileWebpSrcset: '/images/home/banner-sm-1.webp',
     webpSrcset: '/images/home/banner-1-768.webp 768w, /images/home/banner-1-1440.webp 1440w, /images/home/banner-1-2880.webp 2880w',
     wideWebpSrcset: '/images/home/banner-1-2880.webp 2880w',
     alt: "Xi'an city wall surrounded by water at sunset"
@@ -402,7 +402,7 @@ const homeHeroSlides: HomeHeroSlide[] = [
     fallback: '/images/home/banner-2-1440.webp',
     width: 2880,
     height: 1560,
-    mobileWebpSrcset: '/images/home/banner-2-768.webp 768w',
+    mobileWebpSrcset: '/images/home/banner-sm-2.webp',
     webpSrcset: '/images/home/banner-2-768.webp 768w, /images/home/banner-2-1440.webp 1440w, /images/home/banner-2-2880.webp 2880w',
     wideWebpSrcset: '/images/home/banner-2-2880.webp 2880w',
     alt: "Xi'an pagoda beside a star-lit modern facade at dusk"
@@ -413,7 +413,7 @@ const homeHeroSlides: HomeHeroSlide[] = [
     fallback: '/images/home/banner-3-1440.webp',
     width: 2880,
     height: 1560,
-    mobileWebpSrcset: '/images/home/banner-3-768.webp 768w',
+    mobileWebpSrcset: '/images/home/banner-sm-3.webp',
     webpSrcset: '/images/home/banner-3-768.webp 768w, /images/home/banner-3-1440.webp 1440w, /images/home/banner-3-2880.webp 2880w',
     wideWebpSrcset: '/images/home/banner-3-2880.webp 2880w',
     alt: "Xi'an city gate illuminated beneath an evening sky"
@@ -424,7 +424,7 @@ const homeHeroSlides: HomeHeroSlide[] = [
     fallback: '/images/home/banner-4-1440.webp',
     width: 2880,
     height: 1560,
-    mobileWebpSrcset: '/images/home/banner-4-768.webp 768w',
+    mobileWebpSrcset: '/images/home/banner-sm-4.webp',
     webpSrcset: '/images/home/banner-4-768.webp 768w, /images/home/banner-4-1440.webp 1440w, /images/home/banner-4-2880.webp 2880w',
     wideWebpSrcset: '/images/home/banner-4-2880.webp 2880w',
     alt: 'Traditional Chinese opera performers beneath a dramatic ring of light'
@@ -452,7 +452,7 @@ useHead({
     as: 'image',
     type: 'image/webp',
     href: '/images/home/banner-1-1440.webp',
-    imagesrcset: '/images/home/banner-1-768.webp 768w, /images/home/banner-1-1440.webp 1440w, /images/home/banner-1-2880.webp 2880w',
+    imagesrcset: '/images/home/banner-sm-1.webp 768w, /images/home/banner-1-1440.webp 1440w, /images/home/banner-1-2880.webp 2880w',
     imagesizes: '100vw',
     fetchpriority: 'high'
   }]
@@ -830,19 +830,19 @@ onUnmounted(() => {
 }
 
 .hero-v2__title {
-  width: min(723px, 50.208vw);
+  width: min(780px, 54vw);
   height: auto;
 }
 
 .hero-v2__content > p {
-  width: min(726px, calc(100vw - 40px));
-  height: 41px;
-  margin-top: 0;
+  width: min(800px, calc(100vw - 40px));
+  height: auto;
+  margin-top: 14px;
   color: #fff;
   font-family: var(--font-body);
-  font-size: clamp(20px, 1.806vw, 26px);
+  font-size: clamp(22px, 2.083vw, 30px);
   font-weight: 400;
-  line-height: 20.8px;
+  line-height: 1.35;
 }
 
 .hero-v2__actions {
@@ -1953,7 +1953,7 @@ onUnmounted(() => {
 
 @media (max-width: 767px) {
   .home-v2 {
-    padding-top: var(--mobile-navbar-height, 60px);
+    padding-top: 0;
   }
 
   .home-shell {
@@ -1961,38 +1961,45 @@ onUnmounted(() => {
   }
 
   .hero-v2 {
-    height: auto;
-    min-height: 0;
-    aspect-ratio: 1440 / 780;
+    height: 100vh;
+    height: 100svh;
+    min-height: 540px;
+    aspect-ratio: auto;
   }
 
   .hero-v2__slide img {
-    object-fit: contain;
-    object-position: center top;
+    object-fit: cover;
+    object-position: center center;
   }
 
   .hero-v2__content {
-    justify-content: flex-start;
-    padding: 18.611vw 20px 0;
+    justify-content: center;
+    padding: calc(var(--mobile-navbar-height, 60px) + 20px) 20px 48px;
   }
 
   .hero-v2__title {
-    width: 50.208vw;
+    width: min(350px, 86vw);
     height: auto;
   }
 
   .hero-v2__content > p {
-    width: 50.417vw;
+    width: min(350px, 90vw);
     height: auto;
-    margin-top: 0;
-    font-size: clamp(8px, 1.806vw, 14px);
-    line-height: 1;
+    margin-top: 16px;
+    font-size: 18px;
+    line-height: 1.4;
+    color: #fff;
+    text-shadow: 0 1px 5px rgba(0, 0, 0, 0.4);
   }
 
   .hero-v2__actions {
-    width: auto;
-    gap: clamp(8px, 1.389vw, 11px);
-    margin-top: clamp(5px, 1.389vw, 11px);
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    width: 100%;
+    max-width: 340px;
+    gap: 10px;
+    margin-top: 22px;
   }
 
   .home-button {
@@ -2003,20 +2010,22 @@ onUnmounted(() => {
   }
 
   .hero-v2 .home-button {
-    min-height: clamp(28px, 4.167vw, 32px);
-    gap: clamp(4px, .833vw, 7px);
-    padding: 0 8px;
-    border-radius: clamp(5px, .694vw, 8px);
-    font-size: clamp(9px, 2vw, 14px);
+    flex: 1;
+    height: 44px;
+    min-height: 44px;
+    padding: 0 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
   }
 
   .hero-v2__actions .home-button--primary {
-    width: clamp(112px, 28vw, 220px);
+    width: auto;
     min-width: 0;
   }
 
   .hero-v2__actions .home-button--outline {
-    width: clamp(92px, 22vw, 170px);
+    width: auto;
     min-width: 0;
   }
 
@@ -2028,22 +2037,22 @@ onUnmounted(() => {
 
   .hero-v2 .home-button img,
   .hero-v2 .home-button svg {
-    width: clamp(12px, 3vw, 24px);
-    height: clamp(12px, 3vw, 24px);
+    width: 16px;
+    height: 16px;
   }
 
   .hero-v2__dots {
-    bottom: clamp(6px, 1.389vw, 11px);
-    gap: 4px;
+    bottom: 18px;
+    gap: 6px;
   }
 
   .hero-v2__dots button {
-    width: clamp(6px, .833vw, 7px);
-    height: clamp(6px, .833vw, 7px);
+    width: 8px;
+    height: 8px;
   }
 
   .hero-v2__dots button.is-active {
-    width: clamp(10px, 1.389vw, 11px);
+    width: 16px;
   }
 
   .audience-section {
