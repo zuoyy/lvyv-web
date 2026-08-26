@@ -251,6 +251,8 @@ export interface TourConfirmationView {
   content?: { content?: ContentView['content']; days?: ContentView['days']; items?: ContentView['items'] }
   startDate?: string
   endDate?: string
+  adultCount?: number
+  childCount?: number
   travelerCount?: number
 }
 

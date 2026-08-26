@@ -14,12 +14,13 @@
           <div><dt>Price per person</dt><dd>{{ formatMoney(offer.unitSubtotal) }}</dd></div>
           <div v-if="Number(offer.unitDiscountAmount) > 0"><dt>Discount per person</dt><dd>- {{ formatMoney(offer.unitDiscountAmount) }}</dd></div>
           <div v-if="Number(offer.unitTaxAmount) > 0"><dt>Tax per person</dt><dd>{{ formatMoney(offer.unitTaxAmount) }}</dd></div>
-          <div><dt>Adults</dt><dd><input v-model.number="adultCount" class="traveler-input" type="number" min="1" step="1"></dd></div>
-          <div><dt>Children</dt><dd><input v-model.number="childCount" class="traveler-input" type="number" min="0" step="1"></dd></div>
-          <div class="total-row"><dt>Total to pay</dt><dd>{{ formatMoney(Number(offer.unitTotalAmount) * (Math.max(1, adultCount) + Math.max(0, childCount))) }}</dd></div>
+          <div><dt><label for="offer-adult-count">Adults</label></dt><dd><input id="offer-adult-count" v-model.number="adultCount" class="traveler-input" type="number" min="1" step="1" inputmode="numeric" :disabled="!canConfirm || submitting"></dd></div>
+          <div><dt><label for="offer-child-count">Children</label></dt><dd><input id="offer-child-count" v-model.number="childCount" class="traveler-input" type="number" min="0" step="1" inputmode="numeric" :disabled="!canConfirm || submitting"></dd></div>
+          <div v-if="travelerValidationMessage" class="traveler-error"><dt>Travelers</dt><dd>{{ travelerValidationMessage }}</dd></div>
+          <div class="total-row"><dt>Total to pay</dt><dd>{{ totalAmount === null ? '—' : formatMoney(totalAmount) }}</dd></div>
           <div v-if="offer.validUntil"><dt>Valid until</dt><dd>{{ formatDateTime(offer.validUntil) }}</dd></div>
         </dl>
-        <button v-if="canConfirm" type="button" :disabled="submitting" @click="confirmOffer">
+        <button v-if="canConfirm" type="button" :disabled="submitting || !travelerCountsValid" @click="confirmOffer">
           {{ submitting ? 'Creating payment order...' : 'Confirm itinerary and continue to payment' }}
         </button>
         <button v-if="canRequestRevision" type="button" class="secondary" @click="revisionOpen = true">Request a revision</button>
@@ -60,6 +61,7 @@ const revisionOpen = ref(false)
 const revisionContent = ref('')
 const adultCount = ref(1)
 const childCount = ref(0)
+const maxTravelerCount = 2_147_483_647
 const error = ref('')
 const offer = computed(() => confirmation.value?.offer as CustomOfferView)
 const itinerary = computed(() => confirmation.value?.itinerary as TourConfirmationView)
@@ -67,6 +69,13 @@ const description = computed(() => { try { return offer.value?.offerSnapshotJson
 const expired = computed(() => !!offer.value?.validUntil && new Date(offer.value.validUntil).getTime() <= Date.now())
 const canConfirm = computed(() => !!confirmation.value?.canConfirm && !expired.value)
 const canRequestRevision = computed(() => !!confirmation.value?.canRequestRevision && !expired.value)
+const travelerCountsValid = computed(() => Number.isInteger(adultCount.value) && adultCount.value >= 1
+  && Number.isInteger(childCount.value) && childCount.value >= 0
+  && adultCount.value <= maxTravelerCount - childCount.value)
+const travelerValidationMessage = computed(() => travelerCountsValid.value ? '' : 'Enter whole numbers: at least 1 adult and 0 or more children.')
+const totalAmount = computed(() => travelerCountsValid.value
+  ? Number(offer.value?.unitTotalAmount || 0) * (adultCount.value + childCount.value)
+  : null)
 const statusLabel = computed(() => ({ SENT: 'Awaiting your confirmation', ACCEPTED: 'Accepted - waiting for payment', REVISION_REQUESTED: 'Revision requested', EXPIRED: 'Expired', CANCELLED: 'Cancelled' } as Record<string, string>)[offer.value?.status || ''] || offer.value?.status || '')
 const formatMoney = (amount: string | number) => `${offer.value?.currency || ''} ${Number(amount).toFixed(2)}`
 const formatDate = (value?: string) => {
@@ -80,8 +89,28 @@ const formatDate = (value?: string) => {
   return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(year, month - 1, day))
 }
 const formatDateTime = (value: string) => new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
-const load = async () => { loading.value = true; error.value = ''; try { confirmation.value = await commerce.getOffer(String(route.params.offerNo)) } catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not load this offer.' } finally { loading.value = false } }
-const confirmOffer = async () => { submitting.value = true; error.value = ''; try { const order = await commerce.confirmOffer(String(route.params.offerNo), Math.max(1, adultCount.value), Math.max(0, childCount.value)); await navigateTo(order.order.status === 'COMPLETED' ? '/trips' : `/orders/${encodeURIComponent(order.order.orderNo)}/pay`) } catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not confirm this offer.' } finally { submitting.value = false } }
+const applyTravelerCounts = (value: TourConfirmationView) => {
+  const adults = Number(value.adultCount)
+  const children = Number(value.childCount)
+  if (Number.isInteger(adults) && adults >= 1 && Number.isInteger(children) && children >= 0) {
+    adultCount.value = adults
+    childCount.value = children
+    return
+  }
+  const legacyTotal = Number(value.travelerCount)
+  adultCount.value = Number.isInteger(legacyTotal) && legacyTotal >= 1 ? legacyTotal : 1
+  childCount.value = 0
+}
+const load = async () => { loading.value = true; error.value = ''; try { const result = await commerce.getOffer(String(route.params.offerNo)); confirmation.value = result; applyTravelerCounts(result.itinerary) } catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not load this offer.' } finally { loading.value = false } }
+const confirmOffer = async () => {
+  if (!travelerCountsValid.value) { error.value = travelerValidationMessage.value; return }
+  submitting.value = true
+  error.value = ''
+  try {
+    const order = await commerce.confirmOffer(String(route.params.offerNo), adultCount.value, childCount.value)
+    await navigateTo(order.order.status === 'COMPLETED' ? '/trips' : `/orders/${encodeURIComponent(order.order.orderNo)}/pay`)
+  } catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not confirm this offer.' } finally { submitting.value = false }
+}
 const requestRevision = async () => { revisionSubmitting.value = true; error.value = ''; try { await commerce.requestRevision(String(route.params.offerNo), revisionContent.value.trim()); revisionOpen.value = false; await load() } catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not send the revision request.' } finally { revisionSubmitting.value = false } }
 onMounted(async () => { if (await initializeAccount()) await load() })
 </script>
@@ -89,5 +118,7 @@ onMounted(async () => { if (await initializeAccount()) await load() })
 <style scoped>
 .offer-layout { display: grid; grid-template-columns: minmax(300px, .8fr) minmax(0, 1.2fr); gap: 18px; align-items: start; }.offer-panel, .itinerary-panel { padding: 28px; border: 1px solid #dfe5e1; background: #fff; }.eyebrow { margin: 0 0 8px; color: #84918a; font-size: 9px; font-weight: 800; text-transform: uppercase; }.offer-panel h2 { margin: 0; color: #173f34; font: 600 28px/1.2 'Playfair Display', Georgia, serif; }.offer-panel > p:not(.eyebrow) { color: #6e7c75; font-size: 13px; line-height: 1.6; }dl { display: grid; gap: 10px; margin: 22px 0; padding-top: 18px; border-top: 1px solid #edf1ee; }dl div { display: flex; justify-content: space-between; gap: 18px; }dt { color: #84918a; font-size: 11px; }dd { margin: 0; color: #35473e; font-weight: 700; }.total-row { margin-top: 3px; padding-top: 12px; border-top: 1px solid #edf1ee; }.total-row dd { color: #174d40; font-size: 16px; }.offer-panel button, .revision-modal button { width: 100%; min-height: 44px; margin-top: 8px; padding: 0 18px; border: 0; background: #174d40; color: #fff; font-weight: 700; cursor: pointer; }.offer-panel button.secondary, .revision-modal button.secondary { border: 1px solid #174d40; background: #fff; color: #174d40; }.offer-panel button:disabled, .revision-modal button:disabled { opacity: .55; cursor: not-allowed; }.notice { margin-top: 16px; color: #64736c; font-size: 12px; }.itinerary-heading { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 15px; border-bottom: 1px solid #edf1ee; color: #78877f; font-size: 11px; }.itinerary-heading strong { color: #174d40; }.designer-message { padding: 14px; background: #f5f8f4; color: #56675e; font-size: 12px; line-height: 1.6; }.day { display: grid; grid-template-columns: 68px 1fr; gap: 15px; padding: 20px 0; border-bottom: 1px solid #edf1ee; }.day-label { color: #174d40; font-size: 11px; font-weight: 800; text-transform: uppercase; }.day h3 { margin: 0; color: #2e4137; font-size: 16px; }.day p { margin: 5px 0 0; color: #77857d; font-size: 12px; }.day ul { display: grid; gap: 10px; margin: 14px 0 0; padding: 0; list-style: none; }.day li { display: grid; gap: 2px; padding-left: 14px; border-left: 2px solid #bfdc72; }.day li strong { color: #35473e; font-size: 13px; }.day li span { color: #78857e; font-size: 11px; }.offer-state { min-height: 260px; display: grid; place-items: center; border: 1px solid #dfe5e1; color: #75827c; }.offer-state.error { color: #a33e35; }.modal-backdrop { position: fixed; z-index: 1500; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(11,28,22,.58); }.revision-modal { width: min(520px,100%); padding: 25px; background: #fff; }.revision-modal h2 { margin: 0; color: #173f34; }.revision-modal p { color: #68766f; font-size: 13px; line-height: 1.5; }.revision-modal textarea { width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid #cfd9d2; resize: vertical; }.revision-modal footer { display: flex; gap: 8px; justify-content: flex-end; }.revision-modal footer button { width: auto; min-width: 110px; }.revision-modal footer button.secondary { order: -1; }
 .traveler-input { width: 72px; min-height: 32px; padding: 0 8px; border: 1px solid #cfd9d2; color: #35473e; }
+.traveler-input:disabled { background: #f4f6f4; color: #7c8982; cursor: not-allowed; }
+.traveler-error dd { color: #a33e35; font-size: 11px; text-align: right; }
 @media (max-width: 800px) { .offer-layout { grid-template-columns: 1fr; }.offer-panel, .itinerary-panel { padding: 20px; } }
 </style>
