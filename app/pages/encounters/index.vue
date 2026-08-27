@@ -161,9 +161,9 @@
                     </p>
                   </div>
                   <div class="encounter-card__price">
-                    <del v-if="product.listPrice > product.salePrice">{{ formatPrice(product.listPrice, product.currency) }}</del>
+                    <del v-if="product.lowestAdultListPrice > product.lowestAdultSalePrice">{{ formatPrice(product.lowestAdultListPrice, product.currency) }}</del>
                     <p>
-                      <strong>{{ formatPrice(product.salePrice, product.currency) }}</strong><span>/person</span>
+                      <strong>{{ formatPrice(product.lowestAdultSalePrice, product.currency) }}</strong><span>/starting price/person</span>
                     </p>
                     <small v-if="product.priceNote" class="encounter-card__tax-note">{{ product.priceNote }}</small>
                   </div>
@@ -192,8 +192,8 @@ interface EncounterProduct {
   duration: string
   days: number
   currency: string
-  listPrice: number
-  salePrice: number
+  lowestAdultListPrice: number
+  lowestAdultSalePrice: number
   themes: string[]
   features: string[]
   reviewCount: number
@@ -254,7 +254,7 @@ const filteredProducts = computed(() => {
   const themes = [...selectedThemes.value].filter(theme => theme !== 'all')
   const filtered = products.value.filter((product) => {
     const matchesCity = activeCity.value === 'all' || normalizeCity(product.cityCode) === activeCity.value
-    const matchesPrice = product.salePrice >= priceMin.value && product.salePrice <= priceMax.value
+    const matchesPrice = product.lowestAdultSalePrice >= priceMin.value && product.lowestAdultSalePrice <= priceMax.value
     const matchesDuration = activeDuration.value === 'all'
       || (activeDuration.value === 'weekend' && product.days >= 3 && product.days <= 4)
       || (activeDuration.value === 'deep' && product.days >= 7 && product.days <= 8)
@@ -262,8 +262,8 @@ const filteredProducts = computed(() => {
     return matchesCity && matchesPrice && matchesDuration && matchesTheme
   })
 
-  if (sortBy.value === 'price-asc') return [...filtered].sort((a, b) => a.salePrice - b.salePrice)
-  if (sortBy.value === 'price-desc') return [...filtered].sort((a, b) => b.salePrice - a.salePrice)
+  if (sortBy.value === 'price-asc') return [...filtered].sort((a, b) => a.lowestAdultSalePrice - b.lowestAdultSalePrice)
+  if (sortBy.value === 'price-desc') return [...filtered].sort((a, b) => b.lowestAdultSalePrice - a.lowestAdultSalePrice)
   return filtered
 })
 
@@ -331,8 +331,8 @@ const showMore = () => {
 
 const applyCatalog = (catalog: import('~/composables/useTourCommerce').CatalogProductListView[]) => {
   products.value = catalog.map((item) => {
-        const listPrice = Number(item.listPrice ?? 0)
-        const salePrice = Number(item.salePrice ?? listPrice)
+        const lowestAdultListPrice = Number(item.lowestAdultListPrice ?? 0)
+        const lowestAdultSalePrice = Number(item.lowestAdultSalePrice ?? lowestAdultListPrice)
         const features = [
           ...(item.serviceLanguages || []),
           item.guaranteedDeparture ? 'Guaranteed Departure' : '',
@@ -348,8 +348,8 @@ const applyCatalog = (catalog: import('~/composables/useTourCommerce').CatalogPr
           duration: durationLabel(item.dateText, item.dayCount),
           days: item.dayCount,
           currency: item.currency || 'USD',
-          listPrice,
-          salePrice,
+          lowestAdultListPrice,
+          lowestAdultSalePrice,
           themes: item.themes || [],
           features,
           reviewCount: generatedReviewCount(item.productCode),
@@ -357,7 +357,7 @@ const applyCatalog = (catalog: import('~/composables/useTourCommerce').CatalogPr
         }
       }).filter(product => product.imageUrls.length > 0)
   if (products.value.length) {
-    const prices = products.value.map(product => product.salePrice)
+    const prices = products.value.map(product => product.lowestAdultSalePrice)
     priceFloor.value = Math.floor(Math.min(...prices) / 10) * 10
     priceCeiling.value = Math.max(priceFloor.value + 10, Math.ceil(Math.max(...prices) / 10) * 10)
     priceMin.value = priceFloor.value

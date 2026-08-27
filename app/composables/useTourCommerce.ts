@@ -54,8 +54,8 @@ export interface CatalogProductView {
   product: { id: number; productCode: string; name: string; summary?: string; destinationName?: string; travelType?: string; guaranteedDeparture?: boolean; shoppingPolicy?: string; adultAgeLabel?: string; childAgeLabel?: string; minimumAdvanceDays?: number; priceNote?: string; standardItineraryVersionId: number; status: string }
   themes: string[]
   serviceLanguages: string[]
-  price?: { currency: string; listPrice: string | number; salePrice: string | number }
-  pricing: { listUnitPrice: string | number; saleUnitPrice: string | number; promotionItem?: { salePrice: string | number; listPrice?: string | number }; promotionCampaign?: { endTime: string; name: string; campaignNo?: string } }
+  price?: { currency: string; tiers: Array<{ minTravelerCount: number; maxTravelerCount?: number | null; adultListPrice: string | number; adultSalePrice: string | number; childListPrice: string | number; childSalePrice: string | number }> }
+  pricing: { adultListUnitPrice: string | number; adultSaleUnitPrice: string | number; childListUnitPrice: string | number; childSaleUnitPrice: string | number; promotionCampaign?: { endTime: string; name: string; campaignNo?: string } }
   itinerary: {
     standardItineraryId: number
     itineraryCode: string
@@ -97,8 +97,10 @@ export interface CatalogProductListView {
   dateText?: string
   dayCount: number
   currency: string
-  listPrice: string | number
-  salePrice: string | number
+  lowestAdultListPrice: string | number
+  lowestAdultSalePrice: string | number
+  pricingMode?: string
+  tiers?: Array<{ minTravelerCount: number; maxTravelerCount?: number | null; adultSalePrice: string | number; childSalePrice: string | number }>
   promoted: boolean
 }
 
@@ -143,9 +145,10 @@ export interface OrderSnapshot {
   adultCount?: number
   childCount?: number
   currency: string
-  unitPrice: string | number
-  listUnitPrice?: string | number
-  saleUnitPrice?: string | number
+  adultListUnitPrice: string | number
+  adultUnitPrice: string | number
+  childListUnitPrice: string | number
+  childUnitPrice: string | number
   promotionCampaignNo?: string
   promotionCampaignName?: string
   couponNo?: string
@@ -155,7 +158,7 @@ export interface OrderSnapshot {
 
 export interface OrderView {
   order: { id: number; orderNo: string; status: string; currency: string; sourceType: string; subtotal: string | number; promotionDiscountAmount: string | number; couponDiscountAmount: string | number; discountAmount: string | number; totalAmount: string | number; createTime?: string }
-  items: Array<{ item: { id: number; itemType: string; adultCount: number; childCount: number; listUnitPrice?: string | number; unitPrice: string | number; promotionDiscountAmount?: string | number; taxAmount?: string | number; startDate?: string; endDate?: string; customItineraryId?: number; customItineraryVersionId?: number; itineraryInstanceId?: number }; snapshot?: OrderSnapshot; itineraryNo?: string }>
+  items: Array<{ item: { id: number; itemType: string; adultCount: number; childCount: number; adultListUnitPrice: string | number; adultUnitPrice: string | number; childListUnitPrice: string | number; childUnitPrice: string | number; promotionDiscountAmount?: string | number; taxAmount?: string | number; startDate?: string; endDate?: string; customItineraryId?: number; customItineraryVersionId?: number; itineraryInstanceId?: number }; snapshot?: OrderSnapshot; itineraryNo?: string }>
   entitlements: Entitlement[]
   coupon?: { couponNo: string; discountType: string; discountValue: string | number; discountAmount: string | number; status: string }
   activeOnlinePayment: boolean
@@ -205,8 +208,12 @@ export interface OrderPricingQuote {
   childCount: number
   travelerCount: number
   currency: string
-  listUnitPrice: string | number
-  saleUnitPrice: string | number
+  adultListUnitPrice: string | number
+  adultSaleUnitPrice: string | number
+  childListUnitPrice: string | number
+  childSaleUnitPrice: string | number
+  adultSubtotal: string | number
+  childSubtotal: string | number
   listSubtotal: string | number
   promotionDiscountAmount: string | number
   saleSubtotal: string | number
@@ -226,14 +233,28 @@ export interface CustomOfferView {
   serviceCode: string
   status: 'SENT' | 'ACCEPTED' | 'REVISION_REQUESTED' | 'EXPIRED' | 'CANCELLED' | string
   currency: string
-  unitSubtotal: string | number
-  unitDiscountAmount: string | number
-  unitTaxAmount: string | number
-  unitTotalAmount: string | number
+  tiers: Array<{ id?: number; minTravelerCount: number; maxTravelerCount?: number | null; adultListPrice: string | number; adultSalePrice: string | number; childListPrice: string | number; childSalePrice: string | number }>
   validUntil?: string
   offerSnapshotJson?: string
   acceptedOrderId?: number
   createTime?: string
+}
+
+export interface CustomOfferQuote {
+  selectedTier: CustomOfferView['tiers'][number]
+  adultCount: number
+  childCount: number
+  travelerCount: number
+  currency: string
+  adultListUnitPrice: string | number
+  adultSaleUnitPrice: string | number
+  childListUnitPrice: string | number
+  childSaleUnitPrice: string | number
+  adultSubtotal: string | number
+  childSubtotal: string | number
+  listSubtotal: string | number
+  discountAmount: string | number
+  totalAmount: string | number
 }
 
 export interface TourConfirmationView {
@@ -274,6 +295,7 @@ export const useTourCommerce = () => {
     listCustomOffers: () => auth.request<CustomOfferView[]>('/commerce/custom-offers', undefined, 'GET'),
     getOrder: (orderNo: string) => auth.request<OrderView>(`/commerce/orders/${encodeURIComponent(orderNo)}`, undefined, 'GET'),
     getOffer: (offerNo: string) => auth.request<CustomOfferConfirmationView>(`/commerce/custom-offers/${encodeURIComponent(offerNo)}`, undefined, 'GET'),
+    previewOffer: (offerNo: string, adultCount: number, childCount: number) => auth.request<CustomOfferQuote>(`/commerce/custom-offers/${encodeURIComponent(offerNo)}/quote?adultCount=${adultCount}&childCount=${childCount}`, undefined, 'GET'),
     confirmOffer: (offerNo: string, adultCount: number, childCount: number) => auth.request<OrderView>(`/commerce/custom-offers/${encodeURIComponent(offerNo)}/confirm`, { adultCount, childCount }),
     requestRevision: (offerNo: string, requestContent: string) => auth.request(`/commerce/custom-offers/${encodeURIComponent(offerNo)}/request-revision`, { requestContent }),
     cancelOrder: (orderNo: string) => auth.request<OrderView>(`/commerce/orders/${encodeURIComponent(orderNo)}/cancel`),

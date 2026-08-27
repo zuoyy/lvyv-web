@@ -166,7 +166,8 @@
           </div>
 
           <div class="booking-total">
-            <p>Total <strong>{{ formatPrice(detail.salePrice * (adults + children)) }}</strong></p>
+            <p>Starting price <strong>{{ formatPrice(detail.lowestAdultSalePrice) }}</strong> / person</p>
+            <div v-if="detail.tiers.length" class="price-tiers"><strong>Prices by group size</strong><div v-for="tier in detail.tiers" :key="`${tier.minTravelerCount}-${tier.maxTravelerCount}`">{{ tier.minTravelerCount }}{{ tier.maxTravelerCount ? `-${tier.maxTravelerCount}` : '+' }} travelers: {{ formatPrice(tier.adultSalePrice) }}/adult · {{ formatPrice(tier.childSalePrice) }}/child</div></div>
             <span v-if="detail.priceNote">{{ detail.priceNote }}</span>
           </div>
 
@@ -214,8 +215,9 @@ interface EncounterDetail {
   imageUrls: string[]
   summary: string
   currency: string
-  listPrice: number
-  salePrice: number
+  lowestAdultListPrice: number
+  lowestAdultSalePrice: number
+  tiers: Array<{ minTravelerCount: number; maxTravelerCount?: number | null; adultSalePrice: number; childSalePrice: number }>
   dateText: string
   serviceLanguages: string[]
   travelType?: string
@@ -239,8 +241,9 @@ const detail = ref<EncounterDetail>({
   imageUrls: [],
   summary: '',
   currency: 'USD',
-  listPrice: 0,
-  salePrice: 0,
+  lowestAdultListPrice: 0,
+  lowestAdultSalePrice: 0,
+  tiers: [],
   dateText: '',
   serviceLanguages: [],
   guaranteedDeparture: false,
@@ -309,12 +312,13 @@ useHead(() => ({ link: [{ rel: 'canonical', href: absoluteUrl(`/encounters/${enc
 const formatPrice = (value: number) => new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: detail.value.currency || 'USD',
-  maximumFractionDigits: 0
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2
 }).format(value)
 
 const mapCatalog = (catalog: import('~/composables/useTourCommerce').CatalogProductView): EncounterDetail => {
-  const listPrice = Number(catalog.pricing?.listUnitPrice ?? catalog.price?.listPrice ?? 0)
-  const salePrice = Number(catalog.pricing?.saleUnitPrice ?? catalog.price?.salePrice ?? listPrice)
+  const lowestAdultListPrice = Math.min(...(catalog.price?.tiers || []).map((tier) => Number(tier.adultListPrice)))
+  const lowestAdultSalePrice = Math.min(...(catalog.price?.tiers || []).map((tier) => Number(tier.adultSalePrice)))
   const mappedDays = catalog.itinerary.days.map(day => ({
     dayNo: day.dayNo,
     title: day.title || `Day ${day.dayNo}`,
@@ -339,8 +343,9 @@ const mapCatalog = (catalog: import('~/composables/useTourCommerce').CatalogProd
     imageUrls: catalog.itinerary.imageUrls || [],
     summary: catalog.product.summary || catalog.itinerary.summary || '',
     currency: catalog.price?.currency || 'USD',
-    listPrice,
-    salePrice,
+    lowestAdultListPrice: Number.isFinite(lowestAdultListPrice) ? lowestAdultListPrice : 0,
+    lowestAdultSalePrice: Number.isFinite(lowestAdultSalePrice) ? lowestAdultSalePrice : 0,
+    tiers: (catalog.price?.tiers || []).map((tier: any) => ({ ...tier, adultSalePrice: Number(tier.adultSalePrice), childSalePrice: Number(tier.childSalePrice) })),
     dateText: catalog.itinerary.dateText || '',
     serviceLanguages: catalog.serviceLanguages || [],
     travelType: catalog.product.travelType,

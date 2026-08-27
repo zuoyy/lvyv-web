@@ -14,7 +14,7 @@
           <h3>Custom itinerary service</h3>
           <span>{{ offerStatusLabel(offer) }}<template v-if="offer.validUntil"> · Valid until {{ formatDate(offer.validUntil) }}</template></span>
         </div>
-        <strong>{{ offer.currency }} {{ offer.unitTotalAmount }} / person</strong>
+        <strong>{{ offer.tiers?.length ? `${offer.currency} tiered price` : 'Price unavailable' }}</strong>
         <button type="button" :aria-label="offer.status === 'SENT' ? 'Review offer' : 'View offer'" @click="openOffer(offer.offerNo)">
           {{ offer.status === 'SENT' ? 'Review offer' : 'View offer' }}
           <font-awesome-icon :icon="['fas', 'arrow-right']" />
@@ -45,7 +45,7 @@
           <div class="order-lines">
             <article v-for="line in selectedOrder.items" :key="line.item.id">
               <div><span>{{ line.itineraryNo || line.snapshot?.productCode || line.item.itemType }}</span><h3>{{ line.snapshot?.title || 'Lvyv journey service' }}</h3><p>{{ line.snapshot?.contentSummary }}</p></div>
-              <div class="line-meta"><strong>{{ line.snapshot?.currency || selectedOrder.order.currency }} {{ line.snapshot?.unitPrice || selectedOrder.order.totalAmount }}</strong><span>{{ line.item.adultCount }} adults · {{ line.item.childCount }} children</span></div>
+              <div class="line-meta"><strong>{{ line.snapshot?.currency || selectedOrder.order.currency }} {{ line.item.adultUnitPrice }}</strong><span>{{ line.item.adultCount }} adults · {{ line.item.childCount }} children</span></div>
             </article>
           </div>
           <footer><NuxtLink v-if="itineraryNo(selectedOrder)" :to="`/trips?itineraryNo=${encodeURIComponent(itineraryNo(selectedOrder)!)}`">View itinerary</NuxtLink><NuxtLink v-if="selectedOrder.order.status === 'PENDING_PAYMENT'" :to="`/orders/${encodeURIComponent(selectedOrder.order.orderNo)}/pay`">{{ selectedOrder.activeOnlinePayment ? 'Resume payment' : 'Pay now' }}</NuxtLink><button v-if="selectedOrder.order.status === 'PENDING_PAYMENT'" type="button" :disabled="selectedOrder.activeOnlinePayment" @click="cancel(selectedOrder.order.orderNo)">Cancel order</button><button type="button" @click="selectedOrder = null">Close</button></footer>

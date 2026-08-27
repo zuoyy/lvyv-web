@@ -17,6 +17,8 @@
         <p v-if="isLoggedIn && redeemMessage" class="feedback">{{ redeemMessage }}</p>
       </div>
       <aside v-if="quote" class="checkout-summary">
+        <div v-if="quote.adultSaleUnitPrice != null"><span>Adults {{ quote.adultCount }} × {{ quote.adultSaleUnitPrice }} USD</span><strong>USD {{ quote.adultSubtotal }}</strong></div>
+        <div v-if="quote.childCount > 0 && quote.childSaleUnitPrice != null"><span>Children {{ quote.childCount }} × {{ quote.childSaleUnitPrice }} USD</span><strong>USD {{ quote.childSubtotal }}</strong></div>
         <div><span>Original subtotal</span><strong>USD {{ quote.listSubtotal }}</strong></div>
         <div><span>Promotion</span><strong>- USD {{ quote.promotionDiscountAmount }}</strong></div>
         <div><span>Coupon</span><strong>- USD {{ quote.couponDiscountAmount }}</strong></div>
