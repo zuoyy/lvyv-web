@@ -165,13 +165,30 @@
             </div>
           </div>
 
-          <div class="booking-total">
-            <p>Starting price <strong>{{ formatPrice(detail.lowestAdultSalePrice) }}</strong> / person</p>
-            <div v-if="detail.tiers.length" class="price-tiers"><strong>Prices by group size</strong><div v-for="tier in detail.tiers" :key="`${tier.minTravelerCount}-${tier.maxTravelerCount}`">{{ tier.minTravelerCount }}{{ tier.maxTravelerCount ? `-${tier.maxTravelerCount}` : '+' }} travelers: {{ formatPrice(tier.adultSalePrice) }}/adult · {{ formatPrice(tier.childSalePrice) }}/child</div></div>
-            <span v-if="detail.priceNote">{{ detail.priceNote }}</span>
+          <div class="booking-total" aria-live="polite">
+            <div class="booking-total__heading">
+              <div><span>Current price</span><strong v-if="selectedTier">{{ formatPrice(bookingTotal) }}</strong><strong v-else>Unavailable</strong></div>
+              <small>From {{ formatPrice(detail.lowestAdultSalePrice) }}/person<br>{{ travelerCount }} {{ travelerCount === 1 ? 'traveler' : 'travelers' }}</small>
+            </div>
+            <div v-if="selectedTier" class="booking-breakdown">
+              <div><span>Adults {{ adults }} × {{ formatPrice(selectedTier.adultSalePrice) }}</span><strong>{{ formatPrice(adultSubtotal) }}</strong></div>
+              <div v-if="children > 0"><span>Children {{ children }} × {{ formatPrice(selectedTier.childSalePrice) }}</span><strong>{{ formatPrice(childSubtotal) }}</strong></div>
+            </div>
+            <p v-if="selectedTier" class="selected-tier">Group rate: {{ tierLabel(selectedTier) }}</p>
+            <p v-else class="price-unavailable">This group size is not available.</p>
+            <div v-if="detail.tiers.length" class="price-tiers">
+              <div class="price-tiers__heading"><strong>Prices by group size</strong><span>Per traveler</span></div>
+              <div class="price-tiers__table" role="table" aria-label="Prices by group size">
+                <div class="price-tiers__row price-tiers__row--header" role="row"><span>Group size</span><span>Adult</span><span>Child</span></div>
+                <div v-for="tier in detail.tiers" :key="`${tier.minTravelerCount}-${tier.maxTravelerCount}`" :class="['price-tiers__row', { 'price-tiers__row--active': selectedTier === tier }]" role="row">
+                  <span>{{ tierLabel(tier) }}</span><strong>{{ formatPrice(tier.adultSalePrice) }}</strong><strong>{{ formatPrice(tier.childSalePrice) }}</strong>
+                </div>
+              </div>
+            </div>
+            <p v-if="detail.priceNote" class="price-note">{{ detail.priceNote }}</p>
           </div>
 
-          <button class="next-button" type="button" @click="bookNow">Next</button>
+          <button class="next-button" type="button" :disabled="!selectedTier" @click="bookNow">Next</button>
         </aside>
       </section>
     </div>
@@ -217,7 +234,7 @@ interface EncounterDetail {
   currency: string
   lowestAdultListPrice: number
   lowestAdultSalePrice: number
-  tiers: Array<{ minTravelerCount: number; maxTravelerCount?: number | null; adultSalePrice: number; childSalePrice: number }>
+  tiers: Array<{ minTravelerCount: number; maxTravelerCount?: number | null; adultListPrice: number; adultSalePrice: number; childListPrice: number; childSalePrice: number }>
   dateText: string
   serviceLanguages: string[]
   travelType?: string
@@ -284,6 +301,12 @@ const productFeatures = computed(() => [
   detail.value.guaranteedDeparture ? 'Guaranteed Departure' : '',
   detail.value.shoppingPolicy
 ].filter((value): value is string => Boolean(value?.trim())))
+const travelerCount = computed(() => adults.value + children.value)
+const selectedTier = computed(() => detail.value.tiers.find((tier) => tier.minTravelerCount <= travelerCount.value
+  && (tier.maxTravelerCount == null || travelerCount.value <= tier.maxTravelerCount)) || null)
+const adultSubtotal = computed(() => selectedTier.value ? adults.value * selectedTier.value.adultSalePrice : 0)
+const childSubtotal = computed(() => selectedTier.value ? children.value * selectedTier.value.childSalePrice : 0)
+const bookingTotal = computed(() => adultSubtotal.value + childSubtotal.value)
 
 const endDate = computed(() => {
   const date = new Date(`${departureDate.value}T12:00:00`)
@@ -345,7 +368,15 @@ const mapCatalog = (catalog: import('~/composables/useTourCommerce').CatalogProd
     currency: catalog.price?.currency || 'USD',
     lowestAdultListPrice: Number.isFinite(lowestAdultListPrice) ? lowestAdultListPrice : 0,
     lowestAdultSalePrice: Number.isFinite(lowestAdultSalePrice) ? lowestAdultSalePrice : 0,
-    tiers: (catalog.price?.tiers || []).map((tier: any) => ({ ...tier, adultSalePrice: Number(tier.adultSalePrice), childSalePrice: Number(tier.childSalePrice) })),
+    tiers: (catalog.price?.tiers || []).map((tier: any) => ({
+      ...tier,
+      minTravelerCount: Number(tier.minTravelerCount),
+      maxTravelerCount: tier.maxTravelerCount == null ? null : Number(tier.maxTravelerCount),
+      adultListPrice: Number(tier.adultListPrice),
+      adultSalePrice: Number(tier.adultSalePrice),
+      childListPrice: Number(tier.childListPrice),
+      childSalePrice: Number(tier.childSalePrice)
+    })),
     dateText: catalog.itinerary.dateText || '',
     serviceLanguages: catalog.serviceLanguages || [],
     travelType: catalog.product.travelType,
@@ -430,6 +461,14 @@ const iconName = (type = '') => {
 }
 
 const itemTime = (item: DetailItem) => item.timeText?.trim() || item.startTime?.slice(0, 5) || ''
+const tierLabel = (tier: EncounterDetail['tiers'][number]) => {
+  const range = tier.maxTravelerCount == null
+    ? `${tier.minTravelerCount}+`
+    : tier.minTravelerCount === tier.maxTravelerCount
+      ? `${tier.minTravelerCount}`
+      : `${tier.minTravelerCount}-${tier.maxTravelerCount}`
+  return `${range} ${tier.minTravelerCount === 1 && tier.maxTravelerCount === 1 ? 'traveler' : 'travelers'}`
+}
 
 const activePhotoIndex = computed(() => Math.max(0, previewImages.value.indexOf(activePhoto.value)))
 const showPhoto = (index: number) => {
@@ -830,12 +869,31 @@ onBeforeUnmount(() => {
 .stepper strong { min-width: 12px; color: #263a32; font: 600 12px/1 'Inter', sans-serif; text-align: center; }
 
 .booking-total { margin-top: 19px; padding-top: 22px; border-top: 1px solid #e0e5e2; }
-.booking-total p { margin: 0; color: #263a32; font: 700 15px/1 'Inter', sans-serif; }
-.booking-total strong { margin-left: 4px; font: 800 24px/1 'Inter', sans-serif; }
-.booking-total span { display: block; margin-top: 5px; color: #6f7c76; font: 400 9px/1 'Inter', sans-serif; }
+.booking-total__heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.booking-total__heading div { display: grid; gap: 7px; }
+.booking-total__heading span { margin: 0; color: #6f7c76; font: 700 10px/1 'Inter', sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+.booking-total__heading strong { color: #263a32; font: 800 28px/1 'Inter', sans-serif; letter-spacing: 0; }
+.booking-total__heading small { color: #6f7c76; font: 500 11px/1 'Inter', sans-serif; white-space: nowrap; }
+.booking-breakdown { display: grid; gap: 9px; margin-top: 18px; padding: 13px 0; border-top: 1px solid #edf0ee; border-bottom: 1px solid #edf0ee; }
+.booking-breakdown div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; color: #52645d; font: 500 12px/1.35 'Inter', sans-serif; }
+.booking-breakdown strong { color: #263a32; font: 700 12px/1 'Inter', sans-serif; white-space: nowrap; }
+.selected-tier, .price-unavailable, .price-note { margin: 10px 0 0; color: #718079; font: 500 11px/1.4 'Inter', sans-serif; }
+.price-unavailable { color: #a34e3f; }
+.price-tiers { margin-top: 21px; }
+.price-tiers__heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 9px; }
+.price-tiers__heading strong { color: #263a32; font: 700 12px/1.2 'Inter', sans-serif; }
+.price-tiers__heading span { color: #87938d; font: 500 10px/1.2 'Inter', sans-serif; }
+.price-tiers__table { overflow: hidden; border: 1px solid #e1e7e3; }
+.price-tiers__row { display: grid; grid-template-columns: minmax(100px, 1.4fr) repeat(2, minmax(74px, 1fr)); align-items: center; gap: 8px; min-height: 39px; padding: 0 11px; border-top: 1px solid #edf0ee; color: #52645d; font: 500 11px/1.2 'Inter', sans-serif; }
+.price-tiers__row:first-child { border-top: 0; }
+.price-tiers__row--header { min-height: 31px; background: #f6f8f6; color: #87938d; font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.price-tiers__row strong { color: #263a32; font: 700 11px/1 'Inter', sans-serif; text-align: right; white-space: nowrap; }
+.price-tiers__row--active { background: #edf5ef; box-shadow: inset 3px 0 #3a654f; }
+.price-note { margin-top: 13px; }
 
 .next-button { width: 100%; height: 42px; margin-top: 23px; border: 0; border-radius: 22px; background: #315b4b; color: #fff; font: 600 12px/1 'Inter', sans-serif; cursor: pointer; }
 .next-button:hover { background: #244b3d; }
+.next-button:disabled { background: #aab8af; cursor: not-allowed; }
 
 .journey-loading {
   min-height: 640px;
