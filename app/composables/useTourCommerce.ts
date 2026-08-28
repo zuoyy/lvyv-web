@@ -51,7 +51,7 @@ export interface StandardItineraryView {
 }
 
 export interface CatalogProductView {
-  product: { id: number; productCode: string; name: string; summary?: string; destinationName?: string; travelType?: string; guaranteedDeparture?: boolean; shoppingPolicy?: string; adultAgeLabel?: string; childAgeLabel?: string; minimumAdvanceDays?: number; priceNote?: string; standardItineraryVersionId: number; status: string }
+  product: { id: number; productCode: string; name: string; summary?: string; cityCode: string; travelType?: string; guaranteedDeparture?: boolean; shoppingPolicy?: string; adultAgeLabel?: string; childAgeLabel?: string; minimumAdvanceDays?: number; priceNote?: string; standardItineraryVersionId: number; status: string }
   themes: string[]
   serviceLanguages: string[]
   price?: { currency: string; tiers: Array<{ minTravelerCount: number; maxTravelerCount?: number | null; adultListPrice: string | number; adultSalePrice: string | number; childListPrice: string | number; childSalePrice: string | number }> }
@@ -81,7 +81,6 @@ export interface CatalogProductListView {
   productCode: string
   name: string
   summary?: string
-  destinationName?: string
   travelType?: string
   themes: string[]
   serviceLanguages: string[]
@@ -285,8 +284,8 @@ export const useTourCommerce = () => {
   return {
     listItineraries: () => auth.request<ItineraryInstance[]>('/tour/itineraries', undefined, 'GET'),
     getItinerary: (itineraryNo: string) => auth.request<ItineraryInstance>(`/tour/itineraries/${encodeURIComponent(itineraryNo)}`, undefined, 'GET'),
-    listCatalogProducts: () => auth.publicRequest<CatalogProductListView[]>('/commerce/catalog/products'),
-    getCatalogProduct: (productCode: string) => auth.request<CatalogProductView>(`/commerce/catalog/products/${encodeURIComponent(productCode)}`, undefined, 'GET'),
+    listCatalogProducts: (cityCode?: string) => auth.publicRequest<CatalogProductListView[]>(`/commerce/catalog/products${cityCode ? `?cityCode=${encodeURIComponent(cityCode)}` : ''}`),
+    getCatalogProduct: (productCode: string) => auth.publicRequest<CatalogProductView>(`/commerce/catalog/products/${encodeURIComponent(productCode)}`),
     listCoupons: () => auth.request<MemberCouponView[]>('/commerce/coupons?status=AVAILABLE', undefined, 'GET'),
     redeemCoupon: (redeemCode: string) => auth.request<MemberCouponView>('/commerce/coupons/redeem', { redeemCode }),
     previewStandardOrder: (productCode: string, adultCount: number, childCount: number, startDate: string, memberCouponId?: number) => auth.request<OrderPricingQuote>('/commerce/orders/standard/preview', { productCode, adultCount, childCount, currency: 'USD', startDate, memberCouponId }),

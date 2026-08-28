@@ -228,7 +228,6 @@ interface EncounterDetail {
   productCode: string
   title: string
   cityCode: string
-  destinationName?: string
   imageUrls: string[]
   summary: string
   currency: string
@@ -249,6 +248,7 @@ interface EncounterDetail {
 
 const route = useRoute()
 const commerce = useTourCommerce()
+const { cities, load: loadCities } = useTourCities()
 const productCode = computed(() => String(route.params.productCode || ''))
 
 const detail = ref<EncounterDetail>({
@@ -291,8 +291,7 @@ const initialMonth = new Date(`${earliestDate.value}T12:00:00`)
 const calendarYear = ref(initialMonth.getFullYear())
 const calendarMonth = ref(initialMonth.getMonth())
 
-const normalizeCity = (city: string) => city.toLowerCase().replace(/[^a-z]/g, '')
-const cityLabel = computed(() => detail.value.destinationName || ({ xian: "Xi'an", chengdu: 'Chengdu', beijing: 'Beijing' }[normalizeCity(detail.value.cityCode)] || detail.value.cityCode))
+const cityLabel = computed(() => cities.value.find(city => city.code === detail.value.cityCode)?.label || detail.value.cityCode)
 const duration = computed(() => detail.value.dateText.trim() || `${detail.value.days.length}D${Math.max(0, detail.value.days.length - 1)}N`)
 const journeyTitle = computed(() => [duration.value, detail.value.travelType, detail.value.title].filter(Boolean).join(' · '))
 const allDaysOpen = computed(() => detail.value.days.length > 0 && detail.value.days.every(day => openDays.value.has(day.dayNo)))
@@ -340,6 +339,9 @@ const formatPrice = (value: number) => new Intl.NumberFormat('en-US', {
 }).format(value)
 
 const mapCatalog = (catalog: import('~/composables/useTourCommerce').CatalogProductView): EncounterDetail => {
+  if (catalog.product.cityCode !== catalog.itinerary.cityCode) {
+    throw new Error('This encounter has inconsistent city data.')
+  }
   const lowestAdultListPrice = Math.min(...(catalog.price?.tiers || []).map((tier) => Number(tier.adultListPrice)))
   const lowestAdultSalePrice = Math.min(...(catalog.price?.tiers || []).map((tier) => Number(tier.adultSalePrice)))
   const mappedDays = catalog.itinerary.days.map(day => ({
@@ -361,8 +363,7 @@ const mapCatalog = (catalog: import('~/composables/useTourCommerce').CatalogProd
   return {
     productCode: catalog.product.productCode,
     title: catalog.product.name || catalog.itinerary.title,
-    cityCode: catalog.itinerary.cityCode,
-    destinationName: catalog.product.destinationName,
+    cityCode: catalog.product.cityCode,
     imageUrls: catalog.itinerary.imageUrls || [],
     summary: catalog.product.summary || catalog.itinerary.summary || '',
     currency: catalog.price?.currency || 'USD',
@@ -525,8 +526,9 @@ const bookNow = async () => navigateTo({
   query: { product: detail.value.productCode, date: departureDate.value, adultCount: String(adults.value), childCount: String(children.value) }
 })
 
-onMounted(() => {
-  load()
+onMounted(async () => {
+  await loadCities()
+  await load()
   window.addEventListener('keydown', handlePhotoKeydown)
   window.addEventListener('afterprint', restoreDaysAfterPrint)
 })

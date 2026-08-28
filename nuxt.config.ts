@@ -5,7 +5,7 @@ export default defineNuxtConfig({
 
   // 运行时配置，可以通过环境变量（如 NUXT_PUBLIC_API_BASE）覆盖
   runtimeConfig: {
-    contentApiBase: 'http://127.0.0.1:8088/web-api',
+    contentApiBase: import.meta.env.NUXT_CONTENT_API_BASE || 'http://127.0.0.1:8088/web-api',
     previewSecret: '',
     public: {
       apiBase: '/web-api'
@@ -28,7 +28,7 @@ export default defineNuxtConfig({
     devProxy: {
       '/web-api': {
         // Nitro 会移除匹配到的代理前缀，因此目标地址需要显式补回 /web-api。
-        target: 'http://localhost:8088/web-api',
+        target: import.meta.env.NUXT_CONTENT_API_BASE || 'http://localhost:8088/web-api',
         changeOrigin: true
       }
     },

@@ -21,8 +21,8 @@ export const useTourCities = () => {
     loading.value = true
     error.value = ''
     try {
-      const response = await $fetch<ApiResult<TourCityOption[]>>('/tour/wish-configs/options', {
-        baseURL: config.public.apiBase as string,
+      const response = await $fetch<ApiResult<TourCityOption[]>>('/tour/cities/options', {
+        baseURL: (import.meta.server ? config.contentApiBase : config.public.apiBase) as string,
       })
       if (response.code !== 200) throw new Error(response.msg || 'Unable to load destinations')
       cities.value = response.data || []

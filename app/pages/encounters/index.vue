@@ -187,7 +187,6 @@ interface EncounterProduct {
   productCode: string
   title: string
   cityCode: string
-  destinationName?: string
   imageUrls: string[]
   duration: string
   days: number
@@ -227,13 +226,14 @@ const priceFloor = ref(0)
 const priceCeiling = ref(0)
 const priceMin = ref(0)
 const priceMax = ref(0)
+const availableCityCodes = ref(new Set<string>())
 
-const cityFilters = [
+const { cities, load: loadCities } = useTourCities()
+const cityFilters = computed(() => [
   { label: 'All', value: 'all' },
-  { label: "Xi'an", value: 'xian' },
-  { label: 'Chengdu', value: 'chengdu' },
-  { label: 'Beijing', value: 'beijing' }
-]
+  ...cities.value.filter(city => availableCityCodes.value.has(city.code))
+    .map(city => ({ label: city.label, value: city.code }))
+])
 
 const durationOptions = [
   { label: 'All', value: 'all' },
@@ -248,12 +248,10 @@ const themeOptions = computed(() => [
     .map(value => ({ label: value, value }))
 ])
 
-const normalizeCity = (value: string) => value.toLowerCase().replace(/[^a-z]/g, '')
-
 const filteredProducts = computed(() => {
   const themes = [...selectedThemes.value].filter(theme => theme !== 'all')
   const filtered = products.value.filter((product) => {
-    const matchesCity = activeCity.value === 'all' || normalizeCity(product.cityCode) === activeCity.value
+    const matchesCity = activeCity.value === 'all' || product.cityCode === activeCity.value
     const matchesPrice = product.lowestAdultSalePrice >= priceMin.value && product.lowestAdultSalePrice <= priceMax.value
     const matchesDuration = activeDuration.value === 'all'
       || (activeDuration.value === 'weekend' && product.days >= 3 && product.days <= 4)
@@ -274,15 +272,11 @@ watch([activeCity, activeDuration, priceMin, priceMax, sortBy, selectedThemes], 
   visibleCount.value = 5
 })
 
-const cityLabel = (cityCode: string) => ({
-  xian: "Xi'an",
-  chengdu: 'Chengdu',
-  beijing: 'Beijing'
-}[normalizeCity(cityCode)] || cityCode)
+const cityLabel = (cityCode: string) => cities.value.find(city => city.code === cityCode)?.label || cityCode
 
 const encounterSubtitle = (product: EncounterProduct) => {
-  const label = product.destinationName || cityLabel(product.cityCode)
-  return `${normalizeCity(product.cityCode) === 'xian' ? 'An' : 'A'} ${label} Encounter`
+  const label = cityLabel(product.cityCode)
+  return `${/^([aeiou])/i.test(label) ? 'An' : 'A'} ${label} Encounter`
 }
 
 const durationLabel = (dateText: string | undefined, days: number) => {
@@ -329,7 +323,7 @@ const showMore = () => {
   if (hasMore.value) visibleCount.value += 5
 }
 
-const applyCatalog = (catalog: import('~/composables/useTourCommerce').CatalogProductListView[]) => {
+const applyCatalog = (catalog: import('~/composables/useTourCommerce').CatalogProductListView[], updateCities = false) => {
   products.value = catalog.map((item) => {
         const lowestAdultListPrice = Number(item.lowestAdultListPrice ?? 0)
         const lowestAdultSalePrice = Number(item.lowestAdultSalePrice ?? lowestAdultListPrice)
@@ -343,7 +337,6 @@ const applyCatalog = (catalog: import('~/composables/useTourCommerce').CatalogPr
           productCode: item.productCode,
           title: item.name,
           cityCode: item.cityCode,
-          destinationName: item.destinationName,
           imageUrls: item.imageUrls || [],
           duration: durationLabel(item.dateText, item.dayCount),
           days: item.dayCount,
@@ -356,6 +349,7 @@ const applyCatalog = (catalog: import('~/composables/useTourCommerce').CatalogPr
           priceNote: item.priceNote
         }
       }).filter(product => product.imageUrls.length > 0)
+  if (updateCities) availableCityCodes.value = new Set(products.value.map(product => product.cityCode))
   if (products.value.length) {
     const prices = products.value.map(product => product.lowestAdultSalePrice)
     priceFloor.value = Math.floor(Math.min(...prices) / 10) * 10
@@ -375,7 +369,21 @@ const { data: catalogData, status: catalogStatus, refresh: refreshCatalog } = aw
 )
 const loading = computed(() => catalogStatus.value === 'idle' || catalogStatus.value === 'pending')
 const loadWarning = computed(() => catalogStatus.value === 'error')
-watch(catalogData, value => applyCatalog(value || []), { immediate: true })
+watch(catalogData, value => applyCatalog(value || [], true), { immediate: true })
+
+await loadCities()
+watch(activeCity, async (cityCode) => {
+  if (cityCode === 'all') {
+    await refreshCatalog()
+    return
+  }
+  if (!cities.value.some(city => city.code === cityCode)) {
+    activeCity.value = 'all'
+    return
+  }
+  const filtered = await commerce.listCatalogProducts(cityCode)
+  applyCatalog(filtered)
+})
 
 const refreshCatalogOnFocus = () => {
   void refreshCatalog()
