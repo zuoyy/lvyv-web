@@ -12,7 +12,8 @@
             <span class="countdown-icon">⏱</span>
             <span>剩余支付时间：<strong>{{ countdownText }}</strong></span>
           </div>
-          <p v-else class="deadline">有效期至 {{ dateTime(collection.validUntil) }}</p>
+          <p v-else-if="collection.status === 'PAID' && collection.paidTime" class="deadline">收款时间 {{ dateTime(collection.paidTime) }}</p>
+          <p v-else-if="collection.status === 'EXPIRED'" class="deadline">已于 {{ dateTime(collection.validUntil) }} 过期</p>
         </section>
 
         <section v-if="collection.status === 'PAID'" class="result success">
@@ -84,7 +85,7 @@ const statusText = computed(() => collection.value?.status === 'EXPIRED' ? '收�
 const money = (value: string | number) => Number(value).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const dateTime = (value: string) => {
   const utcValue = /(Z|[+-]\d{2}:?\d{2})$/i.test(value) ? value : `${value}Z`
-  return new Intl.DateTimeFormat('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(utcValue))
+  return new Intl.DateTimeFormat('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(utcValue)).replaceAll('/', '-')
 }
 
 const remainingSeconds = computed(() => {
