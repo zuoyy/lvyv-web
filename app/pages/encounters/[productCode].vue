@@ -84,6 +84,12 @@
                       <div>
                         <p><strong v-if="itemTime(item)">{{ itemTime(item) }}</strong>{{ item.title }}</p>
                         <small v-if="item.description || item.address">{{ item.description || item.address }}</small>
+                        <dl v-if="item.tagGroups.length" class="schedule-tags">
+                          <div v-for="group in item.tagGroups" :key="group.code">
+                            <dt>{{ group.label }}</dt>
+                            <dd><span v-for="tag in group.tags" :key="tag.code">{{ tag.label }}</span></dd>
+                          </div>
+                        </dl>
                       </div>
                     </div>
 
@@ -215,6 +221,7 @@ interface DetailItem {
   endTime?: string
   timeText?: string
   projectImageUrls: string[]
+  tagGroups: import('~/composables/useTourCommerce').ItineraryTagGroupView[]
 }
 
 interface DetailDay {
@@ -356,7 +363,8 @@ const mapCatalog = (catalog: import('~/composables/useTourCommerce').CatalogProd
       startTime: typeof item.startTime === 'string' ? item.startTime : undefined,
       endTime: typeof item.endTime === 'string' ? item.endTime : undefined,
       timeText: typeof item.timeText === 'string' ? item.timeText : undefined,
-      projectImageUrls: Array.isArray(item.projectImageUrls) ? item.projectImageUrls : []
+      projectImageUrls: Array.isArray(item.projectImageUrls) ? item.projectImageUrls : [],
+      tagGroups: Array.isArray(item.tagGroups) ? item.tagGroups : []
     }))
   }))
 
@@ -665,6 +673,11 @@ onBeforeUnmount(() => {
 .print-gallery { display: none; }
 
 .itinerary { margin-top: 41px; }
+.schedule-tags { display: grid; gap: 5px; margin: 9px 0 0; }
+.schedule-tags > div { display: flex; align-items: baseline; gap: 8px; }
+.schedule-tags dt { color: #718077; font-size: 9px; font-weight: 800; text-transform: uppercase; }
+.schedule-tags dd { display: flex; flex-wrap: wrap; gap: 5px; margin: 0; }
+.schedule-tags dd span { padding: 3px 7px; border-radius: 999px; background: #eef3ef; color: #456156; font-size: 9px; }
 .itinerary__title-row h2 { margin: 0; color: #1d3029; font: 700 24px/1.2 'Inter', sans-serif; }
 
 .itinerary__actions {

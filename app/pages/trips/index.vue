@@ -68,6 +68,9 @@
                     <span>{{ item.projectTypeLabel || 'Experience' }}</span>
                     <strong>{{ item.title }}</strong>
                     <p v-if="item.subtitle || item.address">{{ item.subtitle || item.address }}</p>
+                    <dl v-if="item.tagGroups.length" class="item-tag-groups">
+                      <div v-for="group in item.tagGroups" :key="group.code"><dt>{{ group.label }}</dt><dd>{{ group.tags.map(tag => tag.label).join(' · ') }}</dd></div>
+                    </dl>
                   </li>
                 </ol>
               </div>
@@ -88,7 +91,7 @@ import AccountPageShell from '~/components/profile/AccountPageShell.vue'
 
 useNoIndex()
 
-interface TripItemDetail { id: number; projectTypeLabel?: string; title: string; subtitle?: string; address?: string }
+interface TripItemDetail { id: number; projectTypeLabel?: string; title: string; subtitle?: string; address?: string; tagGroups: import('~/composables/useTourCommerce').ItineraryTagGroupView[] }
 interface TripDay { id: number; dayNo: number; title: string; summary?: string; items: TripItemDetail[] }
 interface Trip {
   itineraryNo: string; itineraryType: 'STANDARD_PURCHASE' | 'CUSTOM_SERVICE'; sourceType: 'STANDARD_PRODUCT' | 'WISH' | 'MANUAL'; wishId?: number; wishNo?: string; orderNo?: string; status: string; statusName: string; versionNo: number; travelerCount?: number; startDate?: string; endDate?: string
@@ -105,6 +108,19 @@ const loadError = ref('')
 const selectedTrip = ref<Trip | null>(null)
 const activeFilter = ref<'all' | 'ready' | 'revision' | 'closed'>('all')
 const filters = [{ value: 'all' as const, label: 'All' }, { value: 'ready' as const, label: 'Ready' }, { value: 'revision' as const, label: 'In revision' }, { value: 'closed' as const, label: 'Past' }]
+const parseTagGroups = (value: string | import('~/composables/useTourCommerce').ItineraryTagGroupSnapshot[] | undefined) => {
+  let groups: import('~/composables/useTourCommerce').ItineraryTagGroupSnapshot[] = []
+  if (Array.isArray(value)) groups = value
+  else if (typeof value === 'string' && value.trim()) {
+    try { const parsed = JSON.parse(value); if (Array.isArray(parsed)) groups = parsed } catch { groups = [] }
+  }
+  return groups.filter(group => group.showOnItinerary).sort((a, b) => a.groupSort - b.groupSort).map(group => ({
+    code: group.groupCode,
+    label: group.groupLabels?.['en-US'] || group.groupCode,
+    sort: group.groupSort,
+    tags: [...(group.tags || [])].sort((a, b) => a.sort - b.sort).map(tag => ({ sourceTagId: tag.sourceTagId, code: tag.code, label: tag.labels?.['en-US'] || tag.code, sort: tag.sort }))
+  }))
+}
 const filteredTrips = computed(() => trips.value.filter((trip) => {
   if (activeFilter.value === 'ready') return ['WAITING_CONFIRMATION', 'WAITING_PAYMENT', 'UPCOMING', 'IN_PROGRESS'].includes(trip.status)
   if (activeFilter.value === 'revision') return ['REVISION_REQUIRED', 'REVISING'].includes(trip.status)
@@ -150,7 +166,7 @@ const fetchTrips = async () => {
           dayNo: day.dayNo,
           title: day.title,
           summary: day.summary,
-          items: items.filter(item => item.dayId === day.id).map(item => ({ ...item, projectTypeLabel: item.projectType }))
+          items: items.filter(item => item.dayId === day.id).map(item => ({ ...item, projectTypeLabel: item.projectType, tagGroups: parseTagGroups(item.tagGroups) }))
         }))
       }
     })
@@ -217,6 +233,10 @@ onMounted(async () => {
 .trip-modal header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding-bottom: 20px; border-bottom: 1px solid #e1e7e2; }
 .trip-modal header p { margin: 0 0 7px; color: #78877f; font-size: 10px; font-weight: 800; text-transform: uppercase; }
 .trip-modal h2 { margin: 0; color: #173f34; font: 600 28px/1.2 'Playfair Display', Georgia, serif; }
+.item-tag-groups { display: grid; gap: 4px; margin: 7px 0 0; }
+.item-tag-groups > div { display: flex; gap: 7px; font-size: 10px; }
+.item-tag-groups dt { color: #738078; font-weight: 800; }
+.item-tag-groups dd { margin: 0; color: #496057; }
 .trip-modal header button { width: 34px; height: 34px; border: 0; background: #f0f3f0; color: #52605b; font-size: 23px; cursor: pointer; }
 .modal-summary { margin: 20px 0; color: #64736c; font-size: 13px; line-height: 1.6; }
 .day-list { display: grid; gap: 0; }.day-section { display: grid; grid-template-columns: 70px 1fr; gap: 18px; padding: 22px 0; border-bottom: 1px solid #e6ebe7; }

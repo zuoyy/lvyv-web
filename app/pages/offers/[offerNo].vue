@@ -36,7 +36,7 @@
         <section v-for="day in (itinerary.content?.days || [])" :key="day.id" class="day">
           <div class="day-label">Day {{ day.dayNo }}</div>
           <div><h3>{{ day.title }}</h3><p v-if="day.summary">{{ day.summary }}</p>
-            <ul><li v-for="item in (itinerary.content?.items || []).filter((entry) => entry.dayId === day.id)" :key="item.id"><strong>{{ item.title }}</strong><span>{{ item.subtitle || item.address || item.description }}</span></li></ul>
+            <ul><li v-for="item in (itinerary.content?.items || []).filter((entry) => entry.dayId === day.id)" :key="item.id"><strong>{{ item.title }}</strong><span>{{ item.subtitle || item.address || item.description }}</span><dl v-if="visibleTagGroups(item.tagGroups).length" class="offer-tag-groups"><div v-for="group in visibleTagGroups(item.tagGroups)" :key="group.code"><dt>{{ group.label }}</dt><dd>{{ group.tags.map(tag => tag.label).join(' · ') }}</dd></div></dl></li></ul>
           </div>
         </section>
       </article>
@@ -73,6 +73,17 @@ const maxTravelerCount = 2_147_483_647
 const error = ref('')
 const offer = computed(() => confirmation.value?.offer as CustomOfferView)
 const itinerary = computed(() => confirmation.value?.itinerary as TourConfirmationView)
+const visibleTagGroups = (value: string | import('~/composables/useTourCommerce').ItineraryTagGroupSnapshot[] | undefined) => {
+  let groups: import('~/composables/useTourCommerce').ItineraryTagGroupSnapshot[] = []
+  if (Array.isArray(value)) groups = value
+  else if (typeof value === 'string' && value.trim()) {
+    try { const parsed = JSON.parse(value); if (Array.isArray(parsed)) groups = parsed } catch { groups = [] }
+  }
+  return groups.filter(group => group.showOnItinerary).sort((a, b) => a.groupSort - b.groupSort).map(group => ({
+    code: group.groupCode, label: group.groupLabels?.['en-US'] || group.groupCode,
+    tags: [...(group.tags || [])].sort((a, b) => a.sort - b.sort).map(tag => ({ code: tag.code, label: tag.labels?.['en-US'] || tag.code }))
+  }))
+}
 const description = computed(() => { try { return offer.value?.offerSnapshotJson ? (JSON.parse(offer.value.offerSnapshotJson).description || '') : '' } catch { return '' } })
 const expired = computed(() => !!offer.value?.validUntil && new Date(offer.value.validUntil).getTime() <= Date.now())
 const canConfirm = computed(() => !!confirmation.value?.canConfirm && !expired.value)
@@ -141,6 +152,7 @@ watch([adultCount, childCount], () => {
 
 <style scoped>
 .offer-layout { display: grid; grid-template-columns: minmax(300px, .8fr) minmax(0, 1.2fr); gap: 18px; align-items: start; }.offer-panel, .itinerary-panel { padding: 28px; border: 1px solid #dfe5e1; background: #fff; }.eyebrow { margin: 0 0 8px; color: #84918a; font-size: 9px; font-weight: 800; text-transform: uppercase; }.offer-panel h2 { margin: 0; color: #173f34; font: 600 28px/1.2 'Playfair Display', Georgia, serif; }.offer-panel > p:not(.eyebrow) { color: #6e7c75; font-size: 13px; line-height: 1.6; }dl { display: grid; gap: 10px; margin: 22px 0; padding-top: 18px; border-top: 1px solid #edf1ee; }dl div { display: flex; justify-content: space-between; gap: 18px; }dt { color: #84918a; font-size: 11px; }dd { margin: 0; color: #35473e; font-weight: 700; }.total-row { margin-top: 3px; padding-top: 12px; border-top: 1px solid #edf1ee; }.total-row dd { color: #174d40; font-size: 16px; }.offer-panel button, .revision-modal button { width: 100%; min-height: 44px; margin-top: 8px; padding: 0 18px; border: 0; background: #174d40; color: #fff; font-weight: 700; cursor: pointer; }.offer-panel button.secondary, .revision-modal button.secondary { border: 1px solid #174d40; background: #fff; color: #174d40; }.offer-panel button:disabled, .revision-modal button:disabled { opacity: .55; cursor: not-allowed; }.notice { margin-top: 16px; color: #64736c; font-size: 12px; }.itinerary-heading { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 15px; border-bottom: 1px solid #edf1ee; color: #78877f; font-size: 11px; }.itinerary-heading strong { color: #174d40; }.designer-message { padding: 14px; background: #f5f8f4; color: #56675e; font-size: 12px; line-height: 1.6; }.day { display: grid; grid-template-columns: 68px 1fr; gap: 15px; padding: 20px 0; border-bottom: 1px solid #edf1ee; }.day-label { color: #174d40; font-size: 11px; font-weight: 800; text-transform: uppercase; }.day h3 { margin: 0; color: #2e4137; font-size: 16px; }.day p { margin: 5px 0 0; color: #77857d; font-size: 12px; }.day ul { display: grid; gap: 10px; margin: 14px 0 0; padding: 0; list-style: none; }.day li { display: grid; gap: 2px; padding-left: 14px; border-left: 2px solid #bfdc72; }.day li strong { color: #35473e; font-size: 13px; }.day li span { color: #78857e; font-size: 11px; }.offer-state { min-height: 260px; display: grid; place-items: center; border: 1px solid #dfe5e1; color: #75827c; }.offer-state.error { color: #a33e35; }.modal-backdrop { position: fixed; z-index: 1500; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(11,28,22,.58); }.revision-modal { width: min(520px,100%); padding: 25px; background: #fff; }.revision-modal h2 { margin: 0; color: #173f34; }.revision-modal p { color: #68766f; font-size: 13px; line-height: 1.5; }.revision-modal textarea { width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid #cfd9d2; resize: vertical; }.revision-modal footer { display: flex; gap: 8px; justify-content: flex-end; }.revision-modal footer button { width: auto; min-width: 110px; }.revision-modal footer button.secondary { order: -1; }
+.offer-tag-groups { gap: 4px; margin: 7px 0 0; padding: 0; border: 0; }.offer-tag-groups div { justify-content: flex-start; gap: 7px; }.offer-tag-groups dt, .offer-tag-groups dd { font-size: 9px; }.offer-tag-groups dt { font-weight: 800; }.offer-tag-groups dd { color: #50645b; }
 .traveler-input { width: 72px; min-height: 32px; padding: 0 8px; border: 1px solid #cfd9d2; color: #35473e; }
 .traveler-input:disabled { background: #f4f6f4; color: #7c8982; cursor: not-allowed; }
 .traveler-error dd { color: #a33e35; font-size: 11px; text-align: right; }

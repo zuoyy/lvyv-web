@@ -34,7 +34,7 @@ export interface ContentView {
     subtitle?: string
     description?: string
     tip?: string
-    tags?: string[]
+    tagGroups?: string | ItineraryTagGroupSnapshot[]
     address?: string
     startTime?: string
     endTime?: string
@@ -42,6 +42,21 @@ export interface ContentView {
     projectImageUrls?: string[] | string
     sort: number
   }>
+}
+
+export interface ItineraryTagGroupSnapshot {
+  groupCode: string
+  groupLabels: Record<string, string>
+  groupSort: number
+  showOnItinerary: boolean
+  tags: Array<{ sourceTagId?: number; code: string; labels: Record<string, string>; sort: number }>
+}
+
+export interface ItineraryTagGroupView {
+  code: string
+  label: string
+  sort: number
+  tags: Array<{ sourceTagId?: number; code: string; label: string; sort: number }>
 }
 
 export interface StandardItineraryView {
@@ -72,7 +87,7 @@ export interface CatalogProductView {
     designerMessage?: string
     summary?: string
     deliveryNote?: string
-    days: Array<{ id: number; dayNo: number; title: string; summary?: string; sort: number; items: Array<Record<string, unknown>> }>
+    days: Array<{ id: number; dayNo: number; title: string; summary?: string; sort: number; items: Array<Record<string, unknown> & { tagGroups?: ItineraryTagGroupView[] }> }>
   }
 }
 
