@@ -11,16 +11,16 @@
               class="wish-progress__button"
               :class="{
                 'is-active': currentStep === index,
-                'is-complete': submitted || currentStep > index,
-                'is-available': index <= furthestStep,
+                'is-complete': submitted || (currentStep > index && isStepValid(index)),
+                'is-available': isStepAvailable(index),
               }"
-              :disabled="submitted || index > furthestStep"
+              :disabled="!isStepAvailable(index)"
               :aria-label="item.label"
               :aria-current="currentStep === index ? 'step' : undefined"
               @click="goToStep(index)"
             >
               <span class="wish-progress__marker" aria-hidden="true">
-                <font-awesome-icon v-if="submitted || currentStep > index" :icon="['fas', 'check']" />
+                <font-awesome-icon v-if="submitted || (currentStep > index && isStepValid(index))" :icon="['fas', 'check']" />
                 <span v-else>{{ index + 1 }}</span>
               </span>
               <span class="wish-progress__label">{{ item.label }}</span>
@@ -46,9 +46,9 @@
           </div>
 
           <div v-else :key="currentStep" class="wish-stage">
-            <div v-if="currentStep < 6" class="wish-chat" :class="{ 'wish-chat--city': currentStep === 0 }">
-              <span v-if="currentStep !== 0" class="wish-chat__avatar" aria-hidden="true">
-                <img src="/images/wish/logo-main.svg" alt="">
+            <div v-if="currentStep < 5" class="wish-chat">
+              <span class="wish-chat__avatar" aria-hidden="true">
+                <img src="/images/wish/wish-avatar.svg" alt="" width="44" height="44">
               </span>
               <p>{{ steps[currentStep]?.prompt }}</p>
             </div>
@@ -143,11 +143,11 @@
                 @click="toggleInterest(interest.code)"
               >
                   <span class="wish-interest__icon" aria-hidden="true">
-                    <img v-if="wishIconAsset(interest.icon)" :src="wishIconAsset(interest.icon)" alt="">
+                    <img v-if="interestIconAsset(interest.icon)" :src="interestIconAsset(interest.icon)" alt="">
                     <font-awesome-icon v-else :icon="['fas', interest.icon]" />
                   </span>
                   <span>{{ interest.label }}</span>
-                  <span v-if="form.interestCodes.includes(interest.code)" class="wish-interest__check" aria-hidden="true"><font-awesome-icon :icon="['fas', 'check']" /></span>
+                  <span v-if="form.interestCodes.includes(interest.code)" class="wish-interest__check" aria-hidden="true"><img src="/images/wish/icons/interest-design/check.svg" alt=""></span>
                 </button>
               </div>
             </div>
@@ -274,14 +274,29 @@ const route = useRoute()
 const steps = [
   { label: 'Choose City', prompt: 'Choose where to meet, you can choose multiple options' },
   { label: 'Travel Dates', prompt: 'How long are you planning to wander?' },
-  { label: 'Interests', prompt: 'What kind of encounters are you dreaming of? Pick as many as you like.' },
+  { label: 'Interests', prompt: '"What kind of encounters are you dreaming of? Pick as many as you like."' },
   { label: 'Budget', prompt: "What's your budget style? (Not including international flights)" },
-  { label: 'Your Story', prompt: 'Anything we should know to make your encounter perfect?' },
+  { label: 'Your Story', prompt: '"Anything we should know to make your encounter perfect?"' },
   { label: 'Special Needs', prompt: 'Anything else we should know to make your encounter perfect?' },
   { label: 'Confirm', prompt: '' },
 ]
 
-const interestOptions = ref<Array<{ code: string; label: string; icon: string; defaultSelected: boolean }>>([])
+const interestOptions = ref<Array<{ code: string; label: string; icon: string; defaultSelected: boolean }>>([
+  { code: 'history', label: 'History', icon: 'interest-design/history', defaultSelected: false },
+  { code: 'local_life', label: 'Local Life', icon: 'interest-design/local-life', defaultSelected: false },
+  { code: 'solo_friendly', label: 'Solo-friendly', icon: 'interest-design/solo-friendly', defaultSelected: false },
+  { code: 'couple_friendly', label: 'Couple-friendly', icon: 'interest-design/couple-friendly', defaultSelected: false },
+  { code: 'family_friendly', label: 'Family-friendly', icon: 'interest-design/family-friendly', defaultSelected: false },
+  { code: 'senior_friendly', label: 'Senior-friendly', icon: 'interest-design/senior-friendly', defaultSelected: false },
+  { code: 'culture', label: 'Culture', icon: 'interest-design/culture', defaultSelected: false },
+  { code: 'art', label: 'Art', icon: 'interest-design/art', defaultSelected: false },
+  { code: 'nature', label: 'Nature', icon: 'interest-design/nature', defaultSelected: false },
+  { code: 'indoor', label: 'Indoor', icon: 'interest-design/indoor', defaultSelected: false },
+  { code: 'nightlife', label: 'Nightlife', icon: 'interest-design/nightlife', defaultSelected: false },
+  { code: 'outdoor', label: 'Outdoor', icon: 'interest-design/outdoor', defaultSelected: false },
+  { code: 'food', label: 'Food', icon: 'interest-design/food', defaultSelected: false },
+  { code: 'adventure', label: 'Adventure', icon: 'interest-design/adventure', defaultSelected: false },
+])
 const budgetOptions = ref<Array<{ code: string; label: string; price: string; icon: string; features: string[]; defaultSelected: boolean }>>([])
 const journeyOptions = ref<Array<{ code: string; title: string; subtitle: string; image: string; alt: string; story: string; defaultSelected: boolean }>>([])
 const selectedStoryCode = ref('')
@@ -303,6 +318,9 @@ const wishIconAssets: Record<string, string> = {
   'wish-premium': '/images/wish/icons/budget-premium.svg',
 }
 const wishIconAsset = (icon: string) => wishIconAssets[icon] || ''
+const interestIconAsset = (icon: string) => icon.startsWith('interest-design/')
+  ? `/images/wish/icons/${icon}.svg`
+  : wishIconAsset(icon)
 
 const formatDateKey = (date: Date) => {
   const year = date.getFullYear()
@@ -332,8 +350,16 @@ const initialDraft = (): WishDraft => ({
 })
 
 const form = reactive<WishDraft>(initialDraft())
-const currentStep = ref(0)
-const furthestStep = ref(0)
+
+const stepCookie = useCookie<number>('lvyv_wish_step', { default: () => 0, maxAge: 86400 * 7 })
+const furthestCookie = useCookie<number>('lvyv_wish_furthest', { default: () => 0, maxAge: 86400 * 7 })
+
+const queryStep = route.query.step ? Math.max(0, Math.min(6, Number(route.query.step) - 1)) : undefined
+const initialStep = queryStep !== undefined ? queryStep : Math.max(0, Math.min(6, Number(stepCookie.value) || 0))
+const initialFurthest = Math.max(initialStep, Math.min(6, Number(furthestCookie.value) || 0))
+
+const currentStep = ref(initialStep)
+const furthestStep = ref(initialFurthest)
 const submitted = ref(false)
 const submitting = ref(false)
 const submitError = ref('')
@@ -341,6 +367,67 @@ const shareMessage = ref('')
 const today = new Date()
 const calendarMonth = ref(new Date(today.getFullYear(), today.getMonth(), 1))
 const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+const resetDates = () => {
+  form.startDate = ''
+  form.endDate = ''
+  form.tripDays = 0
+  furthestStep.value = Math.min(furthestStep.value, 1)
+  if (currentStep.value > 1) currentStep.value = 1
+}
+
+const saveDraft = () => {
+  if (!import.meta.client) return
+  stepCookie.value = currentStep.value
+  furthestCookie.value = furthestStep.value
+  sessionStorage.setItem(DRAFT_KEY, JSON.stringify({
+    form: { ...form },
+    storyTemplateCode: selectedStoryCode.value,
+    step: currentStep.value,
+    furthest: furthestStep.value,
+  }))
+}
+const restoreDraft = () => {
+  if (!import.meta.client) return
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(DRAFT_KEY) || '')
+    if (!saved?.form) return
+    Object.assign(form, initialDraft(), saved.form)
+    selectedStoryCode.value = typeof saved.storyTemplateCode === 'string' ? saved.storyTemplateCode : ''
+    const savedStep = Math.min(6, Math.max(0, Number(saved.step) || 0))
+    const savedFurthest = Math.min(6, Math.max(savedStep, Number(saved.furthest) || 0))
+    currentStep.value = savedStep
+    furthestStep.value = savedFurthest
+    stepCookie.value = savedStep
+    furthestCookie.value = savedFurthest
+    if (form.startDate && form.endDate) {
+      const date = parseDateKey(form.startDate)
+      const calculatedDays = Math.round((parseDateKey(form.endDate).getTime() - date.getTime()) / 86_400_000) + 1
+      if (calculatedDays >= 1) {
+        form.tripDays = calculatedDays
+        calendarMonth.value = new Date(date.getFullYear(), date.getMonth(), 1)
+      }
+      else {
+        resetDates()
+      }
+    }
+    else {
+      resetDates()
+    }
+    if (!Boolean(form.startDate && form.endDate) && currentStep.value > 1) {
+      currentStep.value = 1
+      furthestStep.value = 1
+      stepCookie.value = 1
+      furthestCookie.value = 1
+    }
+  } catch {
+    sessionStorage.removeItem(DRAFT_KEY)
+  }
+}
+
+if (import.meta.client) {
+  restoreDraft()
+}
 
 const selectedCityLabel = computed(() => {
   return cityCards.value.find(city => city.code === form.cityCode)?.englishName
@@ -385,18 +472,38 @@ const reviewTravelDate = computed(() => {
   return `${formatter.format(parseDateKey(form.startDate))} - ${formatter.format(parseDateKey(form.endDate))}`
 })
 
+const isStepValid = (stepIndex: number): boolean => {
+  if (stepIndex === 0) return Boolean(form.cityCode)
+  if (stepIndex === 1) return hasCompleteTravelDates.value && form.tripDays >= 1
+  if (stepIndex === 2) return form.interestCodes.length > 0
+  if (stepIndex === 3) return Boolean(form.budgetLevel)
+  if (stepIndex === 4) return form.story.trim().length > 0
+  if (stepIndex === 5) return true
+  return true
+}
+
+const isStepAvailable = (targetIndex: number): boolean => {
+  if (submitted.value) return false
+  if (targetIndex === currentStep.value) return true
+  if (targetIndex === 0) return true
+  // 无论是向前回退还是向后跳转，目标步骤之前的所有步骤（0 到 targetIndex - 1）都必须满足有效性
+  for (let i = 0; i < targetIndex; i++) {
+    if (!isStepValid(i)) return false
+  }
+  // 向后跳转不能超过曾到达过的最大步骤
+  if (targetIndex > currentStep.value && targetIndex > furthestStep.value) {
+    return false
+  }
+  return true
+}
+
 const canContinue = computed(() => {
   if (configLoading.value || configError.value) return false
-  if (currentStep.value === 0) return Boolean(form.cityCode && interestOptions.value.length && budgetOptions.value.length && journeyOptions.value.length)
-  if (currentStep.value === 1) return hasCompleteTravelDates.value && form.tripDays >= 1
-  if (currentStep.value === 2) return form.interestCodes.length > 0
-  if (currentStep.value === 3) return Boolean(form.budgetLevel)
-  if (currentStep.value === 4) return form.story.trim().length > 0
-  return true
+  return isStepValid(currentStep.value)
 })
 
 const goToStep = (index: number) => {
-  if (submitted.value || index > furthestStep.value || (index > 1 && !hasCompleteTravelDates.value)) return
+  if (!isStepAvailable(index)) return
   currentStep.value = index
   submitError.value = ''
 }
@@ -423,7 +530,10 @@ const applyWishConfig = async (preserveDraft: boolean, force = false) => {
   const draftStoryCode = selectedStoryCode.value
   const config = await loadWishConfig(force)
   cityCards.value = config.cities
-  interestOptions.value = config.interests
+  // Interest tags are product-owned values, independent of the editable wish config.
+  form.interestCodes = preserveDraft && form.interestCodes.length
+    ? form.interestCodes.filter(code => interestOptions.value.some(option => option.code === code))
+    : []
   budgetOptions.value = config.budgets.map(option => ({ ...option, price: option.priceText }))
   journeyOptions.value = config.storyTemplates.map(option => ({
     code: option.code,
@@ -438,11 +548,6 @@ const applyWishConfig = async (preserveDraft: boolean, force = false) => {
   if (!preserveDraft || !currentCityIsValid) {
     form.cityCode = cityCards.value.find(option => option.defaultSelected)?.code || cityCards.value[0]?.code || ''
   }
-  const allowedInterests = new Set(interestOptions.value.map(option => option.code))
-  const validDraftInterests = form.interestCodes.filter(code => allowedInterests.has(code))
-  form.interestCodes = preserveDraft && validDraftInterests.length
-    ? validDraftInterests
-    : interestOptions.value.filter(option => option.defaultSelected).map(option => option.code)
   const validBudget = budgetOptions.value.some(option => option.code === form.budgetLevel)
   if (!preserveDraft || !validBudget) {
     form.budgetLevel = budgetOptions.value.find(option => option.defaultSelected)?.code || budgetOptions.value[0]?.code || ''
@@ -493,55 +598,6 @@ const changeTripDays = (amount: number) => {
   form.tripDays = Math.min(30, Math.max(1, form.tripDays + amount))
   form.endDate = formatDateKey(addDays(parseDateKey(form.startDate), form.tripDays - 1))
 }
-const resetDates = () => {
-  form.startDate = ''
-  form.endDate = ''
-  form.tripDays = 0
-  furthestStep.value = Math.min(furthestStep.value, 1)
-  if (currentStep.value > 1) currentStep.value = 1
-}
-
-const saveDraft = () => {
-  if (!import.meta.client) return
-  sessionStorage.setItem(DRAFT_KEY, JSON.stringify({
-    form: { ...form },
-    storyTemplateCode: selectedStoryCode.value,
-    step: currentStep.value,
-    furthest: furthestStep.value,
-  }))
-}
-const restoreDraft = () => {
-  if (!import.meta.client) return
-  try {
-    const saved = JSON.parse(sessionStorage.getItem(DRAFT_KEY) || '')
-    if (!saved?.form) return
-    Object.assign(form, initialDraft(), saved.form)
-    selectedStoryCode.value = typeof saved.storyTemplateCode === 'string' ? saved.storyTemplateCode : ''
-    currentStep.value = Math.min(6, Math.max(0, Number(saved.step) || 0))
-    furthestStep.value = Math.min(6, Math.max(currentStep.value, Number(saved.furthest) || 0))
-    if (form.startDate && form.endDate) {
-      const date = parseDateKey(form.startDate)
-      const calculatedDays = Math.round((parseDateKey(form.endDate).getTime() - date.getTime()) / 86_400_000) + 1
-      if (calculatedDays >= 1) {
-        form.tripDays = calculatedDays
-        calendarMonth.value = new Date(date.getFullYear(), date.getMonth(), 1)
-      }
-      else {
-        resetDates()
-      }
-    }
-    else {
-      resetDates()
-    }
-    if (!hasCompleteTravelDates.value && currentStep.value > 1) {
-      currentStep.value = 1
-      furthestStep.value = 1
-    }
-  } catch {
-    sessionStorage.removeItem(DRAFT_KEY)
-  }
-}
-
 const submitWish = async () => {
   submitError.value = ''
   if (!hasCompleteTravelDates.value || form.tripDays < 1) {
@@ -570,6 +626,8 @@ const submitWish = async () => {
     })
     submitted.value = true
     sessionStorage.removeItem(DRAFT_KEY)
+    stepCookie.value = 0
+    furthestCookie.value = 0
   } catch (caught) {
     submitError.value = caught instanceof Error ? caught.message : 'Unable to submit your wish. Please try again.'
     await reloadWishConfig()
@@ -596,7 +654,6 @@ watch(selectedStoryCode, saveDraft)
 watch([currentStep, furthestStep], saveDraft)
 
 onMounted(async () => {
-  restoreDraft()
   await applyWishConfig(true).catch(() => undefined)
   if (route.query.resume === '1' && currentStep.value < 6) {
     if (hasCompleteTravelDates.value) {
@@ -700,6 +757,16 @@ useLvyvSeo({
   color: #242e39;
   font-size: 13px;
   font-weight: 500;
+  overflow: hidden;
+}
+
+.wish-progress__marker svg,
+.wish-progress__marker :deep(svg) {
+  width: 14px;
+  height: 14px;
+  max-width: 14px;
+  max-height: 14px;
+  display: block;
 }
 
 .wish-progress__button.is-active .wish-progress__marker {
@@ -712,7 +779,15 @@ useLvyvSeo({
   color: #285c43;
 }
 
-.wish-progress__arrow { font-size: 12px; }
+.wish-progress__arrow,
+.wish-progress__button :deep(.wish-progress__arrow) {
+  width: 12px;
+  height: 12px;
+  max-width: 12px;
+  max-height: 12px;
+  font-size: 12px;
+  display: block;
+}
 .wish-progress__mobile-label { display: none; }
 
 .wish-conversation {
@@ -723,7 +798,7 @@ useLvyvSeo({
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 44px 80px 76px 120px;
+  padding: 44px 80px 76px 140px;
   background: #eaf0ec;
 }
 
@@ -737,45 +812,45 @@ useLvyvSeo({
 .wish-chat {
   min-height: 44px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
   margin-bottom: 20px;
 }
 
-.wish-chat--city { min-height: 40px; }
-.wish-chat--city p { height: 40px; min-height: 40px; padding-block: 0; }
-
 .wish-chat__avatar {
   width: 44px;
   height: 44px;
-  display: grid;
+  display: flex;
   flex: 0 0 44px;
-  place-items: center;
-  overflow: hidden;
+  align-items: center;
+  justify-content: center;
   border-radius: 50%;
-  background: #719f4f;
+  background: #698e4e;
+  overflow: visible;
 }
 
 .wish-chat__avatar img {
-  width: 31px;
-  height: auto;
-  filter: brightness(0) invert(1);
+  width: 44px;
+  height: 44px;
+  display: block;
+  border-radius: 50%;
 }
 
 .wish-chat p {
-  width: min(401px, 100%);
+  width: fit-content;
+  max-width: min(520px, 100%);
   min-height: 40px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   margin: 0;
-  padding: 10px 14px;
+  padding: 10px 16px;
   border: 1px solid #fff;
   border-radius: 8px;
-  background: rgba(255, 255, 255, .58);
+  background: rgba(255, 255, 255, .5);
   color: #160211;
-  font-size: 14px;
-  line-height: 1.35;
-  white-space: nowrap;
+  font: 400 14px/1.4 'Manrope', 'Inter', sans-serif;
+  white-space: normal;
+  box-sizing: border-box;
 }
 
 .wish-city-stage { min-width: 0; }
@@ -885,11 +960,12 @@ useLvyvSeo({
 .wish-selected-tags button { min-height: 40px; padding: 0 15px; border: 1px solid #698e4e; border-radius: 26px; background: #edf9e1; color: #2a573f; font-size: 13px; cursor: pointer; }
 .wish-selected-tags span { margin-left: 8px; }
 .wish-interest-grid { display: flex; flex-wrap: wrap; gap: 10px; }
-.wish-interest { position: relative; min-width: 170px; min-height: 50px; display: flex; align-items: center; gap: 13px; padding: 0 38px 0 17px; border: 1px solid #698e4e; border-radius: 10px; background: rgba(255, 255, 255, .65); color: #2a573f; font-size: 13px; cursor: pointer; }
+.wish-interest { position: relative; min-width: 123px; min-height: 44px; height: 44px; display: flex; align-items: center; gap: 10px; padding: 0 30px 0 14px; border: 1px solid #698e4e; border-radius: 10px; background: #f9f9f9; color: #2a573f; font: 400 14px/1 'Outfit', 'Inter', sans-serif; cursor: pointer; }
 .wish-interest:hover, .wish-interest.is-selected { background: #fff; }
 .wish-interest__icon { width: 24px; height: 24px; display: grid; flex: 0 0 24px; place-items: center; }
 .wish-interest__icon img, .wish-interest__icon svg { max-width: 24px; max-height: 24px; }
-.wish-interest__check { position: absolute; top: 7px; right: 7px; width: 16px; height: 16px; display: grid; place-items: center; border-radius: 50%; background: #cff380; font-size: 8px; }
+.wish-interest__check { position: absolute; top: 7px; right: 7px; width: 16px; height: 16px; display: grid; place-items: center; }
+.wish-interest__check img { width: 16px; height: 16px; display: block; }
 
 .wish-budget-grid { display: grid; grid-template-columns: repeat(3, minmax(160px, 210px)); gap: 20px; }
 .wish-budget { position: relative; min-height: 300px; display: flex; flex-direction: column; align-items: center; padding: 31px 24px 24px; border: 1px solid transparent; border-radius: 20px; background: #fff; color: #4d5853; cursor: pointer; text-align: center; transition: transform .2s ease, border-color .2s ease; }
@@ -982,6 +1058,7 @@ useLvyvSeo({
   .wish-progress__label, .wish-progress__arrow { display: none; }
   .wish-progress__mobile-label { display: block; margin: 10px 0 0; color: #cff380; font-size: 13px; text-align: center; }
   .wish-conversation { height: 650px; min-height: 650px; padding: 28px 22px 74px; }
+  .wish-chat { margin-left: 0; }
   .wish-city-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
   .wish-city-card { height: 126px; border-radius: 14px; }
   .wish-city-card__name { font-size: 17px; }
@@ -996,7 +1073,7 @@ useLvyvSeo({
   .wish-builder__shell { min-height: calc(100svh - 88px); border-radius: 0; }
   .wish-conversation { height: 670px; min-height: 670px; padding-inline: 16px; }
   .wish-chat { margin-bottom: 24px; }
-  .wish-chat p { font-size: 12px; white-space: normal; }
+  .wish-chat p { font-size: 13px; max-width: 100%; }
   .wish-city-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .wish-city-card { height: 120px; }
   .wish-calendar-card { width: 100%; }

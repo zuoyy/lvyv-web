@@ -1,4 +1,5 @@
-import { library } from '@fortawesome/fontawesome-svg-core'
+import { config, library } from '@fortawesome/fontawesome-svg-core'
+import '@fortawesome/fontawesome-svg-core/styles.css'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { fas } from '@fortawesome/free-solid-svg-icons'
 import {
@@ -10,6 +11,9 @@ import {
   faTiktok,
   faTwitter
 } from '@fortawesome/free-brands-svg-icons'
+
+// Prevent FontAwesome from dynamically adding its CSS since we imported it directly
+config.autoAddCss = false
 
 library.add(
   fas,
