@@ -29,7 +29,7 @@
           :show="showSidebar"
           :display-name="displayName"
           :email="auth.member.value?.email || ''"
-          :avatar="auth.member.value?.avatar || ''"
+          :avatar="auth.member.value?.avatarUrl || ''"
           @update:active-tab="openProfileSection"
           @close="showSidebar = false"
         />

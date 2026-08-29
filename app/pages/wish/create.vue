@@ -566,7 +566,7 @@ const submitWish = async () => {
       budgetLevel: form.budgetLevel,
       story: form.story.trim(),
       specialRequirement: form.specialRequirement.trim(),
-      imageFileIds: [],
+      imageObjectKeys: [],
     })
     submitted.value = true
     sessionStorage.removeItem(DRAFT_KEY)

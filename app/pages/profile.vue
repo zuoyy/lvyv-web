@@ -33,7 +33,7 @@
           :show="showSidebar"
           :display-name="displayName"
           :email="form.email"
-          :avatar="avatar"
+          :avatar="avatarUrl"
           @close="showSidebar = false"
         />
 
@@ -48,7 +48,7 @@
             :gender="form.gender"
             :birthday="form.birthday"
             :preferences="preferences"
-            :avatar="avatar"
+            :avatar-object-key="avatar"
             :timezone="form.timezone"
             :timezone-mode="form.timezoneMode"
             :on-save="saveProfile"
@@ -66,6 +66,7 @@ import ProfileSidebar from '~/components/profile/ProfileSidebar.vue'
 import PersonalInfo from '~/components/profile/PersonalInfo.vue'
 import AccountSecurity from '~/components/profile/AccountSecurity.vue'
 import Settings from '~/components/profile/Settings.vue'
+import { assetKeyToPublicUrl } from '~/utils/avatars'
 
 useNoIndex()
 
@@ -77,7 +78,7 @@ interface ProfileDraft {
   passportCountryCode: string
   bio: string
   preferences: string[]
-  avatar: string
+  avatarObjectKey: string
   timezone: string
   timezoneMode: number
   gender: number
@@ -93,6 +94,7 @@ const activeTab = ref<ProfileSection>(validSections.includes(requestedSection as
   ? requestedSection as ProfileSection
   : 'personal-info')
 const avatar = ref('')
+const avatarUrl = ref('')
 const preferences = ref<string[]>([])
 const showSidebar = ref(false)
 const loading = ref(true)
@@ -141,7 +143,8 @@ onMounted(async () => {
     form.timezoneMode = member.timezoneMode || 0
     form.gender = member.gender || 0
     form.birthday = member.birthday || ''
-    avatar.value = member.avatar || ''
+    avatar.value = member.avatarObjectKey || ''
+    avatarUrl.value = member.avatarUrl || ''
     needsPassportCompletion.value = !form.passportCountryCode && route.query.complete === 'passport'
   } catch {
     auth.clearSession()
@@ -161,7 +164,7 @@ const saveProfile = async (draft: ProfileDraft) => {
     timezone: draft.timezone,
     timezoneMode: draft.timezoneMode,
     passportCountryCode: draft.passportCountryCode,
-    avatar: draft.avatar || undefined,
+    avatarObjectKey: draft.avatarObjectKey || undefined,
     gender: draft.gender,
     birthday: draft.birthday || null,
   })
@@ -175,7 +178,8 @@ const saveProfile = async (draft: ProfileDraft) => {
   form.gender = draft.gender
   form.birthday = draft.birthday
   preferences.value = [...draft.preferences]
-  avatar.value = draft.avatar
+  avatar.value = draft.avatarObjectKey
+  avatarUrl.value = assetKeyToPublicUrl(draft.avatarObjectKey)
   needsPassportCompletion.value = false
 }
 </script>

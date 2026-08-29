@@ -44,7 +44,7 @@
           </div>
           <div v-if="memberToken" ref="accountMenu" class="member-account">
             <button class="member-trigger" type="button" :aria-expanded="accountOpen" aria-haspopup="menu" @click="accountOpen = !accountOpen">
-              <img v-if="member?.avatar && !avatarFailed" :src="member.avatar" alt="" class="member-avatar" @error="avatarFailed = true">
+              <img v-if="member?.avatarUrl && !avatarFailed" :src="member.avatarUrl" alt="" class="member-avatar" @error="avatarFailed = true">
               <span v-else class="member-avatar member-avatar-default"><font-awesome-icon :icon="['fas', 'user']" aria-hidden="true" /></span>
               <span class="member-name">{{ memberDisplayName }}</span>
               <span class="member-chevron" aria-hidden="true" />
@@ -139,7 +139,7 @@
           <!-- Member Auth Status in Drawer -->
           <div v-if="memberToken" class="mobile-drawer-user">
             <div class="mobile-user-info">
-              <img v-if="member?.avatar && !avatarFailed" :src="member.avatar" alt="" class="member-avatar" @error="avatarFailed = true">
+              <img v-if="member?.avatarUrl && !avatarFailed" :src="member.avatarUrl" alt="" class="member-avatar" @error="avatarFailed = true">
               <span v-else class="member-avatar member-avatar-default"><font-awesome-icon :icon="['fas', 'user']" aria-hidden="true" /></span>
               <span class="mobile-user-name">{{ memberDisplayName }}</span>
             </div>
@@ -346,7 +346,7 @@ const memberDisplayName = computed(() => member.value?.nickname?.trim()
   || tokenDisplayName.value)
 const logout = async () => { accountOpen.value = false; await logoutMember(); await navigateTo('/') }
 
-watch(() => member.value?.avatar, () => { avatarFailed.value = false })
+watch(() => member.value?.avatarUrl, () => { avatarFailed.value = false })
 watch(memberToken, async (value) => {
   if (!value) { accountOpen.value = false; return }
   if (!member.value) {

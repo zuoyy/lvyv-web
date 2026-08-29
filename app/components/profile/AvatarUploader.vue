@@ -1,7 +1,7 @@
 <template>
   <div class="avatar-picker">
     <button class="avatar-button" type="button" aria-label="Choose a profile avatar" @click="showPicker = true">
-      <img v-if="modelValue" :src="modelValue" alt="Your profile avatar" class="avatar-img">
+      <img v-if="modelValue" :src="assetKeyToPublicUrl(modelValue)" alt="Your profile avatar" class="avatar-img">
       <span v-else class="avatar-placeholder">{{ initials }}</span>
       <span class="avatar-overlay">
         <font-awesome-icon :icon="['fas', 'pen-to-square']" />
@@ -21,7 +21,7 @@
 
           <div class="avatar-grid" aria-label="Available avatars">
             <button
-              v-for="avatar in REGISTRATION_AVATAR_URLS"
+              v-for="avatar in REGISTRATION_AVATAR_KEYS"
               :key="avatar"
               class="avatar-option"
               :class="{ selected: avatar === modelValue }"
@@ -29,7 +29,7 @@
               :aria-label="avatar === modelValue ? 'Selected avatar' : 'Set this avatar'"
               @click="selectAvatar(avatar)"
             >
-              <img :src="avatar" alt="">
+              <img :src="assetKeyToPublicUrl(avatar)" alt="">
               <span v-if="avatar === modelValue" class="selected-mark">
                 <font-awesome-icon :icon="['fas', 'check']" />
               </span>
@@ -42,7 +42,7 @@
 </template>
 
 <script setup lang="ts">
-import { REGISTRATION_AVATAR_URLS } from '~/utils/avatars'
+import { REGISTRATION_AVATAR_KEYS, assetKeyToPublicUrl } from '~/utils/avatars'
 
 const props = defineProps<{ modelValue: string }>()
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()

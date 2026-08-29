@@ -20,7 +20,8 @@ export interface MemberProfile {
   gender?: number
   birthday?: string
   nickname?: string
-  avatar?: string
+  avatarObjectKey?: string
+  avatarUrl?: string
   bio?: string
 }
 
@@ -106,13 +107,13 @@ export const useMemberAuth = () => {
     googleExchange: (ticket: string) => request<LoginResult>('/auth/google/exchange', { ticket }),
     loadMember,
     clearSession,
-    register: (data: { email: string; password: string; verificationCode: string; avatar: string; timezone?: string }) => request<number>('/auth/register', data),
+    register: (data: { email: string; password: string; verificationCode: string; avatarObjectKey: string; timezone?: string }) => request<number>('/auth/register', data),
     sendRegistrationCode: (email: string) => request<void>('/auth/registration-code', { email }),
     verifyEmailCode: (email: string, code: string) => request<void>('/auth/verify-email-code', { email, code }),
     resendVerificationCode: (email: string) => request<void>('/auth/resend-verification-code', { email }),
     forgotPassword: (email: string) => request<void>('/auth/forgot-password', { email }),
     resetPassword: (value: string, password: string) => request<void>('/auth/reset-password', { token: value, password }),
-    updateProfile: async (data: { email: string; mobile?: string; nickname?: string; locale: string; timezone: string; timezoneMode: number; passportCountryCode: string; avatar?: string; bio?: string; gender?: number; birthday?: string | null }) => {
+    updateProfile: async (data: { email: string; mobile?: string; nickname?: string; locale: string; timezone: string; timezoneMode: number; passportCountryCode: string; avatarObjectKey?: string; bio?: string; gender?: number; birthday?: string | null }) => {
       await request<void>('/auth/profile', data, 'PUT')
       return loadMember()
     },

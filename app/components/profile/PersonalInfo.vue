@@ -120,7 +120,7 @@ interface ProfileDraft {
   passportCountryCode: string
   bio: string
   preferences: string[]
-  avatar: string
+  avatarObjectKey: string
   timezone: string
   timezoneMode: number
   gender: number
@@ -134,7 +134,7 @@ const props = defineProps<{
   passportCountryCode: string
   bio: string
   preferences: string[]
-  avatar: string
+  avatarObjectKey: string
   timezone: string
   timezoneMode: number
   gender: number
@@ -142,7 +142,7 @@ const props = defineProps<{
   onSave: (draft: ProfileDraft) => Promise<void>
 }>()
 
-const localAvatar = ref(props.avatar)
+const localAvatar = ref(props.avatarObjectKey)
 const formData = reactive({
   nickname: props.nickname,
   mobile: props.mobile,
@@ -189,10 +189,10 @@ const syncFromProps = () => {
   formData.timezoneMode = props.timezoneMode === 1 ? 1 : 0
   formData.gender = props.gender || 0
   formData.birthday = props.birthday || ''
-  localAvatar.value = props.avatar
+  localAvatar.value = props.avatarObjectKey
 }
 
-watch(() => props.avatar, (value) => { localAvatar.value = value })
+watch(() => props.avatarObjectKey, (value) => { localAvatar.value = value })
 watch(() => formData.timezoneMode, (mode) => {
   if (mode === 0 || !formData.timezone) formData.timezone = detectMemberTimeZone()
 })
@@ -212,7 +212,7 @@ const handleSubmit = async () => {
       passportCountryCode: formData.passportCountryCode,
       bio: formData.bio.trim(),
       preferences: [...formData.preferences],
-      avatar: localAvatar.value,
+      avatarObjectKey: localAvatar.value,
       timezone: formData.timezoneMode === 1 ? formData.timezone : detectMemberTimeZone(),
       timezoneMode: Number(formData.timezoneMode),
       gender: Number(formData.gender) || 0,

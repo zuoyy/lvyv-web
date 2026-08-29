@@ -2,6 +2,7 @@ export interface WishCityOption {
   code: string
   englishName: string
   chineseName: string
+  imageKey: string
   imageUrl: string
   defaultSelected: boolean
 }
@@ -26,6 +27,7 @@ export interface WishStoryTemplate {
   code: string
   title: string
   subtitle: string
+  imageKey: string
   imageUrl: string
   story: string
   defaultSelected: boolean

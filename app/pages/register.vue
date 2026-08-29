@@ -238,7 +238,7 @@ const submit = async () => {
     await auth.register({
       email: form.email,
       password: form.password,
-      avatar: randomRegistrationAvatar(),
+      avatarObjectKey: randomRegistrationAvatar(),
       timezone: form.timezone,
       verificationCode: verificationCode.value,
     })
