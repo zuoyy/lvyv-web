@@ -682,7 +682,7 @@ const startBgTimer = () => {
   if (bgTimer) clearInterval(bgTimer)
   bgTimer = setInterval(() => {
     activeBg.value = getNextLoadedHero()
-  }, 6000)
+  }, 3000)
 }
 
 const setBg = (index: number) => {

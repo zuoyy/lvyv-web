@@ -15,6 +15,7 @@
                 'is-available': index <= furthestStep,
               }"
               :disabled="submitted || index > furthestStep"
+              :aria-label="item.label"
               :aria-current="currentStep === index ? 'step' : undefined"
               @click="goToStep(index)"
             >
@@ -28,13 +29,6 @@
           </li>
         </ol>
         <p class="wish-progress__mobile-label">{{ steps[currentStep]?.label }}</p>
-        <img
-          class="wish-progress__slogan"
-          src="/images/wish/create/wish-slogan.svg"
-          alt="Go, meet someone."
-          width="226"
-          height="52"
-        >
       </aside>
 
       <div class="wish-conversation">
@@ -52,51 +46,46 @@
           </div>
 
           <div v-else :key="currentStep" class="wish-stage">
-            <div v-if="currentStep < 6" class="wish-chat">
-              <span class="wish-chat__avatar" aria-hidden="true">
+            <div v-if="currentStep < 6" class="wish-chat" :class="{ 'wish-chat--city': currentStep === 0 }">
+              <span v-if="currentStep !== 0" class="wish-chat__avatar" aria-hidden="true">
                 <img src="/images/wish/logo-main.svg" alt="">
               </span>
               <p>{{ steps[currentStep]?.prompt }}</p>
             </div>
 
-            <div v-if="currentStep === 0 && (cityLoading || cityError)" class="wish-config-state" :class="{ 'wish-config-state--error': cityError }" :role="cityError ? 'alert' : 'status'">
-              <span v-if="cityLoading" class="wish-config-spinner" />
-              <font-awesome-icon v-else :icon="['fas', 'circle-exclamation']" />
-              <strong>{{ cityLoading ? 'Loading destinations...' : 'We could not load available destinations.' }}</strong>
-              <span v-if="cityError">{{ cityError }}</span>
-              <button v-if="cityError" type="button" @click="reloadCities">Try again</button>
+            <div v-if="configLoading" class="wish-config-state" role="status">
+              <span class="wish-config-spinner" />
+              <strong>Loading wish options...</strong>
             </div>
 
-            <div v-else-if="currentStep === 0" class="wish-city-grid" aria-label="Choose a destination">
-              <button
-                v-for="city in cityCards"
-                :key="city.code"
-                type="button"
-                class="wish-city-card"
-                :class="{ 'is-selected': form.cityCode === city.code }"
-                :aria-pressed="form.cityCode === city.code"
-                @click="selectCity(city.code)"
-              >
-                <img :src="city.image" :alt="city.alt" width="960" height="640">
-                <span class="wish-city-card__shade" aria-hidden="true" />
-                <span class="wish-city-card__name">{{ city.name }}</span>
-                <span class="wish-city-card__zh">{{ city.zh }}</span>
-                <span v-if="form.cityCode === city.code" class="wish-choice-check" aria-hidden="true"><font-awesome-icon :icon="['fas', 'check']" /></span>
-              </button>
+            <div v-else-if="configError" class="wish-config-state wish-config-state--error" role="alert">
+              <font-awesome-icon :icon="['fas', 'circle-exclamation']" />
+              <strong>We could not load wish options.</strong>
+              <span>{{ configError }}</span>
+              <button type="button" @click="reloadWishConfig">Try again</button>
+            </div>
 
-              <button
-                v-if="hasSurpriseCity"
-                type="button"
-                class="wish-city-card wish-city-card--surprise"
-                :class="{ 'is-selected': form.cityCode === 'surprise' }"
-                :aria-pressed="form.cityCode === 'surprise'"
-                @click="selectCity('surprise')"
-              >
-                <span class="wish-surprise-icon" aria-hidden="true">?</span>
-                <strong>Surprise Me</strong>
-                <small>Let fate decide</small>
-                <span v-if="form.cityCode === 'surprise'" class="wish-choice-check" aria-hidden="true"><font-awesome-icon :icon="['fas', 'check']" /></span>
-              </button>
+            <div v-else-if="currentStep === 0" class="wish-city-stage">
+              <div class="wish-city-grid" aria-label="Choose a destination">
+                <button
+                  v-for="city in cityCards"
+                  :key="city.code"
+                  type="button"
+                  class="wish-city-card"
+                  :class="{ 'is-selected': form.cityCode === city.code }"
+                  :aria-pressed="form.cityCode === city.code"
+                  :aria-label="`${city.englishName} ${city.chineseName}`"
+                  @click="selectCity(city.code)"
+                >
+                  <img :src="city.imageUrl" alt="" width="840" height="560">
+                  <span class="wish-city-card__shade" aria-hidden="true" />
+                  <span class="wish-city-card__name">{{ city.englishName }}</span>
+                  <span class="wish-city-card__zh">{{ city.chineseName }}</span>
+                  <span class="wish-city-card__status" aria-hidden="true">
+                    <font-awesome-icon v-if="form.cityCode === city.code" :icon="['fas', 'check']" />
+                  </span>
+                </button>
+              </div>
             </div>
 
             <div v-else-if="currentStep === 1" class="wish-calendar-card">
@@ -125,26 +114,16 @@
                     'is-disabled': day.disabled,
                     'is-range': day.inRange,
                     'is-edge': day.isStart || day.isEnd,
+                    'is-start': day.isStart,
+                    'is-end': day.isEnd,
                   }"
                   :disabled="day.disabled"
                   :aria-label="day.label"
                   :aria-pressed="day.isStart || day.isEnd"
                   @click="selectCalendarDay(day.key)"
-                >{{ day.day }}</button>
+                ><span>{{ day.day }}</span></button>
               </div>
               <button type="button" class="wish-calendar-card__reset" @click="resetDates">Clear dates</button>
-            </div>
-
-            <div v-else-if="configLoading" class="wish-config-state" role="status">
-              <span class="wish-config-spinner" />
-              <strong>Loading this city's wish options...</strong>
-            </div>
-
-            <div v-else-if="configError" class="wish-config-state wish-config-state--error" role="alert">
-              <font-awesome-icon :icon="['fas', 'circle-exclamation']" />
-              <strong>We could not load this city's wish options.</strong>
-              <span>{{ configError }}</span>
-              <button type="button" @click="reloadCityConfig">Try again</button>
             </div>
 
             <div v-else-if="currentStep === 2" class="wish-interest-stage">
@@ -289,12 +268,11 @@ interface CalendarDay {
 
 const DRAFT_KEY = 'lvyv_wish_builder_draft_v1'
 const auth = useMemberAuth()
-const { cities, loading: cityLoading, error: cityError, load: loadCities } = useTourCities()
 const { loading: configLoading, error: configError, load: loadWishConfig } = useWishConfig()
 const route = useRoute()
 
 const steps = [
-  { label: 'Choose City', prompt: 'Hey! Where do you want your encounter to begin?' },
+  { label: 'Choose City', prompt: 'Choose where to meet, you can choose multiple options' },
   { label: 'Travel Dates', prompt: 'How long are you planning to wander?' },
   { label: 'Interests', prompt: 'What kind of encounters are you dreaming of? Pick as many as you like.' },
   { label: 'Budget', prompt: "What's your budget style? (Not including international flights)" },
@@ -307,6 +285,13 @@ const interestOptions = ref<Array<{ code: string; label: string; icon: string; d
 const budgetOptions = ref<Array<{ code: string; label: string; price: string; icon: string; features: string[]; defaultSelected: boolean }>>([])
 const journeyOptions = ref<Array<{ code: string; title: string; subtitle: string; image: string; alt: string; story: string; defaultSelected: boolean }>>([])
 const selectedStoryCode = ref('')
+const cityCards = ref<Array<{
+  code: string
+  englishName: string
+  chineseName: string
+  imageUrl: string
+  defaultSelected: boolean
+}>>([])
 
 const wishIconAssets: Record<string, string> = {
   'wish-food': '/images/wish/icons/interest-food.svg',
@@ -336,7 +321,7 @@ const addDays = (date: Date, count: number) => {
 }
 
 const initialDraft = (): WishDraft => ({
-  cityCode: 'xian',
+  cityCode: '',
   tripDays: 0,
   startDate: '',
   endDate: '',
@@ -357,29 +342,8 @@ const today = new Date()
 const calendarMonth = ref(new Date(today.getFullYear(), today.getMonth(), 1))
 const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
-const cityCards = computed(() => {
-  const knownCards: Record<string, { name: string; zh: string; image: string; alt: string }> = {
-    xian: { name: "XI'AN", zh: '西安', image: '/images/wish/create/city-xian.webp', alt: "Illustration of Xi'an and the Giant Wild Goose Pagoda" },
-    chengdu: { name: 'CHENGDU', zh: '成都', image: '/images/wish/create/city-chengdu.webp', alt: 'Illustration of Chengdu with a panda and modern skyline' },
-  }
-  return cities.value
-    .filter(city => city.code !== 'surprise')
-    .map(city => {
-      const known = knownCards[city.code]
-      return {
-        code: city.code,
-        name: known?.name || city.code.replaceAll('_', ' ').toUpperCase(),
-        zh: known?.zh || city.label,
-        image: known?.image || '/images/wish/create/city-xian.webp',
-        alt: known?.alt || `${city.label} travel destination`,
-      }
-    })
-})
-const hasSurpriseCity = computed(() => cities.value.some(city => city.code === 'surprise'))
 const selectedCityLabel = computed(() => {
-  if (form.cityCode === 'surprise') return 'Surprise Me'
-  return cities.value.find(city => city.code === form.cityCode)?.label
-    || cityCards.value.find(city => city.code === form.cityCode)?.name
+  return cityCards.value.find(city => city.code === form.cityCode)?.englishName
     || form.cityCode
 })
 const selectedInterestOptions = computed(() => interestOptions.value.filter(option => form.interestCodes.includes(option.code)))
@@ -455,9 +419,10 @@ const selectStory = (code: string) => {
   selectedStoryCode.value = code
   form.story = template.story
 }
-const applyCityConfig = async (cityCode: string, preserveDraft: boolean, force = false) => {
-  const previousTemplateStories = journeyOptions.value.map(option => option.story)
-  const config = await loadWishConfig(cityCode, force)
+const applyWishConfig = async (preserveDraft: boolean, force = false) => {
+  const draftStoryCode = selectedStoryCode.value
+  const config = await loadWishConfig(force)
+  cityCards.value = config.cities
   interestOptions.value = config.interests
   budgetOptions.value = config.budgets.map(option => ({ ...option, price: option.priceText }))
   journeyOptions.value = config.storyTemplates.map(option => ({
@@ -469,6 +434,10 @@ const applyCityConfig = async (cityCode: string, preserveDraft: boolean, force =
     story: option.story,
     defaultSelected: option.defaultSelected,
   }))
+  const currentCityIsValid = cityCards.value.some(option => option.code === form.cityCode)
+  if (!preserveDraft || !currentCityIsValid) {
+    form.cityCode = cityCards.value.find(option => option.defaultSelected)?.code || cityCards.value[0]?.code || ''
+  }
   const allowedInterests = new Set(interestOptions.value.map(option => option.code))
   const validDraftInterests = form.interestCodes.filter(code => allowedInterests.has(code))
   form.interestCodes = preserveDraft && validDraftInterests.length
@@ -479,8 +448,12 @@ const applyCityConfig = async (cityCode: string, preserveDraft: boolean, force =
     form.budgetLevel = budgetOptions.value.find(option => option.defaultSelected)?.code || budgetOptions.value[0]?.code || ''
   }
   const defaultStory = journeyOptions.value.find(option => option.defaultSelected) || journeyOptions.value[0]
-  const storyIsTemplate = previousTemplateStories.includes(form.story)
-  if (!preserveDraft || !form.story.trim() || storyIsTemplate) {
+  const draftStory = journeyOptions.value.find(option => option.code === draftStoryCode)
+  if (preserveDraft && draftStory) {
+    selectedStoryCode.value = draftStory.code
+    form.story = draftStory.story
+  }
+  else if (!preserveDraft || !form.story.trim() || Boolean(draftStoryCode)) {
     selectedStoryCode.value = defaultStory?.code || ''
     form.story = defaultStory?.story || ''
   }
@@ -489,36 +462,17 @@ const applyCityConfig = async (cityCode: string, preserveDraft: boolean, force =
   }
 }
 const selectCity = async (cityCode: string) => {
-  if (form.cityCode === cityCode && interestOptions.value.length) return
-  const storyIsTemplate = journeyOptions.value.some(option => option.story === form.story)
-  const customStory = form.story.trim() && !storyIsTemplate ? form.story : ''
-  if (customStory && import.meta.client && !window.confirm('You wrote a custom story. Keep it when changing cities?')) return
+  const city = cityCards.value.find(item => item.code === cityCode)
+  if (!city) return
   form.cityCode = cityCode
-  try {
-    await applyCityConfig(cityCode, false)
-    if (customStory) {
-      form.story = customStory
-      selectedStoryCode.value = ''
-    }
-  }
-  catch {
-    interestOptions.value = []
-    budgetOptions.value = []
-    journeyOptions.value = []
-  }
 }
-const reloadCityConfig = async () => {
+const reloadWishConfig = async () => {
   try {
-    await applyCityConfig(form.cityCode, true, true)
+    await applyWishConfig(true, true)
   }
   catch {
     // The composable exposes the actionable error state.
   }
-}
-const reloadCities = async () => {
-  await loadCities(true).catch(() => undefined)
-  if (!form.cityCode || !cities.value.some(city => city.code === form.cityCode)) form.cityCode = cities.value[0]?.code || ''
-  if (form.cityCode) await applyCityConfig(form.cityCode, true, true).catch(() => undefined)
 }
 const moveCalendar = (offset: number) => {
   calendarMonth.value = new Date(calendarMonth.value.getFullYear(), calendarMonth.value.getMonth() + offset, 1)
@@ -549,7 +503,12 @@ const resetDates = () => {
 
 const saveDraft = () => {
   if (!import.meta.client) return
-  sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ form: { ...form }, step: currentStep.value, furthest: furthestStep.value }))
+  sessionStorage.setItem(DRAFT_KEY, JSON.stringify({
+    form: { ...form },
+    storyTemplateCode: selectedStoryCode.value,
+    step: currentStep.value,
+    furthest: furthestStep.value,
+  }))
 }
 const restoreDraft = () => {
   if (!import.meta.client) return
@@ -557,6 +516,7 @@ const restoreDraft = () => {
     const saved = JSON.parse(sessionStorage.getItem(DRAFT_KEY) || '')
     if (!saved?.form) return
     Object.assign(form, initialDraft(), saved.form)
+    selectedStoryCode.value = typeof saved.storyTemplateCode === 'string' ? saved.storyTemplateCode : ''
     currentStep.value = Math.min(6, Math.max(0, Number(saved.step) || 0))
     furthestStep.value = Math.min(6, Math.max(currentStep.value, Number(saved.furthest) || 0))
     if (form.startDate && form.endDate) {
@@ -612,7 +572,7 @@ const submitWish = async () => {
     sessionStorage.removeItem(DRAFT_KEY)
   } catch (caught) {
     submitError.value = caught instanceof Error ? caught.message : 'Unable to submit your wish. Please try again.'
-    await reloadCityConfig()
+    await reloadWishConfig()
   } finally {
     submitting.value = false
   }
@@ -632,13 +592,12 @@ const shareJourney = async () => {
 }
 
 watch(form, saveDraft, { deep: true })
+watch(selectedStoryCode, saveDraft)
 watch([currentStep, furthestStep], saveDraft)
 
 onMounted(async () => {
   restoreDraft()
-  await loadCities().catch(() => undefined)
-  if (!cities.value.some(city => city.code === form.cityCode)) form.cityCode = cities.value[0]?.code || ''
-  if (form.cityCode) await applyCityConfig(form.cityCode, true).catch(() => undefined)
+  await applyWishConfig(true).catch(() => undefined)
   if (route.query.resume === '1' && currentStep.value < 6) {
     if (hasCompleteTravelDates.value) {
       currentStep.value = 6
@@ -672,7 +631,7 @@ useLvyvSeo({
   width: min(1280px, 100%);
   min-height: 640px;
   display: grid;
-  grid-template-columns: 340px minmax(0, 1fr);
+  grid-template-columns: 280px minmax(0, 1fr);
   margin: 0 auto;
   padding: 0;
   overflow: hidden;
@@ -683,7 +642,7 @@ useLvyvSeo({
 .wish-progress {
   position: relative;
   min-width: 0;
-  padding: 38px 38px 88px 48px;
+  padding: 54px 20px 54px 48px;
   background: #285c43;
   color: #fff;
 }
@@ -756,17 +715,6 @@ useLvyvSeo({
 .wish-progress__arrow { font-size: 12px; }
 .wish-progress__mobile-label { display: none; }
 
-.wish-progress__slogan {
-  position: absolute;
-  bottom: 27px;
-  left: 48px;
-  width: 226px;
-  height: auto;
-  display: block;
-  transform: rotate(1.68deg);
-  transform-origin: center;
-}
-
 .wish-conversation {
   position: relative;
   height: 640px;
@@ -775,7 +723,7 @@ useLvyvSeo({
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 43px 56px 76px;
+  padding: 44px 80px 76px 120px;
   background: #eaf0ec;
 }
 
@@ -791,8 +739,11 @@ useLvyvSeo({
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  margin-bottom: 31px;
+  margin-bottom: 20px;
 }
+
+.wish-chat--city { min-height: 40px; }
+.wish-chat--city p { height: 40px; min-height: 40px; padding-block: 0; }
 
 .wish-chat__avatar {
   width: 44px;
@@ -812,7 +763,7 @@ useLvyvSeo({
 }
 
 .wish-chat p {
-  max-width: 430px;
+  width: min(401px, 100%);
   min-height: 40px;
   display: flex;
   align-items: center;
@@ -824,17 +775,21 @@ useLvyvSeo({
   color: #160211;
   font-size: 14px;
   line-height: 1.35;
+  white-space: nowrap;
 }
+
+.wish-city-stage { min-width: 0; }
 
 .wish-city-grid {
   display: grid;
   grid-template-columns: repeat(3, 210px);
-  gap: 20px;
+  gap: 30px 40px;
+  margin-top: 40px;
 }
 
 .wish-city-card {
   position: relative;
-  height: 300px;
+  height: 126px;
   overflow: hidden;
   padding: 0;
   border: 0;
@@ -849,11 +804,16 @@ useLvyvSeo({
 .wish-city-card:hover { transform: translateY(-3px); }
 .wish-city-card.is-selected { outline: 2px solid #142b22; outline-offset: -2px; box-shadow: 0 10px 24px rgba(32, 61, 51, .13); }
 .wish-city-card > img { width: 100%; height: 100%; display: block; object-fit: cover; }
-.wish-city-card__shade { position: absolute; inset: 0; background: rgba(3, 53, 40, .46); mix-blend-mode: multiply; }
+.wish-city-card__shade { position: absolute; inset: 0; background: rgba(3, 53, 40, .57); mix-blend-mode: multiply; }
 .wish-city-card__name, .wish-city-card__zh { position: absolute; left: 14px; z-index: 1; }
-.wish-city-card__name { top: 12px; font: 600 24px/1 'Khula', sans-serif; text-transform: uppercase; }
+.wish-city-card__name { top: 12px; color: rgba(255, 255, 255, .5); font: 600 24px/1 'Khula', sans-serif; text-transform: uppercase; }
 .wish-city-card__zh { top: 42px; font-size: 16px; font-weight: 300; }
+.wish-city-card__zh { color: rgba(255, 255, 255, .5); }
+.wish-city-card.is-selected .wish-city-card__shade { background: rgba(3, 53, 40, .35); }
+.wish-city-card.is-selected .wish-city-card__name,
+.wish-city-card.is-selected .wish-city-card__zh { color: #fff; }
 
+.wish-city-card__status,
 .wish-choice-check {
   position: absolute;
   z-index: 2;
@@ -869,20 +829,15 @@ useLvyvSeo({
   font-size: 11px;
 }
 
-.wish-city-card--surprise {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: #fff;
-  color: rgba(0, 0, 0, .58);
-  text-align: center;
+.wish-city-card__status {
+  border: 1px solid rgba(255, 255, 255, .72);
+  background: transparent;
 }
 
-.wish-city-card--surprise strong { margin-top: 16px; font: 600 23px/1.2 'Khula', sans-serif; text-transform: uppercase; }
-.wish-city-card--surprise small { margin-top: 8px; font-size: 13px; text-transform: uppercase; }
-.wish-city-card--surprise.is-selected { outline-color: #698e4e; }
-.wish-surprise-icon { width: 54px; height: 48px; display: grid; place-items: center; border-top: 8px solid #285c43; background: #285c43; color: #cff380; font-size: 28px; box-shadow: inset 0 0 0 7px #fff; }
+.wish-city-card.is-selected .wish-city-card__status {
+  border-color: #cff380;
+  background: #cff380;
+}
 
 .wish-calendar-card {
   width: 360px;
@@ -913,12 +868,16 @@ useLvyvSeo({
 
 .wish-calendar { display: grid; grid-template-columns: repeat(7, 1fr); padding: 0 16px 9px; }
 .wish-calendar__weekday { height: 32px; display: grid; place-items: center; color: #8d8d8d; font-size: 10px; }
-.wish-calendar__day { position: relative; height: 38px; border: 0; background: transparent; color: #333; font-size: 12px; cursor: pointer; }
+.wish-calendar__day { position: relative; height: 38px; border: 0; background: transparent; color: #333; font-size: 12px; cursor: pointer; isolation: isolate; }
+.wish-calendar__day span { position: relative; z-index: 2; }
 .wish-calendar__day:hover:not(:disabled) { background: #edf9e1; }
-.wish-calendar__day.is-outside { color: #aeb4b0; }
+.wish-calendar__day.is-outside.is-disabled { color: #aeb4b0; }
 .wish-calendar__day.is-disabled { color: #d1d4d2; cursor: not-allowed; }
-.wish-calendar__day.is-range { background: #d8f5c3; }
-.wish-calendar__day.is-edge { border-radius: 50%; background: #285c43; color: #fff; }
+.wish-calendar__day.is-range::before { position: absolute; z-index: 0; inset: 0; background: #d8f5c3; content: ''; }
+.wish-calendar__day.is-start::before { left: 50%; }
+.wish-calendar__day.is-end::before { right: 50%; }
+.wish-calendar__day.is-edge { color: #fff; }
+.wish-calendar__day.is-edge::after { position: absolute; z-index: 1; top: 50%; left: 50%; width: 40px; height: 40px; border-radius: 50%; background: #285c43; content: ''; transform: translate(-50%, -50%); }
 .wish-calendar-card__reset { margin: 0 16px 15px; padding: 8px 13px; border: 1px solid #bfc9c3; border-radius: 20px; background: #fff; color: #3e4d45; font-size: 11px; cursor: pointer; }
 
 .wish-interest-stage { max-width: 720px; }
@@ -1004,9 +963,8 @@ useLvyvSeo({
   .wish-builder { padding-inline: 28px; }
   .wish-builder__shell { grid-template-columns: 260px minmax(0, 1fr); }
   .wish-progress { padding-inline: 32px 24px; }
-  .wish-progress__slogan { left: 32px; }
-  .wish-conversation { padding-inline: 38px; }
-  .wish-city-grid { grid-template-columns: repeat(3, minmax(150px, 210px)); }
+  .wish-conversation { padding-inline: 52px; }
+  .wish-city-grid { grid-template-columns: repeat(3, minmax(140px, 210px)); gap: 24px; }
   .wish-budget-grid { grid-template-columns: repeat(3, minmax(150px, 1fr)); }
   .wish-journeys { overflow-x: auto; grid-template-columns: repeat(5, 130px); padding-bottom: 8px; }
 }
@@ -1023,14 +981,11 @@ useLvyvSeo({
   .wish-progress__marker { width: 30px; height: 30px; flex: 0 0 30px; }
   .wish-progress__label, .wish-progress__arrow { display: none; }
   .wish-progress__mobile-label { display: block; margin: 10px 0 0; color: #cff380; font-size: 13px; text-align: center; }
-  .wish-progress__slogan { display: none; }
   .wish-conversation { height: 650px; min-height: 650px; padding: 28px 22px 74px; }
   .wish-city-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-  .wish-city-card { height: 250px; border-radius: 14px; }
+  .wish-city-card { height: 126px; border-radius: 14px; }
   .wish-city-card__name { font-size: 17px; }
   .wish-city-card__zh { top: 36px; font-size: 13px; }
-  .wish-city-card--surprise strong { font-size: 15px; }
-  .wish-city-card--surprise small { font-size: 10px; }
   .wish-budget-grid { gap: 10px; }
   .wish-budget { min-height: 270px; padding-inline: 15px; }
   .wish-journeys { margin-top: 35px; }
@@ -1041,10 +996,9 @@ useLvyvSeo({
   .wish-builder__shell { min-height: calc(100svh - 88px); border-radius: 0; }
   .wish-conversation { height: 670px; min-height: 670px; padding-inline: 16px; }
   .wish-chat { margin-bottom: 24px; }
-  .wish-chat p { font-size: 12px; }
+  .wish-chat p { font-size: 12px; white-space: normal; }
   .wish-city-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .wish-city-card { height: 224px; }
-  .wish-city-card--surprise { grid-column: 1 / -1; height: 130px; }
+  .wish-city-card { height: 120px; }
   .wish-calendar-card { width: 100%; }
   .wish-calendar-card__summary { padding-inline: 14px; font-size: 12px; }
   .wish-calendar { padding-inline: 8px; }

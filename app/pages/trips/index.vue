@@ -67,7 +67,7 @@
                   <li v-for="item in day.items" :key="item.id">
                     <span>{{ item.projectTypeLabel || 'Experience' }}</span>
                     <strong>{{ item.title }}</strong>
-                    <p v-if="item.subtitle || item.address">{{ item.subtitle || item.address }}</p>
+                    <p v-if="item.address">{{ item.address }}</p>
                     <dl v-if="item.tagGroups.length" class="item-tag-groups">
                       <div v-for="group in item.tagGroups" :key="group.code"><dt>{{ group.label }}</dt><dd>{{ group.tags.map(tag => tag.label).join(' · ') }}</dd></div>
                     </dl>
@@ -91,7 +91,7 @@ import AccountPageShell from '~/components/profile/AccountPageShell.vue'
 
 useNoIndex()
 
-interface TripItemDetail { id: number; projectTypeLabel?: string; title: string; subtitle?: string; address?: string; tagGroups: import('~/composables/useTourCommerce').ItineraryTagGroupView[] }
+interface TripItemDetail { id: number; projectTypeLabel?: string; title: string; address?: string; tagGroups: import('~/composables/useTourCommerce').ItineraryTagGroupView[] }
 interface TripDay { id: number; dayNo: number; title: string; summary?: string; items: TripItemDetail[] }
 interface Trip {
   itineraryNo: string; itineraryType: 'STANDARD_PURCHASE' | 'CUSTOM_SERVICE'; sourceType: 'STANDARD_PRODUCT' | 'WISH' | 'MANUAL'; wishId?: number; wishNo?: string; orderNo?: string; status: string; statusName: string; versionNo: number; travelerCount?: number; startDate?: string; endDate?: string

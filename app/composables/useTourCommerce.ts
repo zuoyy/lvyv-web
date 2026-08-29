@@ -31,7 +31,6 @@ export interface ContentView {
     dayNo: number
     projectType: string
     title: string
-    subtitle?: string
     description?: string
     tip?: string
     tagGroups?: string | ItineraryTagGroupSnapshot[]

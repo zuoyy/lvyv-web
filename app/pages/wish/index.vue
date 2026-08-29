@@ -1,5 +1,9 @@
 <template>
-  <main class="wish-landing" aria-labelledby="wish-title">
+  <main
+    class="wish-landing"
+    :class="{ 'wish-landing--blackout': isBlackout }"
+    aria-labelledby="wish-title"
+  >
     <div class="wish-landing__backdrop" aria-hidden="true">
       <img src="/images/wish/wish-hero.webp" alt="">
     </div>
@@ -15,12 +19,12 @@
         <span>A real human will handcraft it for you</span>
       </p>
 
-      <div class="wish-landing__countdown" role="timer" aria-label="Time remaining">
-        <span class="wish-landing__countdown-value">{{ countdownParts.hours }}</span>
+      <div class="wish-landing__countdown" role="timer" aria-label="Elapsed time">
+        <span class="wish-landing__countdown-value">{{ clockParts.hours }}</span>
         <span class="wish-landing__countdown-separator" aria-hidden="true">:</span>
-        <span class="wish-landing__countdown-value">{{ countdownParts.minutes }}</span>
+        <span class="wish-landing__countdown-value">{{ clockParts.minutes }}</span>
         <span class="wish-landing__countdown-separator" aria-hidden="true">:</span>
-        <span class="wish-landing__countdown-value">{{ countdownParts.seconds }}</span>
+        <span class="wish-landing__countdown-value">{{ clockParts.seconds }}</span>
       </div>
 
       <NuxtLink to="/wish/create" class="wish-landing__cta">
@@ -37,13 +41,17 @@
 </template>
 
 <script setup lang="ts">
-const countdownSeconds = ref(23 * 60 * 60 + 59 * 60 + 59)
-let countdownTimer: ReturnType<typeof setInterval> | undefined
+const cycleStartSeconds = 23 * 60 * 60 + 59 * 60 + 50
+const daySeconds = 24 * 60 * 60
+const clockSeconds = ref(cycleStartSeconds)
+const isBlackout = ref(false)
+let clockTimer: ReturnType<typeof setInterval> | undefined
+let blackoutTimer: ReturnType<typeof setTimeout> | undefined
 
-const countdownParts = computed(() => {
-  const hours = Math.floor(countdownSeconds.value / 3600)
-  const minutes = Math.floor((countdownSeconds.value % 3600) / 60)
-  const seconds = countdownSeconds.value % 60
+const clockParts = computed(() => {
+  const hours = Math.floor(clockSeconds.value / 3600)
+  const minutes = Math.floor((clockSeconds.value % 3600) / 60)
+  const seconds = clockSeconds.value % 60
   return {
     hours: String(hours).padStart(2, '0'),
     minutes: String(minutes).padStart(2, '0'),
@@ -51,14 +59,29 @@ const countdownParts = computed(() => {
   }
 })
 
-onMounted(() => {
-  countdownTimer = setInterval(() => {
-    if (countdownSeconds.value > 0) countdownSeconds.value -= 1
+const tickClock = () => {
+  if (clockSeconds.value < daySeconds - 1) {
+    clockSeconds.value += 1
+    return
+  }
+
+  clockSeconds.value = 0
+  isBlackout.value = true
+  if (clockTimer) clearInterval(clockTimer)
+  blackoutTimer = setTimeout(() => {
+    clockSeconds.value = cycleStartSeconds
+    isBlackout.value = false
+    clockTimer = setInterval(tickClock, 1000)
   }, 1000)
+}
+
+onMounted(() => {
+  clockTimer = setInterval(tickClock, 1000)
 })
 
 onBeforeUnmount(() => {
-  if (countdownTimer) clearInterval(countdownTimer)
+  if (clockTimer) clearInterval(clockTimer)
+  if (blackoutTimer) clearTimeout(blackoutTimer)
 })
 
 useLvyvSeo({
@@ -103,6 +126,14 @@ useHead({
   overflow: hidden;
   isolation: isolate;
   background: #111e42;
+}
+
+.wish-landing--blackout {
+  background: #000;
+}
+
+.wish-landing--blackout > * {
+  visibility: hidden;
 }
 
 .wish-landing__backdrop,

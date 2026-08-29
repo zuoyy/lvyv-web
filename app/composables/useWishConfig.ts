@@ -1,3 +1,11 @@
+export interface WishCityOption {
+  code: string
+  englishName: string
+  chineseName: string
+  imageUrl: string
+  defaultSelected: boolean
+}
+
 export interface WishInterestOption {
   code: string
   label: string
@@ -23,9 +31,8 @@ export interface WishStoryTemplate {
   defaultSelected: boolean
 }
 
-export interface WishCityConfig {
-  cityCode: string
-  cityLabel: string
+export interface WishConfig {
+  cities: WishCityOption[]
   interests: WishInterestOption[]
   budgets: WishBudgetOption[]
   storyTemplates: WishStoryTemplate[]
@@ -39,22 +46,21 @@ interface ApiResult<T> {
 
 export const useWishConfig = () => {
   const runtimeConfig = useRuntimeConfig()
-  const cache = useState<Record<string, WishCityConfig>>('wish-city-config-cache', () => ({}))
+  const cache = useState<WishConfig | null>('wish-config-cache', () => null)
   const loading = ref(false)
   const error = ref('')
 
-  const load = async (cityCode: string, force = false) => {
-    if (!cityCode) throw new Error('Choose a destination first.')
-    if (!force && cache.value[cityCode]) return cache.value[cityCode]
+  const load = async (force = false) => {
+    if (!force && cache.value) return cache.value
     loading.value = true
     error.value = ''
     try {
-      const response = await $fetch<ApiResult<WishCityConfig>>(`/tour/wish-configs/${encodeURIComponent(cityCode)}`, {
+      const response = await $fetch<ApiResult<WishConfig>>('/tour/wish-configs', {
         baseURL: runtimeConfig.public.apiBase as string,
         headers: { lang: 'en-US', 'Accept-Language': 'en-US' },
       })
-      if (response.code !== 200 || !response.data) throw new Error(response.msg || 'This destination is not available for wishes yet.')
-      cache.value = { ...cache.value, [cityCode]: response.data }
+      if (response.code !== 200 || !response.data) throw new Error(response.msg || 'Wish options are unavailable.')
+      cache.value = response.data
       return response.data
     }
     catch (caught) {

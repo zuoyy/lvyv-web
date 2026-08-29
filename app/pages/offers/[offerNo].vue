@@ -36,7 +36,7 @@
         <section v-for="day in (itinerary.content?.days || [])" :key="day.id" class="day">
           <div class="day-label">Day {{ day.dayNo }}</div>
           <div><h3>{{ day.title }}</h3><p v-if="day.summary">{{ day.summary }}</p>
-            <ul><li v-for="item in (itinerary.content?.items || []).filter((entry) => entry.dayId === day.id)" :key="item.id"><strong>{{ item.title }}</strong><span>{{ item.subtitle || item.address || item.description }}</span><dl v-if="visibleTagGroups(item.tagGroups).length" class="offer-tag-groups"><div v-for="group in visibleTagGroups(item.tagGroups)" :key="group.code"><dt>{{ group.label }}</dt><dd>{{ group.tags.map(tag => tag.label).join(' · ') }}</dd></div></dl></li></ul>
+            <ul><li v-for="item in (itinerary.content?.items || []).filter((entry) => entry.dayId === day.id)" :key="item.id"><strong>{{ item.title }}</strong><span>{{ item.address || item.description }}</span><dl v-if="visibleTagGroups(item.tagGroups).length" class="offer-tag-groups"><div v-for="group in visibleTagGroups(item.tagGroups)" :key="group.code"><dt>{{ group.label }}</dt><dd>{{ group.tags.map(tag => tag.label).join(' · ') }}</dd></div></dl></li></ul>
           </div>
         </section>
       </article>
