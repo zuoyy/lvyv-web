@@ -45,7 +45,7 @@
             <p v-if="shareMessage" class="wish-success__share" role="status">{{ shareMessage }}</p>
           </div>
 
-          <div v-else :key="currentStep" class="wish-stage">
+          <div v-else :key="currentStep" class="wish-stage" :class="{ 'wish-stage--story': currentStep === 4 }">
             <div v-if="currentStep < 5" class="wish-chat">
               <span class="wish-chat__avatar" aria-hidden="true">
                 <img src="/images/wish/wish-avatar.svg" alt="" width="44" height="44">
@@ -189,7 +189,7 @@
                   title="Previous story templates"
                   @click="scrollStories(-1)"
                 >
-                  <font-awesome-icon :icon="['fas', 'chevron-left']" aria-hidden="true" />
+                  <img src="/images/wish/chevron-left.svg" alt="" aria-hidden="true">
                 </button>
                 <div ref="storyScrollRef" class="wish-journeys" @scroll="updateStoryScrollState">
                   <button
@@ -214,7 +214,7 @@
                   title="Next story templates"
                   @click="scrollStories(1)"
                 >
-                  <font-awesome-icon :icon="['fas', 'chevron-right']" aria-hidden="true" />
+                  <img class="wish-journeys-arrow__right" src="/images/wish/chevron-right.svg" alt="" aria-hidden="true">
                 </button>
               </div>
             </div>
@@ -858,6 +858,8 @@ useLvyvSeo({
   scrollbar-gutter: stable;
 }
 
+.wish-stage--story { overflow: visible; }
+
 .wish-chat {
   min-height: 44px;
   display: flex;
@@ -1033,19 +1035,20 @@ useLvyvSeo({
 .wish-textarea textarea { width: 100%; min-height: 130px; display: block; resize: vertical; padding: 20px 24px 34px; border: 1px solid #fff; border-radius: 8px; outline: none; background: rgba(255, 255, 255, .6); color: #222; font: 400 14px/1.55 'Inter', sans-serif; }
 .wish-textarea textarea:focus { border-color: #698e4e; box-shadow: 0 0 0 3px rgba(105, 142, 78, .12); }
 .wish-textarea small { position: absolute; right: 16px; bottom: 10px; color: #8b8b8b; font-size: 11px; }
-.wish-journeys-shell { min-width: 0; display: flex; align-items: center; gap: 10px; margin-top: 62px; }
+.wish-journeys-shell { width: 968px; max-width: none; min-width: 0; display: flex; align-items: center; gap: 2px; margin-top: 62px; margin-left: -130px; }
 .wish-journeys { min-width: 0; flex: 1 1 auto; display: flex; gap: 12px; overflow-x: auto; padding: 0 0 8px; scroll-behavior: smooth; scrollbar-width: none; }
 .wish-journeys::-webkit-scrollbar { display: none; }
-.wish-journeys-arrow { width: 32px; height: 32px; display: grid; flex: 0 0 32px; place-items: center; padding: 0; border: 1px solid #698e4e; border-radius: 50%; background: #fff; color: #2a573f; cursor: pointer; transition: background .2s ease, color .2s ease, opacity .2s ease; }
-.wish-journeys-arrow:hover:not(:disabled) { background: #2a573f; color: #fff; }
+.wish-journeys-arrow { width: 48px; height: 48px; display: grid; flex: 0 0 48px; place-items: center; padding: 0; border: 0; border-radius: 0; background: transparent; color: #698e4e; font-size: 20px; cursor: pointer; transition: color .2s ease, opacity .2s ease; }
+.wish-journeys-arrow:hover:not(:disabled) { color: #2a573f; }
 .wish-journeys-arrow:disabled { opacity: .35; cursor: not-allowed; }
-.wish-journeys-arrow :deep(svg) { width: 11px; height: 11px; }
-.wish-journey { min-width: 0; flex: 0 0 calc((100% - 48px) / 5); overflow: hidden; padding: 8px 8px 14px; border: 1px solid transparent; border-radius: 16px; background: #fff; color: #1f2d27; cursor: pointer; text-align: left; transition: transform .2s ease, border-color .2s ease; }
+.wish-journeys-arrow img { width: 48px; height: 48px; display: block; }
+.wish-journeys-arrow__right { transform: rotate(180deg); }
+.wish-journey { width: 164px; height: 211px; min-width: 164px; flex: 0 0 164px; overflow: hidden; padding: 10px; border: 0; border-radius: 18px; background: #fff; color: #1f2d27; cursor: pointer; text-align: left; transition: transform .2s ease, outline-color .2s ease; }
 .wish-journey:hover { transform: translateY(-3px); }
-.wish-journey.is-selected { border-color: #698e4e; }
-.wish-journey img { width: 100%; height: 128px; display: block; border-radius: 10px; object-fit: cover; }
-.wish-journey strong { display: block; margin-top: 10px; overflow: hidden; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
-.wish-journey small { display: block; margin: 7px 0 0 20px; color: #969696; font-size: 9px; }
+.wish-journey.is-selected { outline: 1px solid #698e4e; outline-offset: -1px; }
+.wish-journey img { width: 144px; height: 135px; display: block; border-radius: 9px; object-fit: cover; }
+.wish-journey strong { display: block; margin-top: 10px; overflow: hidden; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.wish-journey small { display: block; margin: 6px 0 0 20px; color: #969696; font-size: 10px; }
 .wish-textarea--needs textarea { min-height: 165px; }
 .wish-clear-needs { margin-top: 12px; padding: 0; border: 0; background: transparent; color: #2a573f; font-size: 12px; text-decoration: underline; cursor: pointer; }
 
@@ -1097,7 +1100,10 @@ useLvyvSeo({
   .wish-conversation { padding-inline: 52px; }
   .wish-city-grid { grid-template-columns: repeat(3, minmax(140px, 210px)); gap: 24px; }
   .wish-budget-grid { grid-template-columns: repeat(3, minmax(150px, 1fr)); }
-  .wish-journey { flex-basis: 130px; }
+}
+
+@media (max-width: 1350px) {
+  .wish-journeys-shell { width: auto; max-width: 100%; margin-left: 0; }
 }
 
 @media (max-width: 820px) {
@@ -1113,6 +1119,7 @@ useLvyvSeo({
   .wish-progress__label, .wish-progress__arrow { display: none; }
   .wish-progress__mobile-label { display: block; margin: 10px 0 0; color: #cff380; font-size: 13px; text-align: center; }
   .wish-conversation { height: 650px; min-height: 650px; padding: 28px 22px 74px; }
+  .wish-stage--story { overflow-x: hidden; overflow-y: auto; }
   .wish-chat { margin-left: 0; }
   .wish-city-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
   .wish-city-card { height: 126px; border-radius: 14px; }
@@ -1144,7 +1151,6 @@ useLvyvSeo({
   .wish-budget > small { text-align: left; }
   .wish-textarea textarea { min-height: 160px; padding-inline: 16px; }
   .wish-journeys { margin-right: -16px; }
-  .wish-journey { flex-basis: 145px; }
   .wish-review { padding-inline: 20px; }
   .wish-review dl > div { grid-template-columns: 85px minmax(0, 1fr); }
   .wish-review__actions, .wish-success__actions { gap: 8px; }
