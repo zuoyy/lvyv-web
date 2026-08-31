@@ -179,18 +179,42 @@
                 <textarea v-model="form.story" maxlength="500" rows="4" placeholder="Tell us the moment you hope this journey will create..." @input="selectedStoryCode = ''" />
                 <small>{{ form.story.length }}/500</small>
               </label>
-              <div class="wish-journeys" aria-label="Journey inspiration">
+              <div class="wish-journeys-shell" aria-label="Journey inspiration">
                 <button
-                  v-for="journey in journeyOptions"
-                  :key="journey.code"
+                  v-if="journeyOptions.length > 1"
                   type="button"
-                  class="wish-journey"
-                  :class="{ 'is-selected': selectedStoryCode === journey.code }"
-                  @click="selectStory(journey.code)"
+                  class="wish-journeys-arrow"
+                  :disabled="!storyCanScrollPrev"
+                  aria-label="Previous story templates"
+                  title="Previous story templates"
+                  @click="scrollStories(-1)"
                 >
-                  <img :src="journey.image" :alt="journey.alt" width="520" height="347">
-                  <strong>{{ journey.title }}</strong>
-                  <small>{{ journey.subtitle }}</small>
+                  <font-awesome-icon :icon="['fas', 'chevron-left']" aria-hidden="true" />
+                </button>
+                <div ref="storyScrollRef" class="wish-journeys" @scroll="updateStoryScrollState">
+                  <button
+                    v-for="journey in journeyOptions"
+                    :key="journey.code"
+                    type="button"
+                    class="wish-journey"
+                    :class="{ 'is-selected': selectedStoryCode === journey.code }"
+                    @click="selectStory(journey.code)"
+                  >
+                    <img :src="journey.image" :alt="journey.alt" width="520" height="347">
+                    <strong>{{ journey.title }}</strong>
+                    <small>{{ journey.subtitle }}</small>
+                  </button>
+                </div>
+                <button
+                  v-if="journeyOptions.length > 1"
+                  type="button"
+                  class="wish-journeys-arrow"
+                  :disabled="!storyCanScrollNext"
+                  aria-label="Next story templates"
+                  title="Next story templates"
+                  @click="scrollStories(1)"
+                >
+                  <font-awesome-icon :icon="['fas', 'chevron-right']" aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -299,6 +323,9 @@ const interestOptions = ref<Array<{ code: string; label: string; icon: string; d
 ])
 const budgetOptions = ref<Array<{ code: string; label: string; price: string; icon: string; features: string[]; defaultSelected: boolean }>>([])
 const journeyOptions = ref<Array<{ code: string; title: string; subtitle: string; image: string; alt: string; story: string; defaultSelected: boolean }>>([])
+const storyScrollRef = ref<HTMLElement | null>(null)
+const storyCanScrollPrev = ref(false)
+const storyCanScrollNext = ref(false)
 const selectedStoryCode = ref('')
 const cityCards = ref<Array<{
   code: string
@@ -526,6 +553,22 @@ const selectStory = (code: string) => {
   selectedStoryCode.value = code
   form.story = template.story
 }
+const updateStoryScrollState = () => {
+  const scrollElement = storyScrollRef.value
+  if (!scrollElement) {
+    storyCanScrollPrev.value = false
+    storyCanScrollNext.value = false
+    return
+  }
+  const maxScrollLeft = Math.max(0, scrollElement.scrollWidth - scrollElement.clientWidth)
+  storyCanScrollPrev.value = scrollElement.scrollLeft > 1
+  storyCanScrollNext.value = maxScrollLeft - scrollElement.scrollLeft > 1
+}
+const scrollStories = (direction: -1 | 1) => {
+  const scrollElement = storyScrollRef.value
+  if (!scrollElement) return
+  scrollElement.scrollBy({ left: direction * Math.max(scrollElement.clientWidth * 0.8, 240), behavior: 'smooth' })
+}
 const applyWishConfig = async (preserveDraft: boolean, force = false) => {
   const draftStoryCode = selectedStoryCode.value
   const config = await loadWishConfig(force)
@@ -565,6 +608,8 @@ const applyWishConfig = async (preserveDraft: boolean, force = false) => {
   else {
     selectedStoryCode.value = journeyOptions.value.find(option => option.story === form.story)?.code || ''
   }
+  await nextTick()
+  updateStoryScrollState()
 }
 const selectCity = async (cityCode: string) => {
   const city = cityCards.value.find(item => item.code === cityCode)
@@ -652,9 +697,12 @@ const shareJourney = async () => {
 watch(form, saveDraft, { deep: true })
 watch(selectedStoryCode, saveDraft)
 watch([currentStep, furthestStep], saveDraft)
+watch(journeyOptions, () => nextTick(updateStoryScrollState), { deep: true })
 
 onMounted(async () => {
+  window.addEventListener('resize', updateStoryScrollState)
   await applyWishConfig(true).catch(() => undefined)
+  updateStoryScrollState()
   if (route.query.resume === '1' && currentStep.value < 6) {
     if (hasCompleteTravelDates.value) {
       currentStep.value = 6
@@ -666,6 +714,7 @@ onMounted(async () => {
     }
   }
 })
+onBeforeUnmount(() => window.removeEventListener('resize', updateStoryScrollState))
 
 useNoIndex()
 useLvyvSeo({
@@ -984,8 +1033,14 @@ useLvyvSeo({
 .wish-textarea textarea { width: 100%; min-height: 130px; display: block; resize: vertical; padding: 20px 24px 34px; border: 1px solid #fff; border-radius: 8px; outline: none; background: rgba(255, 255, 255, .6); color: #222; font: 400 14px/1.55 'Inter', sans-serif; }
 .wish-textarea textarea:focus { border-color: #698e4e; box-shadow: 0 0 0 3px rgba(105, 142, 78, .12); }
 .wish-textarea small { position: absolute; right: 16px; bottom: 10px; color: #8b8b8b; font-size: 11px; }
-.wish-journeys { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-top: 62px; }
-.wish-journey { min-width: 0; overflow: hidden; padding: 8px 8px 14px; border: 1px solid transparent; border-radius: 16px; background: #fff; color: #1f2d27; cursor: pointer; text-align: left; transition: transform .2s ease, border-color .2s ease; }
+.wish-journeys-shell { min-width: 0; display: flex; align-items: center; gap: 10px; margin-top: 62px; }
+.wish-journeys { min-width: 0; flex: 1 1 auto; display: flex; gap: 12px; overflow-x: auto; padding: 0 0 8px; scroll-behavior: smooth; scrollbar-width: none; }
+.wish-journeys::-webkit-scrollbar { display: none; }
+.wish-journeys-arrow { width: 32px; height: 32px; display: grid; flex: 0 0 32px; place-items: center; padding: 0; border: 1px solid #698e4e; border-radius: 50%; background: #fff; color: #2a573f; cursor: pointer; transition: background .2s ease, color .2s ease, opacity .2s ease; }
+.wish-journeys-arrow:hover:not(:disabled) { background: #2a573f; color: #fff; }
+.wish-journeys-arrow:disabled { opacity: .35; cursor: not-allowed; }
+.wish-journeys-arrow :deep(svg) { width: 11px; height: 11px; }
+.wish-journey { min-width: 0; flex: 0 0 calc((100% - 48px) / 5); overflow: hidden; padding: 8px 8px 14px; border: 1px solid transparent; border-radius: 16px; background: #fff; color: #1f2d27; cursor: pointer; text-align: left; transition: transform .2s ease, border-color .2s ease; }
 .wish-journey:hover { transform: translateY(-3px); }
 .wish-journey.is-selected { border-color: #698e4e; }
 .wish-journey img { width: 100%; height: 128px; display: block; border-radius: 10px; object-fit: cover; }
@@ -1042,7 +1097,7 @@ useLvyvSeo({
   .wish-conversation { padding-inline: 52px; }
   .wish-city-grid { grid-template-columns: repeat(3, minmax(140px, 210px)); gap: 24px; }
   .wish-budget-grid { grid-template-columns: repeat(3, minmax(150px, 1fr)); }
-  .wish-journeys { overflow-x: auto; grid-template-columns: repeat(5, 130px); padding-bottom: 8px; }
+  .wish-journey { flex-basis: 130px; }
 }
 
 @media (max-width: 820px) {
@@ -1065,7 +1120,7 @@ useLvyvSeo({
   .wish-city-card__zh { top: 36px; font-size: 13px; }
   .wish-budget-grid { gap: 10px; }
   .wish-budget { min-height: 270px; padding-inline: 15px; }
-  .wish-journeys { margin-top: 35px; }
+  .wish-journeys-shell { margin-top: 35px; }
 }
 
 @media (max-width: 560px) {
@@ -1088,7 +1143,8 @@ useLvyvSeo({
   .wish-budget > strong { margin: 8px 0 4px; }
   .wish-budget > small { text-align: left; }
   .wish-textarea textarea { min-height: 160px; padding-inline: 16px; }
-  .wish-journeys { grid-template-columns: repeat(5, 145px); margin-right: -16px; }
+  .wish-journeys { margin-right: -16px; }
+  .wish-journey { flex-basis: 145px; }
   .wish-review { padding-inline: 20px; }
   .wish-review dl > div { grid-template-columns: 85px minmax(0, 1fr); }
   .wish-review__actions, .wish-success__actions { gap: 8px; }
