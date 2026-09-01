@@ -15,11 +15,13 @@
           <div><dt><label for="offer-adult-count">Adults</label></dt><dd><input id="offer-adult-count" v-model.number="adultCount" class="traveler-input" type="number" min="1" step="1" inputmode="numeric" :disabled="!canConfirm || submitting"></dd></div>
           <div><dt><label for="offer-child-count">Children</label></dt><dd><input id="offer-child-count" v-model.number="childCount" class="traveler-input" type="number" min="0" step="1" inputmode="numeric" :disabled="!canConfirm || submitting"></dd></div>
           <div v-if="travelerValidationMessage || quoteError" class="traveler-error"><dt>Travelers</dt><dd>{{ travelerValidationMessage || quoteError }}</dd></div>
+          <div><dt><label for="offer-points">Points</label></dt><dd><input id="offer-points" v-model.number="requestedPoints" class="traveler-input" type="number" min="0" :step="pointsPerUsd"><button type="button" class="points-all" @click="useAllPoints">Use all {{ availablePoints }}</button></dd></div>
           <template v-if="quote">
             <div><dt>Adults</dt><dd>{{ quote.adultCount }} x {{ formatMoney(quote.adultSaleUnitPrice) }} = {{ formatMoney(quote.adultSubtotal) }}</dd></div>
             <div v-if="quote.childCount"><dt>Children</dt><dd>{{ quote.childCount }} x {{ formatMoney(quote.childSaleUnitPrice) }} = {{ formatMoney(quote.childSubtotal) }}</dd></div>
             <div><dt>List subtotal</dt><dd>{{ formatMoney(quote.listSubtotal) }}</dd></div>
             <div v-if="Number(quote.discountAmount) > 0"><dt>Tier discount</dt><dd>-{{ formatMoney(quote.discountAmount) }}</dd></div>
+            <div v-if="Number(quote.redemption?.pointsAmount || 0) > 0"><dt>Points ({{ quote.redemption?.usablePoints }})</dt><dd>-{{ formatMoney(quote.redemption?.pointsAmount || 0) }}</dd></div>
             <div class="total-row"><dt>Total to pay</dt><dd>{{ quoteLoading ? 'Updating...' : formatMoney(quote.totalAmount) }}</dd></div>
           </template>
           <div v-if="offer.validUntil"><dt>Valid until</dt><dd>{{ formatDateTime(offer.validUntil) }}</dd></div>
@@ -68,6 +70,7 @@ const childCount = ref(0)
 const quote = ref<CustomOfferQuote | null>(null)
 const quoteLoading = ref(false)
 const quoteError = ref('')
+const requestedPoints = ref(0); const availablePoints = ref(0); const pointsPerUsd = ref(100)
 let quoteRequest = 0
 const maxTravelerCount = 2_147_483_647
 const error = ref('')
@@ -124,7 +127,7 @@ const refreshQuote = async () => {
   if (!travelerCountsValid.value || !canConfirm.value) return
   quoteLoading.value = true
   try {
-    const result = await commerce.previewOffer(String(route.params.offerNo), adultCount.value, childCount.value)
+    const result = await commerce.previewOffer(String(route.params.offerNo), adultCount.value, childCount.value, requestedPoints.value)
     if (request === quoteRequest) quote.value = result
   } catch (caught) {
     if (request === quoteRequest) quoteError.value = caught instanceof Error ? caught.message : 'This traveler count is not available for the offer.'
@@ -132,19 +135,20 @@ const refreshQuote = async () => {
     if (request === quoteRequest) quoteLoading.value = false
   }
 }
-const load = async () => { loading.value = true; error.value = ''; try { const result = await commerce.getOffer(String(route.params.offerNo)); confirmation.value = result; applyTravelerCounts(result.itinerary); await refreshQuote() } catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not load this offer.' } finally { loading.value = false } }
+const load = async () => { loading.value = true; error.value = ''; try { const [result, account, config] = await Promise.all([commerce.getOffer(String(route.params.offerNo)), commerce.getPointsAccount(), commerce.getPointsRedemptionConfig()]); confirmation.value = result; availablePoints.value = account.availablePoints; pointsPerUsd.value = config.pointsPerUsd; applyTravelerCounts(result.itinerary); await refreshQuote() } catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not load this offer.' } finally { loading.value = false } }
 const confirmOffer = async () => {
   if (!travelerCountsValid.value || !quote.value) { quoteError.value = travelerValidationMessage.value || 'This traveler count is not available for the offer.'; return }
   submitting.value = true
   error.value = ''
   try {
-    const order = await commerce.confirmOffer(String(route.params.offerNo), adultCount.value, childCount.value)
+    const order = await commerce.confirmOffer(String(route.params.offerNo), adultCount.value, childCount.value, requestedPoints.value)
     await navigateTo(order.order.status === 'COMPLETED' ? '/trips' : `/orders/${encodeURIComponent(order.order.orderNo)}/pay`)
   } catch (caught) { quoteError.value = caught instanceof Error ? caught.message : 'Could not confirm this offer.' } finally { submitting.value = false }
 }
 const requestRevision = async () => { revisionSubmitting.value = true; error.value = ''; try { await commerce.requestRevision(String(route.params.offerNo), revisionContent.value.trim()); revisionOpen.value = false; await load() } catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not send the revision request.' } finally { revisionSubmitting.value = false } }
+const useAllPoints = () => { requestedPoints.value = availablePoints.value; void refreshQuote() }
 onMounted(async () => { if (await initializeAccount()) await load() })
-watch([adultCount, childCount], () => {
+watch([adultCount, childCount, requestedPoints], () => {
   // load() performs the initial request after restoring itinerary counts.
   if (!loading.value) void refreshQuote()
 })

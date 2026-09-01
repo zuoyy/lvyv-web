@@ -13,6 +13,8 @@
             <option v-for="coupon in coupons" :key="coupon.coupon.id" :value="coupon.coupon.id">{{ coupon.template.name }} · {{ couponLabel(coupon) }}</option>
           </select>
         </label>
+        <label v-if="isLoggedIn">Points to use ({{ pointsPerUsd }} points = 1 USD)<input v-model.number="requestedPoints" type="number" min="0" :step="pointsPerUsd" @input="refreshQuote"></label>
+        <button v-if="isLoggedIn" type="button" class="use-all" @click="useAllPoints">Use all available points ({{ availablePoints }})</button>
         <div v-if="isLoggedIn" class="redeem-row"><input v-model="redeemCode" placeholder="Redeem code"><button type="button" @click="redeem">Redeem</button></div>
         <p v-if="isLoggedIn && redeemMessage" class="feedback">{{ redeemMessage }}</p>
       </div>
@@ -22,6 +24,7 @@
         <div><span>Original subtotal</span><strong>USD {{ quote.listSubtotal }}</strong></div>
         <div><span>Promotion</span><strong>- USD {{ quote.promotionDiscountAmount }}</strong></div>
         <div><span>Coupon</span><strong>- USD {{ quote.couponDiscountAmount }}</strong></div>
+        <div v-if="Number(quote.pointsAmount) > 0"><span>Points</span><strong>- USD {{ quote.pointsAmount }}</strong></div>
         <div class="total"><span>Payable</span><strong>USD {{ quote.totalAmount }}</strong></div>
         <button type="button" :disabled="submitting" @click="submit">{{ submitting ? 'Creating order...' : 'Create order' }}</button>
       </aside>
@@ -54,6 +57,7 @@ const childCount = ref(Math.max(0, Number(route.query.childCount || 0)))
 const requestedDate = typeof route.query.date === 'string' ? route.query.date : ''
 const startDate = ref(requestedDate >= earliestStartDate.value ? requestedDate : earliestStartDate.value)
 const selectedCouponId = ref<number | undefined>(undefined)
+const requestedPoints = ref(0); const availablePoints = ref(0); const pointsPerUsd = ref(100)
 const coupons = ref<MemberCouponView[]>([])
 const quote = ref<OrderPricingQuote | null>(null)
 const redeemCode = ref('')
@@ -68,7 +72,7 @@ const refreshQuote = async () => {
   if (!productCode.value) { error.value = 'A product is required.'; return }
   if (!startDate.value) { error.value = 'A departure date is required.'; quote.value = null; return }
   try {
-    quote.value = await commerce.previewStandardOrder(productCode.value, Math.max(1, adultCount.value), Math.max(0, childCount.value), startDate.value, selectedCouponId.value)
+    quote.value = await commerce.previewStandardOrder(productCode.value, Math.max(1, adultCount.value), Math.max(0, childCount.value), startDate.value, selectedCouponId.value, isLoggedIn.value ? requestedPoints.value : 0)
     error.value = ''
   } catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not calculate the price.' }
 }
@@ -80,6 +84,7 @@ const load = async () => {
       commerce.getCatalogProduct(productCode.value),
       isLoggedIn.value ? commerce.listCoupons() : Promise.resolve([]),
     ])
+    if (isLoggedIn.value) { const [account, config] = await Promise.all([commerce.getPointsAccount(), commerce.getPointsRedemptionConfig()]); availablePoints.value = account.availablePoints; pointsPerUsd.value = config.pointsPerUsd }
     earliestStartDate.value = dateAfter(Math.max(1, Number(catalog.product.minimumAdvanceDays || 1)))
     if (!requestedDate || requestedDate < earliestStartDate.value) startDate.value = earliestStartDate.value
     coupons.value = availableCoupons
@@ -103,12 +108,13 @@ const submit = async () => {
   if (!startDate.value) { error.value = 'A departure date is required.'; return }
   submitting.value = true
   try {
-    const order = await commerce.createStandardOrder(productCode.value, Math.max(1, adultCount.value), Math.max(0, childCount.value), startDate.value, selectedCouponId.value)
+    const order = await commerce.createStandardOrder(productCode.value, Math.max(1, adultCount.value), Math.max(0, childCount.value), startDate.value, selectedCouponId.value, isLoggedIn.value ? requestedPoints.value : 0)
     await navigateTo(order.order.status === 'COMPLETED'
       ? (isLoggedIn.value ? '/trips' : '/encounters')
       : `/orders/${encodeURIComponent(order.order.orderNo)}/pay`)
   } catch (caught) { error.value = caught instanceof Error ? caught.message : 'Could not create the order.' } finally { submitting.value = false }
 }
+const useAllPoints = () => { requestedPoints.value = availablePoints.value; void refreshQuote() }
 onMounted(load)
 </script>
 
@@ -119,6 +125,7 @@ onMounted(load)
 label { display: grid; gap: 7px; color: #53625b; font-size: 11px; font-weight: 800; text-transform: uppercase; }
 input, select { min-height: 42px; padding: 0 11px; border: 1px solid #ccd7d0; background: #fff; color: #263b32; font: inherit; text-transform: none; }
 .redeem-row { display: flex; gap: 8px; }.redeem-row input { flex: 1; }.redeem-row button, .checkout-summary button, .checkout-state button { min-height: 42px; padding: 0 15px; border: 0; background: #174d40; color: #fff; font-weight: 700; cursor: pointer; }
+.use-all { min-height: 38px; border: 1px solid #174d40; background: #fff; color: #174d40; font-weight: 700; cursor: pointer; }
 .feedback { margin: 0; color: #38705f; font-size: 12px; }.checkout-summary { display: grid; gap: 14px; }.checkout-summary div { display: flex; justify-content: space-between; gap: 12px; color: #748078; font-size: 12px; }.checkout-summary strong { color: #29453a; }.checkout-summary .total { padding-top: 14px; border-top: 1px solid #e3e9e4; color: #173f34; font-size: 14px; }.checkout-summary .total strong { color: #174d40; font-size: 20px; }.checkout-summary button { width: 100%; }.checkout-summary button:disabled { opacity: .6; cursor: wait; }
 .checkout-state { min-height: 260px; display: grid; place-items: center; gap: 10px; border: 1px solid #dfe5e1; color: #75827c; text-align: center; }.checkout-state.error { display: flex; flex-direction: column; }
 @media (max-width: 700px) { .checkout-layout { grid-template-columns: 1fr; } }

@@ -170,7 +170,7 @@ export interface OrderSnapshot {
 }
 
 export interface OrderView {
-  order: { id: number; orderNo: string; status: string; currency: string; sourceType: string; subtotal: string | number; promotionDiscountAmount: string | number; couponDiscountAmount: string | number; discountAmount: string | number; totalAmount: string | number; createTime?: string }
+  order: { id: number; orderNo: string; status: string; currency: string; sourceType: string; subtotal: string | number; promotionDiscountAmount: string | number; couponDiscountAmount: string | number; discountAmount: string | number; pointsAmount: string | number; pointsPerUsdSnapshot?: number; pointsTransactionNo?: string; pointsRefundTransactionNo?: string; totalAmount: string | number; createTime?: string }
   items: Array<{ item: { id: number; itemType: string; adultCount: number; childCount: number; adultListUnitPrice: string | number; adultUnitPrice: string | number; childListUnitPrice: string | number; childUnitPrice: string | number; promotionDiscountAmount?: string | number; taxAmount?: string | number; startDate?: string; endDate?: string; customItineraryId?: number; customItineraryVersionId?: number; itineraryInstanceId?: number }; snapshot?: OrderSnapshot; itineraryNo?: string }>
   entitlements: Entitlement[]
   coupon?: { couponNo: string; discountType: string; discountValue: string | number; discountAmount: string | number; status: string }
@@ -235,7 +235,10 @@ export interface OrderPricingQuote {
   pointsAmount: string | number
   taxAmount: string | number
   totalAmount: string | number
+  redemption?: PointsRedemptionQuote
 }
+export interface PointsRedemptionConfig { id: number; pointsPerUsd: number; version: number; updateTime?: string }
+export interface PointsRedemptionQuote { availablePoints: number; requestedPoints: number; usablePoints: number; pointsAmount: string | number; payableBeforePoints: string | number; payableAfterPoints: string | number; pointsPerUsd: number; configVersion: number }
 
 export interface CustomOfferView {
   id: number
@@ -268,6 +271,7 @@ export interface CustomOfferQuote {
   listSubtotal: string | number
   discountAmount: string | number
   totalAmount: string | number
+  redemption?: PointsRedemptionQuote
 }
 
 export interface TourConfirmationView {
@@ -302,14 +306,16 @@ export const useTourCommerce = () => {
     getCatalogProduct: (productCode: string) => auth.publicRequest<CatalogProductView>(`/commerce/catalog/products/${encodeURIComponent(productCode)}`),
     listCoupons: () => auth.request<MemberCouponView[]>('/commerce/coupons?status=AVAILABLE', undefined, 'GET'),
     redeemCoupon: (redeemCode: string) => auth.request<MemberCouponView>('/commerce/coupons/redeem', { redeemCode }),
-    previewStandardOrder: (productCode: string, adultCount: number, childCount: number, startDate: string, memberCouponId?: number) => auth.request<OrderPricingQuote>('/commerce/orders/standard/preview', { productCode, adultCount, childCount, currency: 'USD', startDate, memberCouponId }),
-    createStandardOrder: (productCode: string, adultCount: number, childCount: number, startDate: string, memberCouponId?: number) => auth.request<OrderView>('/commerce/orders/standard', { productCode, adultCount, childCount, currency: 'USD', startDate, memberCouponId }),
+    getPointsAccount: () => auth.request<{ availablePoints: number }>('/points/account', undefined, 'GET'),
+    getPointsRedemptionConfig: () => auth.request<PointsRedemptionConfig>('/points/redemption-config', undefined, 'GET'),
+    previewStandardOrder: (productCode: string, adultCount: number, childCount: number, startDate: string, memberCouponId?: number, requestedPoints = 0) => auth.request<OrderPricingQuote>('/commerce/orders/standard/preview', { productCode, adultCount, childCount, currency: 'USD', startDate, memberCouponId, requestedPoints }),
+    createStandardOrder: (productCode: string, adultCount: number, childCount: number, startDate: string, memberCouponId?: number, requestedPoints = 0) => auth.request<OrderView>('/commerce/orders/standard', { productCode, adultCount, childCount, currency: 'USD', startDate, memberCouponId, requestedPoints }),
     listOrders: () => auth.request<OrderView[]>('/commerce/orders', undefined, 'GET'),
     listCustomOffers: () => auth.request<CustomOfferView[]>('/commerce/custom-offers', undefined, 'GET'),
     getOrder: (orderNo: string) => auth.request<OrderView>(`/commerce/orders/${encodeURIComponent(orderNo)}`, undefined, 'GET'),
     getOffer: (offerNo: string) => auth.request<CustomOfferConfirmationView>(`/commerce/custom-offers/${encodeURIComponent(offerNo)}`, undefined, 'GET'),
-    previewOffer: (offerNo: string, adultCount: number, childCount: number) => auth.request<CustomOfferQuote>(`/commerce/custom-offers/${encodeURIComponent(offerNo)}/quote?adultCount=${adultCount}&childCount=${childCount}`, undefined, 'GET'),
-    confirmOffer: (offerNo: string, adultCount: number, childCount: number) => auth.request<OrderView>(`/commerce/custom-offers/${encodeURIComponent(offerNo)}/confirm`, { adultCount, childCount }),
+    previewOffer: (offerNo: string, adultCount: number, childCount: number, requestedPoints = 0) => auth.request<CustomOfferQuote>(`/commerce/custom-offers/${encodeURIComponent(offerNo)}/quote?adultCount=${adultCount}&childCount=${childCount}&requestedPoints=${requestedPoints}`, undefined, 'GET'),
+    confirmOffer: (offerNo: string, adultCount: number, childCount: number, requestedPoints = 0) => auth.request<OrderView>(`/commerce/custom-offers/${encodeURIComponent(offerNo)}/confirm`, { adultCount, childCount, requestedPoints }),
     requestRevision: (offerNo: string, requestContent: string) => auth.request(`/commerce/custom-offers/${encodeURIComponent(offerNo)}/request-revision`, { requestContent }),
     cancelOrder: (orderNo: string) => auth.request<OrderView>(`/commerce/orders/${encodeURIComponent(orderNo)}/cancel`),
     listPaymentChannels: () => auth.request<PaymentChannelView[]>('/commerce/payments/channels', undefined, 'GET'),
