@@ -381,6 +381,7 @@ const form = reactive<WishDraft>(initialDraft())
 const stepCookie = useCookie<number>('lvyv_wish_step', { default: () => 0, maxAge: 86400 * 7 })
 const furthestCookie = useCookie<number>('lvyv_wish_furthest', { default: () => 0, maxAge: 86400 * 7 })
 
+const requestedCityCode = typeof route.query.city === 'string' ? route.query.city.trim().toLowerCase() : ''
 const queryStep = route.query.step ? Math.max(0, Math.min(6, Number(route.query.step) - 1)) : undefined
 const initialStep = queryStep !== undefined ? queryStep : Math.max(0, Math.min(6, Number(stepCookie.value) || 0))
 const initialFurthest = Math.max(initialStep, Math.min(6, Number(furthestCookie.value) || 0))
@@ -587,8 +588,13 @@ const applyWishConfig = async (preserveDraft: boolean, force = false) => {
     story: option.story,
     defaultSelected: option.defaultSelected,
   }))
+  const requestedCityIsValid = cityCards.value.some(option => option.code === requestedCityCode)
   const currentCityIsValid = cityCards.value.some(option => option.code === form.cityCode)
-  if (!preserveDraft || !currentCityIsValid) {
+  if (requestedCityIsValid) {
+    form.cityCode = requestedCityCode
+    currentStep.value = 0
+  }
+  else if (!preserveDraft || !currentCityIsValid) {
     form.cityCode = cityCards.value.find(option => option.defaultSelected)?.code || cityCards.value[0]?.code || ''
   }
   const validBudget = budgetOptions.value.some(option => option.code === form.budgetLevel)

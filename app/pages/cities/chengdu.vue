@@ -8,7 +8,7 @@
       <div class="city-chengdu__hero-copy">
         <h1 id="chengdu-title">Cheng'du</h1>
         <p>要得</p>
-        <NuxtLink to="/wish" class="city-chengdu__hero-button">
+        <NuxtLink to="/wish/create?city=chengdu&step=1" class="city-chengdu__hero-button">
           <span>Start Your Wish in Cheng'du</span>
           <span class="city-chengdu__arrow" aria-hidden="true">&#8594;</span>
         </NuxtLink>
@@ -38,7 +38,7 @@
       <div class="city-chengdu__cta-word" aria-hidden="true">CHENG'DU</div>
       <div class="city-chengdu__cta-content">
         <h2 id="cta-title">Ready for your<br>Cheng'du encounter?</h2>
-        <NuxtLink to="/wish" class="city-chengdu__cta-button">
+        <NuxtLink to="/wish/create?city=chengdu&step=1" class="city-chengdu__cta-button">
           <img src="/images/home/magic-wand.svg" alt="" aria-hidden="true">
           <span>Start Your Wish</span>
         </NuxtLink>

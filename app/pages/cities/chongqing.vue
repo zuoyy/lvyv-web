@@ -11,7 +11,7 @@
       <div class="city-chongqing__hero-copy">
         <h1 id="chongqing-hero-title">CHONGQING</h1>
         <p>Meet the Mountain City</p>
-        <NuxtLink to="/wish" class="city-chongqing__hero-button">
+        <NuxtLink to="/wish/create?city=chongqing&step=1" class="city-chongqing__hero-button">
           <span>Start Your Wish in Chongqing</span>
           <span class="city-chongqing__arrow" aria-hidden="true">&#8594;</span>
         </NuxtLink>
@@ -72,7 +72,7 @@
       <div class="city-chongqing__cta-word" aria-hidden="true">CHONGQING</div>
       <div class="city-chongqing__cta-content">
         <h2 id="cta-title">Ready for your<br>Chongqing encounter?</h2>
-        <NuxtLink to="/wish" class="city-chongqing__cta-button">
+        <NuxtLink to="/wish/create?city=chongqing&step=1" class="city-chongqing__cta-button">
           <img src="/images/home/magic-wand.svg" alt="" aria-hidden="true">
           <span>Start Your Wish</span>
         </NuxtLink>

@@ -11,7 +11,7 @@
       <div class="city-xian__hero-copy">
         <h1 id="xian-hero-title">Xi'an</h1>
         <p>Ancient Echoes</p>
-        <NuxtLink to="/wish" class="city-xian__hero-button">
+        <NuxtLink to="/wish/create?city=xian&step=1" class="city-xian__hero-button">
           <span>Start Your Wish in Xi'an</span>
           <span class="city-xian__arrow" aria-hidden="true">&#8594;</span>
         </NuxtLink>
@@ -67,7 +67,7 @@
       <div class="city-xian__cta-word" aria-hidden="true">XI'AN</div>
       <div class="city-xian__cta-content">
         <h2 id="cta-title">Ready for your<br>Xi'an encounter?</h2>
-        <NuxtLink to="/wish" class="city-xian__cta-button">
+        <NuxtLink to="/wish/create?city=xian&step=1" class="city-xian__cta-button">
           <img src="/images/home/magic-wand.svg" alt="" aria-hidden="true">
           <span>Start Your Wish</span>
         </NuxtLink>
