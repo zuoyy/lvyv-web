@@ -82,7 +82,7 @@
                         <font-awesome-icon :icon="['fas', iconName(item.projectType)]" />
                       </span>
                       <div>
-                        <p><strong v-if="itemTime(item)">{{ itemTime(item) }}</strong>{{ item.title }}</p>
+                        <p><strong v-if="itemTime(item)">{{ itemTime(item) }}</strong><span class="schedule-item__title">{{ item.title }}</span></p>
                         <small v-if="item.description || item.address">{{ item.description || item.address }}</small>
                         <dl v-if="item.tagGroups.length" class="schedule-tags">
                           <div v-for="group in item.tagGroups" :key="group.code">
@@ -103,7 +103,6 @@
                         @click="openPhoto(image)"
                       >
                         <img :src="image" :alt="`${item.title} photo ${imageIndex + 1}`">
-                        <span>{{ item.title }}</span>
                       </button>
                     </div>
                   </div>
@@ -678,7 +677,7 @@ onBeforeUnmount(() => {
 .schedule-tags dt { color: #718077; font-size: 9px; font-weight: 800; text-transform: uppercase; }
 .schedule-tags dd { display: flex; flex-wrap: wrap; gap: 5px; margin: 0; }
 .schedule-tags dd span { padding: 3px 7px; border-radius: 999px; background: #eef3ef; color: #456156; font-size: 9px; }
-.itinerary__title-row h2 { margin: 0; color: #1d3029; font: 700 24px/1.2 'Inter', sans-serif; }
+.itinerary__title-row h2 { margin: 0; color: #1d3029; font: 700 28px/1.2 'Inter', sans-serif; }
 
 .itinerary__actions {
   display: flex;
@@ -748,8 +747,9 @@ onBeforeUnmount(() => {
 
 .schedule-item__line { position: relative; z-index: 1; display: flex; align-items: flex-start; gap: 10px; }
 .schedule-item__line p { margin: 0; color: #1d3029; font: 500 11px/1.45 'Inter', sans-serif; }
-.schedule-item__line p strong { margin-right: 2px; font-weight: 800; }
-.schedule-item__line small { display: block; margin-top: 3px; color: #79857f; font: 400 10px/1.4 'Inter', sans-serif; }
+.schedule-item__title { font-size: 15px; }
+.schedule-item__line p strong { margin-right: 8px; font-size: 15px; font-weight: 800; }
+.schedule-item__line small { display: block; margin-top: 3px; color: #79857f; font: 400 14px/1.4 'Inter', sans-serif; }
 
 .schedule-icon {
   position: relative;
@@ -786,18 +786,6 @@ onBeforeUnmount(() => {
 
 .activity-card { min-width: 0; margin: 0; padding: 0; overflow: hidden; border: 1px solid #e1e5e3; border-radius: 6px; background: #fff; cursor: pointer; }
 .activity-cards img { width: 100%; height: 132px; display: block; object-fit: cover; }
-.activity-card > span {
-  min-height: 54px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px;
-  color: #42544d;
-  font: 400 10px/1.4 'Inter', sans-serif;
-  overflow-wrap: anywhere;
-  text-align: center;
-  white-space: normal;
-}
 .activity-card:hover img { transform: scale(1.025); }
 .activity-card img { transition: transform .25s ease; }
 .empty-day { margin: 0; color: #728079; font: 400 11px/1.5 'Inter', sans-serif; }
@@ -962,7 +950,7 @@ onBeforeUnmount(() => {
   .gallery__main { height: 200px; flex: 0 0 100%; }
   .gallery button:not(.gallery__main) { height: 100px; flex: 1 1 calc(50% - 4px); }
   .itinerary { margin-top: 32px; }
-  .itinerary__title-row h2 { font-size: 21px; }
+  .itinerary__title-row h2 { font-size: 25px; }
   .day-item__heading { grid-template-columns: 48px minmax(0, 1fr) 12px; gap: 8px; }
   .day-item__content { padding-left: 48px; }
   .activity-cards { grid-template-columns: 1fr 1fr; margin-left: 32px; }

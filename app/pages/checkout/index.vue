@@ -1,5 +1,5 @@
 <template>
-  <AccountPageShell active-page="orders" kicker="Checkout" title="Confirm your journey" description="Review the server-calculated price before creating your order." :ready="true" :show-navigation="false">
+  <AccountPageShell active-page="orders" kicker="Checkout" title="Confirm your encounters" description="Review the server-calculated price before creating your order." :ready="true" :show-navigation="false">
     <div v-if="loading" class="checkout-state">Loading checkout...</div>
     <div v-else-if="error" class="checkout-state error">{{ error }} <button type="button" @click="load">Try again</button></div>
     <section v-else class="checkout-layout">
