@@ -271,7 +271,7 @@ const currentPath = computed(() => {
 })
 const isWishExperience = computed(() => currentPath.value === '/wish' || currentPath.value === '/wish/my')
 const isEncountersExperience = computed(() => currentPath.value === '/encounters' || currentPath.value.startsWith('/encounters/'))
-const hidesFooter = computed(() => isWishExperience.value || isEncountersExperience.value || currentPath.value === '/wish/create')
+const hidesFooter = computed(() => isWishExperience.value || currentPath.value === '/wish/create')
 const activeSection = ref('hero')
 // Keep the first client render identical to SSR; sync scroll state after mount.
 const isScrolled = ref(false)
