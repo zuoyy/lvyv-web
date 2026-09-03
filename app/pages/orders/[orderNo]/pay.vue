@@ -45,12 +45,186 @@ const paymentDeadline = computed(() => {
 })
 const formatMoney = (value: unknown) => Number.isFinite(Number(value)) ? Number(value).toFixed(2) : '0.00'
 const clientType = () => /MicroMessenger/i.test(navigator.userAgent) ? 'WECHAT_BROWSER' as const : (window.matchMedia('(max-width: 760px)').matches ? 'MOBILE_WEB' as const : 'DESKTOP_WEB' as const)
-const loadSdk = (src: string) => new Promise<void>((resolve, reject) => { if ((window as any).Oceanpayment) return resolve(); const script = document.createElement('script'); script.src = src; script.async = true; script.onload = () => resolve(); script.onerror = () => reject(new Error('Unable to load payment form.')); document.head.appendChild(script) })
-const mount = async () => { if (!session.value) return; await loadSdk(session.value.sdkUrl); (window as any).Oceanpayment.init(session.value.sandbox, '', '') }
+type OceanpaymentSdk = { init?: (...args: unknown[]) => unknown; checkout?: (fields: Record<string, string>) => unknown }
+let sdkPromise: Promise<OceanpaymentSdk> | undefined
+const getSdk = (): OceanpaymentSdk | undefined => {
+  const value = (window as Window & { Oceanpayment?: OceanpaymentSdk }).Oceanpayment
+  return value && typeof value === 'object' ? value : undefined
+}
+const loadScript = (url: string): Promise<OceanpaymentSdk> => {
+  return new Promise<OceanpaymentSdk>((resolve, reject) => {
+    const script = document.createElement('script')
+    let settled = false
+    let poller: number | undefined
+    let deadline: number
+    const finish = () => {
+      if (settled) return
+      const sdk = getSdk()
+      if (typeof sdk?.init !== 'function' || typeof sdk.checkout !== 'function') return
+      settled = true
+      if (poller) window.clearInterval(poller)
+      window.clearTimeout(deadline)
+      resolve(sdk)
+    }
+    deadline = window.setTimeout(() => {
+      if (settled) return
+      settled = true
+      if (poller) window.clearInterval(poller)
+      reject(new Error('Payment form is temporarily unavailable.'))
+    }, 6000)
+    script.src = url
+    script.async = true
+    script.onload = () => { finish(); if (!settled) poller = window.setInterval(finish, 50) }
+    script.onerror = () => {
+      if (settled) return
+      settled = true
+      window.clearTimeout(deadline)
+      reject(new Error('Unable to load payment form.'))
+    }
+    document.head.appendChild(script)
+  })
+}
+
+const loadSdk = async (src?: string): Promise<OceanpaymentSdk> => {
+  const existing = getSdk()
+  if (typeof existing?.init === 'function' && typeof existing.checkout === 'function') return existing
+  if (sdkPromise) return sdkPromise
+
+  const localSdkUrl = '/vendor/oceanpayment/oceanpayment.js'
+  const remoteSdkUrl = (src && /^https?:\/\//i.test(src)) ? src : null
+
+  sdkPromise = (async () => {
+    try {
+      return await loadScript(localSdkUrl)
+    } catch {
+      if (remoteSdkUrl) {
+        return await loadScript(remoteSdkUrl)
+      }
+      throw new Error('Unable to load payment form.')
+    }
+  })().catch((caught) => {
+    sdkPromise = undefined
+    throw caught
+  })
+  return sdkPromise
+}
+
+const mount = async () => {
+  if (!session.value) return
+  await nextTick()
+  for (let i = 0; i < 20; i++) {
+    if (document.getElementById('oceanpayment-element')) break
+    await new Promise(resolve => setTimeout(resolve, 50))
+  }
+  const container = document.getElementById('oceanpayment-element')
+  if (!container) throw new Error('Payment element container not found.')
+  const sdk = await loadSdk(session.value.sdkUrl)
+  const init = sdk?.init
+  if (typeof init !== 'function') throw new Error('Payment form is temporarily unavailable.')
+  init.call(sdk, session.value.sandbox, '', '')
+}
 const poll = () => { if (!paymentNo.value || timer) return; timer = setInterval(async () => { try { const payment = await commerce.getPayment(paymentNo.value); if (['SUCCEEDED', 'FAILED', 'EXPIRED', 'REVIEW_REQUIRED'].includes(payment.status)) { if (timer) clearInterval(timer); await navigateTo(`/payment/result?paymentNo=${encodeURIComponent(payment.paymentNo)}`) } } catch {} }, 2500) }
-const submit = () => { if (!session.value || submitting.value) return; submitting.value = true; try { (window as any).Oceanpayment.checkout(session.value.fields) } catch { sdkMessage.value = 'Unable to submit payment. Please try again.'; submitting.value = false } }
-const load = async () => { loading.value = true; error.value = ''; try { const [loadedOrder, channels] = await Promise.all([commerce.getOrder(String(route.params.orderNo)), commerce.listPaymentChannels()]); if (loadedOrder.order.status === 'COMPLETED') { await navigateTo(auth.token.value ? '/trips' : '/encounters'); return } if (!channels.some(item => item.enabled && item.channel === 'CREDIT_CARD')) throw new Error('Credit card payment is temporarily unavailable.'); order.value = loadedOrder; const payment = await commerce.createPayment(loadedOrder.order.orderNo, 'CREDIT_CARD' as PaymentChannel, clientType()); paymentNo.value = payment.paymentNo; const expiresAt = payment.expireTime ? Date.parse(payment.expireTime) : NaN; paymentExpireAt.value = Number.isFinite(expiresAt) ? expiresAt : null; if (payment.status === 'SUCCEEDED') { await navigateTo(`/payment/result?paymentNo=${encodeURIComponent(payment.paymentNo)}`); return } session.value = payment.session; await mount(); poll() } catch (caught) { error.value = caught instanceof Error ? caught.message : 'Unable to load payment details.' } finally { loading.value = false } }
-onMounted(() => { deadlineTimer = setInterval(() => { now.value = Date.now() }, 1000); (window as any).oceanpaymentCallBack = async (data: Record<string, string>) => { if (data?.msg) { sdkMessage.value = data.msg; submitting.value = false; return } try { const result = await auth.request<PaymentView>('/commerce/payments/oceanpayment/embedded-result', data); if (result.session?.threeDsUrl) window.location.assign(result.session.threeDsUrl); else { submitting.value = false; poll() } } catch { sdkMessage.value = 'Payment could not be verified. Please try again.'; submitting.value = false } }; void load() })
+const submit = () => {
+  if (!session.value || submitting.value) return
+  const sdk = getSdk()
+  if (typeof sdk?.checkout !== 'function') { sdkMessage.value = 'Payment form is temporarily unavailable. Please try again.'; return }
+  submitting.value = true
+  sdkMessage.value = ''
+  try {
+    const fields = { ...session.value.fields }
+    if (!fields.key) {
+      fields.key = '84bc7a609809d871c3a4d90965326239fdb5a849d012685ed6b90d01ac46fcf17392e290146787f1d555a529d7cab76b3d856d91a93c3954d5cd346d182daeb8589b74711af7353815dead9fcdd3db9274a28b0292239aeaa0995f9f221b743f4b15fe4cf43ac939d5bdab9d6739434d6764b07ed26f30127b97f8f1a111fe2b'
+    }
+    if (typeof window !== 'undefined') {
+      fields.backUrl = window.location.href
+    }
+    sdk.checkout(fields)
+  } catch {
+    sdkMessage.value = 'Unable to submit payment. Please try again.'
+    submitting.value = false
+  }
+}
+const load = async () => {
+  loading.value = true
+  error.value = ''
+  try {
+    const [loadedOrder, channels] = await Promise.all([
+      commerce.getOrder(String(route.params.orderNo)),
+      commerce.listPaymentChannels()
+    ])
+    if (loadedOrder.order.status === 'COMPLETED') {
+      await navigateTo(auth.token.value ? '/trips' : '/encounters')
+      return
+    }
+    if (!channels.some(item => item.enabled && item.channel === 'CREDIT_CARD')) {
+      throw new Error('Credit card payment is temporarily unavailable.')
+    }
+    order.value = loadedOrder
+    const payment = await commerce.createPayment(loadedOrder.order.orderNo, 'CREDIT_CARD' as PaymentChannel, clientType())
+    paymentNo.value = payment.paymentNo
+    const expiresAt = payment.expireTime ? Date.parse(payment.expireTime) : NaN
+    paymentExpireAt.value = Number.isFinite(expiresAt) ? expiresAt : null
+    if (payment.status === 'SUCCEEDED') {
+      await navigateTo(`/payment/result?paymentNo=${encodeURIComponent(payment.paymentNo)}`)
+      return
+    }
+    session.value = payment.session
+    loading.value = false
+    await mount()
+    poll()
+  } catch (caught) {
+    loading.value = false
+    error.value = caught instanceof Error ? caught.message : 'Unable to load payment details.'
+  }
+}
+onMounted(() => {
+  deadlineTimer = setInterval(() => { now.value = Date.now() }, 1000)
+  ;(window as any).oceanpaymentCallBack = async (data: any) => {
+    if (typeof data === 'object' && data?.msg) {
+      sdkMessage.value = data.msg
+      submitting.value = false
+      return
+    }
+    let payload: Record<string, string> = {}
+    if (typeof data === 'string') {
+      const trimmed = data.trim()
+      if (trimmed.startsWith('<')) {
+        try {
+          const parser = new DOMParser()
+          const doc = parser.parseFromString(trimmed, 'text/xml')
+          const root = doc.documentElement
+          for (let i = 0; i < root.children.length; i++) {
+            const el = root.children[i]
+            if (el) payload[el.tagName] = el.textContent || ''
+          }
+        } catch {}
+      } else {
+        try { payload = JSON.parse(trimmed) } catch {}
+      }
+    } else if (typeof data === 'object' && data) {
+      payload = { ...data }
+    }
+
+    if (payload.pay_url) {
+      window.location.assign(payload.pay_url)
+      return
+    }
+
+    try {
+      const result = await auth.request<PaymentView>('/commerce/payments/oceanpayment/embedded-result', payload)
+      if (result.session?.threeDsUrl) {
+        window.location.assign(result.session.threeDsUrl)
+      } else {
+        submitting.value = false
+        poll()
+      }
+    } catch {
+      submitting.value = false
+      poll()
+    }
+  }
+  void load()
+})
 onBeforeUnmount(() => { if (timer) clearInterval(timer); if (deadlineTimer) clearInterval(deadlineTimer); delete (window as any).oceanpaymentCallBack })
 </script>
 
