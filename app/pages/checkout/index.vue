@@ -47,10 +47,16 @@
             <p class="helper">In Order To Help Us Avoid Any Delays In Contacting You, Please Ensure Your Contact Info Is Filled Out Correctly</p>
 
             <div class="contact-fields">
-              <label class="form-field full-width">
-                <span class="field-label">Name</span>
-                <input v-model.trim="fullName" autocomplete="name" required maxlength="128" placeholder="Your full name" class="field-input">
-              </label>
+              <div class="field-row">
+                <label class="form-field">
+                  <span class="field-label">First name</span>
+                  <input v-model.trim="contact.firstName" autocomplete="given-name" required maxlength="50" placeholder="Your first name" class="field-input">
+                </label>
+                <label class="form-field">
+                  <span class="field-label">Last name</span>
+                  <input v-model.trim="contact.lastName" autocomplete="family-name" required maxlength="50" placeholder="Your last name" class="field-input">
+                </label>
+              </div>
 
               <label class="form-field full-width">
                 <span class="field-label">Email</span>
@@ -304,19 +310,11 @@ const stateOptions = computed(() => {
     : []
 })
 
-const fullName = computed({
-  get: () => [contact.firstName, contact.lastName].filter(Boolean).join(' '),
-  set: (value: string) => {
-    const parts = value.trim().split(/\s+/)
-    contact.firstName = parts.shift() || ''
-    contact.lastName = parts.join(' ')
-  }
-})
-
 const hasCompleteContactDetails = computed(() => {
   const email = contact.email.trim()
   return Boolean(
-    fullName.value.trim()
+    contact.firstName.trim()
+    && contact.lastName.trim()
     && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
     && contact.phone.trim()
     && contact.country.trim()
