@@ -41,7 +41,7 @@
       <div v-if="selectedOrder" class="modal-backdrop" @click.self="selectedOrder = null">
         <section class="order-modal" role="dialog" aria-modal="true" aria-labelledby="order-detail-title">
           <header><div><p>{{ selectedOrder.order.orderNo }}</p><h2 id="order-detail-title">Order details</h2></div><button type="button" aria-label="Close" @click="selectedOrder = null">×</button></header>
-          <dl class="order-summary"><div><dt>Order status</dt><dd>{{ orderStatusLabel(selectedOrder.order.status) }}</dd></div><div><dt>Original</dt><dd>{{ selectedOrder.order.currency }} {{ selectedOrder.order.subtotal }}</dd></div><div><dt>Promotion</dt><dd>- {{ selectedOrder.order.currency }} {{ selectedOrder.order.promotionDiscountAmount }}</dd></div><div><dt>Coupon</dt><dd>- {{ selectedOrder.order.currency }} {{ selectedOrder.order.couponDiscountAmount }}</dd></div><div><dt>Points</dt><dd>- {{ selectedOrder.order.currency }} {{ selectedOrder.order.pointsAmount }}</dd></div><div><dt>Total</dt><dd>{{ selectedOrder.order.currency }} {{ selectedOrder.order.totalAmount }}</dd></div><div><dt>Placed</dt><dd>{{ formatDate(selectedOrder.order.createTime) }}</dd></div></dl>
+          <dl class="order-summary"><div><dt>Order status</dt><dd>{{ orderStatusLabel(selectedOrder.order.status) }}</dd></div><div><dt>Merchandise subtotal</dt><dd>{{ formatMoney(selectedOrder.order.subtotal, selectedOrder.order.currency) }}</dd></div><div><dt>Promotion</dt><dd>- {{ formatMoney(selectedOrder.order.promotionDiscountAmount, selectedOrder.order.currency) }}</dd></div><div><dt>Coupon</dt><dd>- {{ formatMoney(selectedOrder.order.couponDiscountAmount, selectedOrder.order.currency) }}</dd></div><div><dt>Points</dt><dd>- {{ formatMoney(selectedOrder.order.pointsAmount, selectedOrder.order.currency) }}</dd></div><div><dt>Original payable</dt><dd>{{ formatMoney(selectedOrder.originalPayableAmount, selectedOrder.order.currency) }}</dd></div><div v-if="Number(selectedOrder.order.manualAdjustmentAmount) !== 0"><dt>Manual adjustment</dt><dd>{{ formatSignedMoney(selectedOrder.order.manualAdjustmentAmount, selectedOrder.order.currency) }}</dd></div><div><dt>Final payable</dt><dd>{{ formatMoney(selectedOrder.order.totalAmount, selectedOrder.order.currency) }}</dd></div><div><dt>Placed</dt><dd>{{ formatDate(selectedOrder.order.createTime) }}</dd></div></dl>
           <div class="order-lines">
             <article v-for="line in selectedOrder.items" :key="line.item.id">
               <div><span>{{ line.itineraryNo || line.snapshot?.productCode || line.item.itemType }}</span><h3>{{ line.snapshot?.title || 'Lvyv journey service' }}</h3><p>{{ line.snapshot?.contentSummary }}</p></div>
@@ -70,6 +70,12 @@ const loading = ref(false)
 const error = ref('')
 
 const formatDate = (value?: string) => value ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value)) : ''
+const formatMoney = (value: string | number, currency: string) => new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(Number(value || 0))
+const formatSignedMoney = (value: string | number, currency: string) => {
+  const amount = Number(value || 0)
+  const formatted = formatMoney(Math.abs(amount), currency)
+  return amount > 0 ? `+${formatted}` : amount < 0 ? `-${formatted}` : formatted
+}
 const load = async () => {
   loading.value = true
   error.value = ''

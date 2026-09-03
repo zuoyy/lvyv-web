@@ -46,6 +46,17 @@
             </figure>
           </section>
 
+          <section v-if="detail.summary || detail.designerMessage" class="journey-introduction" aria-label="Journey introduction">
+            <div v-if="detail.summary" class="journey-introduction__summary">
+              <p class="journey-introduction__eyebrow">Journey summary</p>
+              <p>{{ detail.summary }}</p>
+            </div>
+            <blockquote v-if="detail.designerMessage" class="journey-introduction__designer-message">
+              <p>{{ detail.designerMessage }}</p>
+              <footer>From your journey designer</footer>
+            </blockquote>
+          </section>
+
           <section class="itinerary" aria-labelledby="itinerary-title">
             <div class="itinerary__title-row">
               <h2 id="itinerary-title">{{ detail.days.length }}-day itinerary</h2>
@@ -236,6 +247,7 @@ interface EncounterDetail {
   cityCode: string
   imageUrls: string[]
   summary: string
+  designerMessage?: string
   currency: string
   lowestAdultListPrice: number
   lowestAdultSalePrice: number
@@ -372,7 +384,8 @@ const mapCatalog = (catalog: import('~/composables/useTourCommerce').CatalogProd
     title: catalog.product.name || catalog.itinerary.title,
     cityCode: catalog.product.cityCode,
     imageUrls: catalog.itinerary.imageUrls || [],
-    summary: catalog.product.summary || catalog.itinerary.summary || '',
+    summary: catalog.itinerary.summary || catalog.product.summary || '',
+    designerMessage: catalog.itinerary.designerMessage?.trim() || undefined,
     currency: catalog.price?.currency || 'USD',
     lowestAdultListPrice: Number.isFinite(lowestAdultListPrice) ? lowestAdultListPrice : 0,
     lowestAdultSalePrice: Number.isFinite(lowestAdultSalePrice) ? lowestAdultSalePrice : 0,
@@ -670,6 +683,52 @@ onBeforeUnmount(() => {
 }
 
 .print-gallery { display: none; }
+
+.journey-introduction {
+  display: grid;
+  gap: 18px;
+  margin-top: 32px;
+}
+
+.journey-introduction__summary {
+  padding: 18px 20px;
+  border-left: 3px solid #315b4b;
+  background: #f4f8f5;
+}
+
+.journey-introduction__eyebrow {
+  margin: 0 0 9px;
+  color: #547264;
+  font: 700 10px/1.2 'Inter', sans-serif;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.journey-introduction__summary > p:last-child {
+  margin: 0;
+  color: #34473f;
+  font: 400 14px/1.65 'Inter', sans-serif;
+  white-space: pre-line;
+}
+
+.journey-introduction__designer-message {
+  margin: 0;
+  padding: 2px 20px 0;
+  border-left: 1px solid #c8d4ce;
+  color: #53675d;
+}
+
+.journey-introduction__designer-message p {
+  margin: 0;
+  font: italic 400 14px/1.65 'Georgia', serif;
+  white-space: pre-line;
+}
+
+.journey-introduction__designer-message footer {
+  margin-top: 9px;
+  color: #718077;
+  font: 600 10px/1.2 'Inter', sans-serif;
+}
 
 .itinerary { margin-top: 41px; }
 .schedule-tags { display: grid; gap: 5px; margin: 9px 0 0; }
@@ -996,6 +1055,9 @@ onBeforeUnmount(() => {
   .print-gallery figure:first-child img { height: 78mm; }
 
   .itinerary { margin: 0; }
+  .journey-introduction { margin: 0 0 7mm; }
+  .journey-introduction__summary { padding: 4mm 5mm; }
+  .journey-introduction__designer-message { padding-left: 5mm; }
   .itinerary__title-row { margin-bottom: 4mm; }
   .itinerary__title-row h2 { font-size: 17pt; }
   .day-list { margin-top: 0; }
