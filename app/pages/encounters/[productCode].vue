@@ -291,8 +291,10 @@ const detail = ref<EncounterDetail>({
 const loading = ref(true)
 const loadError = ref('')
 const activePhoto = ref('')
-const adults = ref(1)
-const children = ref(0)
+const queryAdults = Number(route.query.adultCount)
+const adults = ref(Number.isFinite(queryAdults) && queryAdults > 0 ? Math.floor(queryAdults) : 1)
+const queryChildren = Number(route.query.childCount)
+const children = ref(Number.isFinite(queryChildren) && queryChildren >= 0 ? Math.floor(queryChildren) : 0)
 const openDays = ref(new Set<number>())
 const openDaysBeforePrint = ref<Set<number> | null>(null)
 const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -418,10 +420,12 @@ const load = async () => {
     detail.value = mapCatalog(await commerce.getCatalogProduct(productCode.value))
     if (!detail.value.imageUrls.length) throw new Error('This encounter does not have a published image gallery.')
     earliestDate.value = calculateEarliestDate(detail.value.minimumAdvanceDays)
-    departureDate.value = earliestDate.value
-    const firstAvailableMonth = new Date(`${earliestDate.value}T12:00:00`)
-    calendarYear.value = firstAvailableMonth.getFullYear()
-    calendarMonth.value = firstAvailableMonth.getMonth()
+    const queryDate = typeof route.query.date === 'string' ? route.query.date.trim() : ''
+    const isValidQueryDate = queryDate && /^\d{4}-\d{2}-\d{2}$/.test(queryDate) && queryDate >= earliestDate.value
+    departureDate.value = isValidQueryDate ? queryDate : earliestDate.value
+    const activeDateObj = new Date(`${departureDate.value}T12:00:00`)
+    calendarYear.value = activeDateObj.getFullYear()
+    calendarMonth.value = activeDateObj.getMonth()
   } catch (caught) {
     loadError.value = caught instanceof Error ? caught.message : 'Could not load this encounter.'
   } finally {
@@ -547,7 +551,7 @@ const bookNow = async () => navigateTo({
 })
 
 onMounted(async () => {
-  await loadCities()
+  void loadCities().catch(() => undefined)
   await load()
   window.addEventListener('keydown', handlePhotoKeydown)
   window.addEventListener('afterprint', restoreDaysAfterPrint)

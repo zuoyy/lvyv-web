@@ -28,6 +28,8 @@ const rewardDescriptions: Record<string, { 'en-US': string; 'zh-CN': string }> =
   DAILY_LOGIN: { 'en-US': 'Points reward: Daily login', 'zh-CN': '积分奖励：每日登录' },
   REGISTER_SUCCESS: { 'en-US': 'Points reward: Registration completed', 'zh-CN': '积分奖励：完成注册' },
   WISH_SUBMITTED: { 'en-US': 'Points reward: Wish submitted', 'zh-CN': '积分奖励：提交愿望' },
+  PAYMENT_SUCCESS: { 'en-US': 'Points reward: Payment completed', 'zh-CN': '积分奖励：完成支付' },
+  ITINERARY_COMPLETED: { 'en-US': 'Points reward: Trip completed', 'zh-CN': '积分奖励：完成行程' },
 }
 const transactionDescription = (transaction: Transaction) => {
   const localizedReward = rewardDescriptions[transaction.ruleCode]

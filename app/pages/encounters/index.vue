@@ -364,6 +364,8 @@ const { data: catalogData, status: catalogStatus, refresh: refreshCatalog } = aw
   () => commerce.listCatalogProducts(),
   {
     default: () => [],
+    // Client-side navigation should complete even when the catalog API is slow.
+    lazy: true,
     getCachedData: (key, nuxtApp) => nuxtApp.isHydrating ? nuxtApp.payload.data[key] : undefined
   }
 )
@@ -371,7 +373,6 @@ const loading = computed(() => catalogStatus.value === 'idle' || catalogStatus.v
 const loadWarning = computed(() => catalogStatus.value === 'error')
 watch(catalogData, value => applyCatalog(value || [], true), { immediate: true })
 
-await loadCities()
 watch(activeCity, async (cityCode) => {
   if (cityCode === 'all') {
     await refreshCatalog()
@@ -388,7 +389,12 @@ watch(activeCity, async (cityCode) => {
 const refreshCatalogOnFocus = () => {
   void refreshCatalog()
 }
-onMounted(() => window.addEventListener('focus', refreshCatalogOnFocus))
+onMounted(() => {
+  // City labels are optional filter metadata. Do not block SSR or the catalog
+  // page when the server-only API endpoint is unavailable.
+  void loadCities().catch(() => undefined)
+  window.addEventListener('focus', refreshCatalogOnFocus)
+})
 onBeforeUnmount(() => window.removeEventListener('focus', refreshCatalogOnFocus))
 
 const explore = async (productCode: string) => {

@@ -15,7 +15,7 @@
           <div><dt><label for="offer-adult-count">Adults</label></dt><dd><input id="offer-adult-count" v-model.number="adultCount" class="traveler-input" type="number" min="1" step="1" inputmode="numeric" :disabled="!canConfirm || submitting"></dd></div>
           <div><dt><label for="offer-child-count">Children</label></dt><dd><input id="offer-child-count" v-model.number="childCount" class="traveler-input" type="number" min="0" step="1" inputmode="numeric" :disabled="!canConfirm || submitting"></dd></div>
           <div v-if="travelerValidationMessage || quoteError" class="traveler-error"><dt>Travelers</dt><dd>{{ travelerValidationMessage || quoteError }}</dd></div>
-          <div><dt><label for="offer-points">Points</label></dt><dd><input id="offer-points" v-model.number="requestedPoints" class="traveler-input" type="number" min="0" :step="pointsPerUsd"><button type="button" class="points-all" @click="useAllPoints">Use all {{ availablePoints }}</button></dd></div>
+          <div><dt><label for="offer-points">Points</label></dt><dd><input id="offer-points" v-model.number="requestedPoints" class="traveler-input" type="number" min="0" step="1"><button type="button" class="points-all" @click="useAllPoints">Use all {{ availablePoints }}</button></dd></div>
           <template v-if="quote">
             <div><dt>Adults</dt><dd>{{ quote.adultCount }} x {{ formatMoney(quote.adultSaleUnitPrice) }} = {{ formatMoney(quote.adultSubtotal) }}</dd></div>
             <div v-if="quote.childCount"><dt>Children</dt><dd>{{ quote.childCount }} x {{ formatMoney(quote.childSaleUnitPrice) }} = {{ formatMoney(quote.childSubtotal) }}</dd></div>

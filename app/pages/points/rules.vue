@@ -195,7 +195,6 @@ const earnRules: EarnRule[] = [
   { action: 'Submit a wish', points: 20, limit: 'Each submission', description: 'Awarded after the wish is created successfully.', icon: ['fas', 'heart'] },
   { action: 'Complete payment', points: 100, limit: 'Per order', description: 'Awarded after payment succeeds.', icon: ['fas', 'credit-card'] },
   { action: 'Complete trip', points: 200, limit: 'Per order', description: 'Awarded one day after the trip ends.', icon: ['fas', 'plane'] },
-  { action: 'Publish travel note', points: 30, limit: 'Up to 3 times a day', description: 'Awarded after the note is published.', icon: ['fas', 'book-open'] },
 ]
 
 const spendRules: SpendRule[] = [

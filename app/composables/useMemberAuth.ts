@@ -31,7 +31,7 @@ export const useMemberAuth = () => {
   const member = useState<MemberProfile | null>('member-profile', () => null)
 
   const executeRequest = async <T>(path: string, body: Record<string, unknown> | undefined,
-    method: 'GET' | 'POST' | 'PUT', authenticated: boolean) => {
+    method: 'GET' | 'POST' | 'PUT', authenticated: boolean, timeout?: number) => {
     try {
       const response = await $fetch<ApiResult<T>>(path, {
         baseURL: (import.meta.server && !authenticated ? config.contentApiBase : config.public.apiBase) as string,
@@ -41,6 +41,7 @@ export const useMemberAuth = () => {
           'X-Time-Zone': detectMemberTimeZone(),
           ...(authenticated && token.value ? { Authorization: `Bearer ${token.value}` } : {}),
         },
+        ...(timeout ? { timeout } : {}),
       })
       if (response.code !== 200) throw new ApiRequestError(response.code, response.msg || 'Request failed')
       return response.data
@@ -55,8 +56,8 @@ export const useMemberAuth = () => {
   const request = <T>(path: string, body?: Record<string, unknown>, method: 'GET' | 'POST' | 'PUT' = 'POST') =>
     executeRequest<T>(path, body, method, true)
 
-  const publicRequest = <T>(path: string, method: 'GET' = 'GET') =>
-    executeRequest<T>(path, undefined, method, false)
+  const publicRequest = <T>(path: string, method: 'GET' = 'GET', timeout?: number) =>
+    executeRequest<T>(path, undefined, method, false, timeout)
 
   const loadMember = async () => {
     if (!token.value) {

@@ -90,6 +90,13 @@ export interface CatalogProductView {
   }
 }
 
+// The encounter detail page and checkout request the same catalog payload in
+// the normal booking flow. Reuse it briefly so navigation does not fetch and
+// parse the large itinerary response twice.
+const catalogProductCache = new Map<string, { value: CatalogProductView; expiresAt: number }>()
+const catalogProductRequests = new Map<string, Promise<CatalogProductView>>()
+const CATALOG_CACHE_TTL_MS = 2 * 60 * 1000
+
 export interface CatalogProductListView {
   id: number
   productCode: string
@@ -188,9 +195,9 @@ export interface BillingDetails {
   phone: string
   country: string
   state: string
-  city: string
-  address: string
-  zip: string
+  city?: string
+  address?: string
+  zip?: string
 }
 export interface PaymentView {
   paymentNo: string
@@ -209,6 +216,7 @@ export interface PaymentView {
   expireTime?: string
   createTime?: string
   updateTime?: string
+  session?: { sdkUrl: string; sandbox: boolean; fields: Record<string, string>; threeDsUrl?: string | null }
 }
 
 export interface MemberCouponView {
@@ -239,6 +247,7 @@ export interface OrderPricingQuote {
   redemption?: PointsRedemptionQuote
 }
 export interface PointsRedemptionConfig { id: number; pointsPerUsd: number; version: number; updateTime?: string }
+export interface PointsEarnRule { ruleCode: 'PAYMENT_SUCCESS' | 'ITINERARY_COMPLETED'; points: number }
 export interface PointsRedemptionQuote { availablePoints: number; requestedPoints: number; usablePoints: number; pointsAmount: string | number; payableBeforePoints: string | number; payableAfterPoints: string | number; pointsPerUsd: number; configVersion: number }
 
 export interface CustomOfferView {
@@ -300,17 +309,38 @@ export interface CustomOfferConfirmationView { offer: CustomOfferView; itinerary
 export const useTourCommerce = () => {
   const auth = useMemberAuth()
 
+  const getCatalogProduct = (productCode: string) => {
+    const key = productCode.trim()
+    const cached = catalogProductCache.get(key)
+    if (cached && cached.expiresAt > Date.now()) return Promise.resolve(cached.value)
+
+    const pending = catalogProductRequests.get(key)
+    if (pending) return pending
+
+    const request = auth.publicRequest<CatalogProductView>(`/commerce/catalog/products/${encodeURIComponent(key)}`, 'GET', 8000)
+      .then((value) => {
+        catalogProductCache.set(key, { value, expiresAt: Date.now() + CATALOG_CACHE_TTL_MS })
+        return value
+      })
+      .finally(() => {
+        catalogProductRequests.delete(key)
+      })
+    catalogProductRequests.set(key, request)
+    return request
+  }
+
   return {
     listItineraries: () => auth.request<ItineraryInstance[]>('/tour/itineraries', undefined, 'GET'),
     getItinerary: (itineraryNo: string) => auth.request<ItineraryInstance>(`/tour/itineraries/${encodeURIComponent(itineraryNo)}`, undefined, 'GET'),
-    listCatalogProducts: (cityCode?: string) => auth.publicRequest<CatalogProductListView[]>(`/commerce/catalog/products${cityCode ? `?cityCode=${encodeURIComponent(cityCode)}` : ''}`),
-    getCatalogProduct: (productCode: string) => auth.publicRequest<CatalogProductView>(`/commerce/catalog/products/${encodeURIComponent(productCode)}`),
+    listCatalogProducts: (cityCode?: string) => auth.publicRequest<CatalogProductListView[]>(`/commerce/catalog/products${cityCode ? `?cityCode=${encodeURIComponent(cityCode)}` : ''}`, 'GET', 8000),
+    getCatalogProduct,
     listCoupons: () => auth.request<MemberCouponView[]>('/commerce/coupons?status=AVAILABLE', undefined, 'GET'),
     redeemCoupon: (redeemCode: string) => auth.request<MemberCouponView>('/commerce/coupons/redeem', { redeemCode }),
     getPointsAccount: () => auth.request<{ availablePoints: number }>('/points/account', undefined, 'GET'),
     getPointsRedemptionConfig: () => auth.request<PointsRedemptionConfig>('/points/redemption-config', undefined, 'GET'),
+    getPointsEarnRules: () => auth.publicRequest<PointsEarnRule[]>('/points/earn-rules', 'GET', 8000),
     previewStandardOrder: (productCode: string, adultCount: number, childCount: number, startDate: string, memberCouponId?: number, requestedPoints = 0) => auth.request<OrderPricingQuote>('/commerce/orders/standard/preview', { productCode, adultCount, childCount, currency: 'USD', startDate, memberCouponId, requestedPoints }),
-    createStandardOrder: (productCode: string, adultCount: number, childCount: number, startDate: string, memberCouponId?: number, requestedPoints = 0) => auth.request<OrderView>('/commerce/orders/standard', { productCode, adultCount, childCount, currency: 'USD', startDate, memberCouponId, requestedPoints }),
+    createStandardOrder: (productCode: string, adultCount: number, childCount: number, startDate: string, memberCouponId?: number, requestedPoints = 0, contact?: BillingDetails) => auth.request<OrderView>('/commerce/orders/standard', { productCode, adultCount, childCount, currency: 'USD', startDate, memberCouponId, requestedPoints, contact }),
     listOrders: () => auth.request<OrderView[]>('/commerce/orders', undefined, 'GET'),
     listCustomOffers: () => auth.request<CustomOfferView[]>('/commerce/custom-offers', undefined, 'GET'),
     getOrder: (orderNo: string) => auth.request<OrderView>(`/commerce/orders/${encodeURIComponent(orderNo)}`, undefined, 'GET'),
@@ -320,7 +350,7 @@ export const useTourCommerce = () => {
     requestRevision: (offerNo: string, requestContent: string) => auth.request(`/commerce/custom-offers/${encodeURIComponent(offerNo)}/request-revision`, { requestContent }),
     cancelOrder: (orderNo: string) => auth.request<OrderView>(`/commerce/orders/${encodeURIComponent(orderNo)}/cancel`),
     listPaymentChannels: () => auth.request<PaymentChannelView[]>('/commerce/payments/channels', undefined, 'GET'),
-    createPayment: (orderNo: string, channel: PaymentChannel, clientType: 'DESKTOP_WEB' | 'MOBILE_WEB' | 'WECHAT_BROWSER', billing: BillingDetails) =>
+    createPayment: (orderNo: string, channel: PaymentChannel, clientType: 'DESKTOP_WEB' | 'MOBILE_WEB' | 'WECHAT_BROWSER', billing?: BillingDetails) =>
       auth.request<PaymentView>(`/commerce/orders/${encodeURIComponent(orderNo)}/payments`, { channel, clientType, billing }),
     getPayment: (paymentNo: string) => auth.request<PaymentView>(`/commerce/payments/${encodeURIComponent(paymentNo)}`, undefined, 'GET'),
   }
