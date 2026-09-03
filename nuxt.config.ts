@@ -18,7 +18,7 @@ export default defineNuxtConfig({
       '/collect/**': { headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
       '/encounters': { headers: { 'cache-control': 'no-store, max-age=0' } },
       '/encounters/**': { headers: { 'cache-control': 'no-store, max-age=0' } },
-      '/checkout': { headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
+      '/checkout': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
       '/orders/**/pay': { headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
       '/faq/**': { swr: 60 },
       '/en/faq/**': { swr: 60 },
