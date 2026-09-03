@@ -135,8 +135,8 @@ const submit = () => {
     if (!fields.key) {
       fields.key = '84bc7a609809d871c3a4d90965326239fdb5a849d012685ed6b90d01ac46fcf17392e290146787f1d555a529d7cab76b3d856d91a93c3954d5cd346d182daeb8589b74711af7353815dead9fcdd3db9274a28b0292239aeaa0995f9f221b743f4b15fe4cf43ac939d5bdab9d6739434d6764b07ed26f30127b97f8f1a111fe2b'
     }
-    if (typeof window !== 'undefined') {
-      fields.backUrl = window.location.href
+    if (!fields.backUrl && paymentNo.value) {
+      fields.backUrl = `${window.location.origin}/web-api/commerce/payments/oceanpayment/return?paymentNo=${encodeURIComponent(paymentNo.value)}`
     }
     sdk.checkout(fields)
   } catch {
