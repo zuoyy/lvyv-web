@@ -50,11 +50,11 @@
               <div class="field-row">
                 <label class="form-field">
                   <span class="field-label">First name</span>
-                  <input v-model.trim="contact.firstName" autocomplete="given-name" required maxlength="50" placeholder="Your first name" class="field-input">
+                  <input v-model.trim="contact.firstName" autocomplete="given-name" required maxlength="64" placeholder="Your first name" class="field-input">
                 </label>
                 <label class="form-field">
                   <span class="field-label">Last name</span>
-                  <input v-model.trim="contact.lastName" autocomplete="family-name" required maxlength="50" placeholder="Your last name" class="field-input">
+                  <input v-model.trim="contact.lastName" autocomplete="family-name" required maxlength="64" placeholder="Your last name" class="field-input">
                 </label>
               </div>
 
@@ -244,6 +244,7 @@
 
 <script setup lang="ts">
 import CheckoutHeader from '~/components/checkout/CheckoutHeader.vue'
+import type { MemberProfile } from '~/composables/useMemberAuth'
 import type { MemberCouponView, OrderPricingQuote, PointsEarnRule } from '~/composables/useTourCommerce'
 import type { BillingDetails, CatalogProductView } from '~/composables/useTourCommerce'
 import SearchCodeSelect from '~/components/payment/SearchCodeSelect.vue'
@@ -440,20 +441,26 @@ const scheduleQuoteRefresh = () => {
   }, 250)
 }
 
-const load = () => {
-  // Render the checkout shell immediately. Catalog, quote, and member benefits
-  // are independent requests; none should keep the whole form blank.
-  loading.value = false
+const applyMemberContact = (member: MemberProfile) => {
+  contact.firstName = member.firstName || ''
+  contact.lastName = member.lastName || ''
+  contact.email = member.email || ''
+  contact.phone = member.mobile || ''
+  contact.country = (member.country || '').toUpperCase()
+  contact.state = (member.stateProvince || '').toUpperCase()
+}
+
+const load = async () => {
+  // Catalog, quote, benefits, and member profile are independent requests.
+  // Keep them concurrent, but hydrate the contact form before exposing it for editing.
+  loading.value = true
   error.value = ''
   if (!productCode.value) {
     error.value = 'A product is required.'
+    loading.value = false
     return
   }
 
-  contact.email = auth.member.value?.email || ''
-  const names = (auth.member.value?.nickname || '').trim().split(/\s+/)
-  contact.firstName = names[0] || ''
-  contact.lastName = names.slice(1).join(' ')
   quoteLoading.value = true
 
   void commerce.getCatalogProduct(productCode.value)
@@ -485,6 +492,16 @@ const load = () => {
       })
       .catch(() => undefined)
   }
+
+  if (isLoggedIn.value) {
+    try {
+      const member = auth.member.value || await auth.loadMember()
+      if (member) applyMemberContact(member)
+    } catch {
+      auth.clearSession()
+    }
+  }
+  loading.value = false
 }
 
 const redeem = async () => {
@@ -525,6 +542,15 @@ const submit = async () => {
       isLoggedIn.value ? requestedPoints.value : 0,
       { ...contact, country: contact.country.toUpperCase() }
     )
+    if (isLoggedIn.value && auth.member.value) {
+      Object.assign(auth.member.value, {
+        firstName: contact.firstName.trim(),
+        lastName: contact.lastName.trim(),
+        mobile: contact.phone.trim(),
+        country: contact.country.trim().toUpperCase(),
+        stateProvince: contact.state.trim().toUpperCase()
+      })
+    }
     await navigateTo(
       order.order.status === 'COMPLETED'
         ? (isLoggedIn.value ? '/trips' : '/encounters')
@@ -1105,7 +1131,7 @@ onBeforeUnmount(() => {
 }
 
 .earn-highlight {
-  color: #144a39;
+  color: #698e4e;
   font-weight: 700;
 }
 

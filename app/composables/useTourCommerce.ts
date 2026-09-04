@@ -340,7 +340,7 @@ export const useTourCommerce = () => {
     getPointsRedemptionConfig: () => auth.request<PointsRedemptionConfig>('/points/redemption-config', undefined, 'GET'),
     getPointsEarnRules: () => auth.publicRequest<PointsEarnRule[]>('/points/earn-rules', 'GET', 8000),
     previewStandardOrder: (productCode: string, adultCount: number, childCount: number, startDate: string, memberCouponId?: number, requestedPoints = 0) => auth.request<OrderPricingQuote>('/commerce/orders/standard/preview', { productCode, adultCount, childCount, currency: 'USD', startDate, memberCouponId, requestedPoints }),
-    createStandardOrder: (productCode: string, adultCount: number, childCount: number, startDate: string, memberCouponId?: number, requestedPoints = 0, contact?: BillingDetails) => auth.request<OrderView>('/commerce/orders/standard', { productCode, adultCount, childCount, currency: 'USD', startDate, memberCouponId, requestedPoints, contact }),
+    createStandardOrder: (productCode: string, adultCount: number, childCount: number, startDate: string, memberCouponId: number | undefined, requestedPoints: number, contact: BillingDetails) => auth.request<OrderView>('/commerce/orders/standard', { productCode, adultCount, childCount, currency: 'USD', startDate, memberCouponId, requestedPoints, contact }),
     listOrders: () => auth.request<OrderView[]>('/commerce/orders', undefined, 'GET'),
     listCustomOffers: () => auth.request<CustomOfferView[]>('/commerce/custom-offers', undefined, 'GET'),
     getOrder: (orderNo: string) => auth.request<OrderView>(`/commerce/orders/${encodeURIComponent(orderNo)}`, undefined, 'GET'),

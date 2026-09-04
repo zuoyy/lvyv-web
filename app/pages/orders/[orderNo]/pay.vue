@@ -20,7 +20,7 @@
         </main>
         <aside class="payment-summary">
           <h2>{{ order.items[0]?.snapshot?.title || 'Lvyv journey' }}</h2><div class="summary-divider" /><h3>Price details</h3>
-          <dl><div><dt>Prepay online</dt><dd>{{ order.order.currency }} {{ formatMoney(order.originalPayableAmount ?? order.order.subtotal) }}</dd></div><div v-if="Number(order.order.pointsAmount) > 0"><dt>Lvyv coins</dt><dd class="discount">- {{ order.order.currency }} {{ formatMoney(order.order.pointsAmount) }}</dd></div></dl>
+          <dl><div><dt>Prepay online</dt><dd>{{ order.order.currency }} {{ formatMoney(order.originalPayableAmount ?? order.order.subtotal) }}</dd></div></dl>
           <div class="summary-divider" /><div class="total"><strong>Total</strong><strong>{{ order.order.currency }} {{ formatMoney(order.order.totalAmount) }}</strong></div>
         </aside>
       </section>
@@ -453,11 +453,6 @@ onBeforeUnmount(() => { if (timer) clearInterval(timer); if (deadlineTimer) clea
 
 .payment-summary dd {
   text-align: right;
-}
-
-.payment-summary .discount {
-  color: #698e4e;
-  font-weight: 500;
 }
 
 .total {

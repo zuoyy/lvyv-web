@@ -13,6 +13,10 @@ export interface MemberProfile {
   email: string
   emailVerified: number
   mobile?: string
+  firstName?: string
+  lastName?: string
+  country?: string
+  stateProvince?: string
   locale: string
   timezone: string
   timezoneMode: number
