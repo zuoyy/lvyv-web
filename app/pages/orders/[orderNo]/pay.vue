@@ -229,5 +229,352 @@ onBeforeUnmount(() => { if (timer) clearInterval(timer); if (deadlineTimer) clea
 </script>
 
 <style scoped>
-.payment-page-shell{position:relative;min-height:100vh;background:#203d33;color:#242424;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;overflow-x:clip}.payment-green-banner{position:absolute;inset:0 0 auto;height:264px;background:#203d33;z-index:1}.payment-body-backdrop{position:absolute;top:157px;right:0;bottom:0;left:0;background:#f5f6f3;border-radius:20px 20px 0 0;z-index:2}.payment-page{position:relative;z-index:5;min-height:calc(100vh - 80px);padding:20px 0 70px}.payment-layout{display:grid;grid-template-columns:minmax(0,803px) minmax(320px,441px);gap:16px;width:min(1256px,calc(100% - 64px));margin:0 auto;align-items:start}.payment-main{display:grid;gap:16px}.payment-card,.payment-action-card,.payment-summary{background:#fff;border-radius:12px;box-shadow:0 4px 8px rgba(17,34,17,.05)}.payment-card{min-height:589px;padding:28px;box-sizing:border-box}.payment-card-heading{display:flex;align-items:center;justify-content:space-between;gap:20px}.payment-card-heading h1{margin:0;color:#112211;font-size:20px;font-weight:600;line-height:26px}.payment-card-heading p{margin:0;color:#242424;opacity:.8;font-size:14px;white-space:nowrap}.payment-card-heading p strong{font-size:16px}.payment-method-panel{margin-top:28px;padding:20px 16px;border:1px solid #c6cfc6;border-radius:4px;box-sizing:border-box;min-height:479px}.payment-method-heading{display:flex;align-items:center;justify-content:space-between;gap:16px}.payment-method-heading h2{margin:0;color:#242424;font-size:18px;line-height:28px}.card-brands{display:flex;align-items:center;gap:8px}.card-brands img{width:38px;height:24px;object-fit:contain}.oceanpayment-element{min-height:367px;margin-top:16px;padding:42px 40px;border:1px solid #203d33;border-radius:4px;background:#f8faf8;box-sizing:border-box}.sdk-message{margin:12px 0 0;color:#a83b32;font-size:12px}.payment-action-card{height:124px;padding:28px;box-sizing:border-box}.pay-button{width:100%;height:54px;border:0;border-radius:4px;background:#203d33;color:#fff;font-size:14px;font-weight:600;cursor:pointer}.pay-button:disabled{opacity:.55;cursor:not-allowed}.payment-summary{min-height:369px;padding:28px 33px;box-sizing:border-box}.payment-summary h2{margin:0;max-width:378px;color:#242424;font-size:18px;font-weight:700;line-height:28px}.payment-summary h3{margin:18px 0 10px;color:#242424;font-size:18px;line-height:28px}.summary-divider{border-top:1px dashed #c6cfc6;margin:18px 0}.payment-summary dl{margin:0}.payment-summary dl div{display:flex;justify-content:space-between;gap:16px;padding:8px 0;color:#090909;font-size:16px;line-height:25px}.payment-summary dt,.payment-summary dd{margin:0}.payment-summary dd{text-align:right}.payment-summary .discount{color:#698e4e}.total{display:flex;justify-content:space-between;gap:16px;color:#242424;font-size:16px;line-height:25px}.total strong:last-child{color:#203d33;font-size:22px}.payment-state{position:relative;z-index:1;min-height:360px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:#6f7e77}.payment-state.error{color:#a83b32}.payment-state p{margin:0}.payment-state button{padding:10px 16px;border:0;background:#203d33;color:#fff;cursor:pointer}@media(max-width:1000px){.payment-layout{grid-template-columns:1fr;width:min(803px,calc(100% - 32px))}.payment-summary{position:static}}@media(max-width:640px){.payment-page{padding-top:10px}.payment-card,.payment-action-card,.payment-summary{border-radius:10px}.payment-card{min-height:0;padding:24px 20px}.payment-card-heading{align-items:flex-start;flex-direction:column;gap:8px}.payment-card-heading p{white-space:normal}.payment-method-panel{padding:18px 12px;min-height:0}.payment-method-heading{align-items:flex-start;flex-direction:column}.card-brands{flex-wrap:wrap}.oceanpayment-element{min-height:367px;padding:24px 16px}.payment-action-card{height:auto;padding:20px}.payment-summary{min-height:0;padding:24px 20px}}
+.payment-page-shell,
+.payment-page-shell * {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  box-sizing: border-box;
+}
+
+.payment-page-shell {
+  position: relative;
+  min-height: 100vh;
+  background: #203d33;
+  color: #242424;
+  overflow-x: clip;
+}
+
+.payment-green-banner {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 264px;
+  background: #203d33;
+  z-index: 1;
+}
+
+.payment-body-backdrop {
+  position: absolute;
+  top: 157px;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: #f5f6f3;
+  border-radius: 20px 20px 0 0;
+  z-index: 2;
+}
+
+.payment-page {
+  position: relative;
+  z-index: 5;
+  min-height: calc(100vh - 80px);
+  padding: 20px 0 70px;
+}
+
+.payment-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 803px) minmax(320px, 441px);
+  gap: 16px;
+  width: min(1256px, calc(100% - 64px));
+  margin: 0 auto;
+  align-items: start;
+}
+
+.payment-main {
+  display: grid;
+  gap: 16px;
+}
+
+.payment-card,
+.payment-action-card,
+.payment-summary {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(17, 34, 17, 0.05);
+}
+
+.payment-card {
+  min-height: 589px;
+  padding: 28px;
+}
+
+.payment-card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.payment-card-heading h1 {
+  margin: 0;
+  color: #112211;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 26px;
+}
+
+.payment-card-heading p {
+  margin: 0;
+  color: #242424;
+  opacity: 0.8;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.payment-card-heading p strong {
+  font-size: 16px;
+  font-weight: 700;
+  color: #112211;
+}
+
+.payment-method-panel {
+  margin-top: 28px;
+  padding: 20px 16px;
+  border: 1px solid #c6cfc6;
+  border-radius: 4px;
+  min-height: 479px;
+}
+
+.payment-method-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.payment-method-heading h2 {
+  margin: 0;
+  color: #242424;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 28px;
+}
+
+.card-brands {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-brands img {
+  width: 38px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.oceanpayment-element {
+  min-height: 367px;
+  margin-top: 16px;
+  padding: 42px 40px;
+  border: 1px solid #203d33;
+  border-radius: 4px;
+  background: #f8faf8;
+}
+
+.sdk-message {
+  margin: 12px 0 0;
+  color: #a83b32;
+  font-size: 12px;
+}
+
+.payment-action-card {
+  height: 124px;
+  padding: 28px;
+}
+
+.pay-button {
+  width: 100%;
+  height: 54px;
+  border: 0;
+  border-radius: 4px;
+  background: #203d33;
+  color: #fff;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pay-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.payment-summary {
+  min-height: 369px;
+  padding: 28px 33px;
+}
+
+.payment-summary h2 {
+  margin: 0;
+  max-width: 378px;
+  color: #242424;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 28.15px;
+}
+
+.payment-summary h3 {
+  margin: 18px 0 10px;
+  color: #242424;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 28.15px;
+}
+
+.summary-divider {
+  border-top: 1px dashed #c6cfc6;
+  margin: 18px 0;
+}
+
+.payment-summary dl {
+  margin: 0;
+}
+
+.payment-summary dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+  color: #090909;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24.63px;
+}
+
+.payment-summary dt,
+.payment-summary dd {
+  margin: 0;
+}
+
+.payment-summary dd {
+  text-align: right;
+}
+
+.payment-summary .discount {
+  color: #698e4e;
+  font-weight: 500;
+}
+
+.total {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  color: #242424;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 24.63px;
+}
+
+.total strong:first-child {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.total strong:last-child {
+  color: #203d33;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 25.8px;
+}
+
+.payment-state {
+  position: relative;
+  z-index: 1;
+  min-height: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #6f7e77;
+}
+
+.payment-state.error {
+  color: #a83b32;
+}
+
+.payment-state p {
+  margin: 0;
+}
+
+.payment-state button {
+  padding: 10px 16px;
+  border: 0;
+  background: #203d33;
+  color: #fff;
+  cursor: pointer;
+}
+
+@media (max-width: 1000px) {
+  .payment-layout {
+    grid-template-columns: 1fr;
+    width: min(803px, calc(100% - 32px));
+  }
+
+  .payment-summary {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .payment-page {
+    padding-top: 10px;
+  }
+
+  .payment-card,
+  .payment-action-card,
+  .payment-summary {
+    border-radius: 10px;
+  }
+
+  .payment-card {
+    min-height: 0;
+    padding: 24px 20px;
+  }
+
+  .payment-card-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .payment-card-heading p {
+    white-space: normal;
+  }
+
+  .payment-method-panel {
+    padding: 18px 12px;
+    min-height: 0;
+  }
+
+  .payment-method-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .card-brands {
+    flex-wrap: wrap;
+  }
+
+  .oceanpayment-element {
+    min-height: 367px;
+    padding: 24px 16px;
+  }
+
+  .payment-action-card {
+    height: auto;
+    padding: 20px;
+  }
+
+  .payment-summary {
+    min-height: 0;
+    padding: 24px 20px;
+  }
+}
 </style>
