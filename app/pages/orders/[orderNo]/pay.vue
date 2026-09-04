@@ -16,7 +16,7 @@
               <p v-if="sdkMessage" class="sdk-message">{{ sdkMessage }}</p>
             </div>
           </section>
-          <section class="payment-action-card"><button class="pay-button" type="button" :disabled="submitting || !session" @click="submit">{{ submitting ? 'Processing...' : 'Pay now' }}</button></section>
+          <section class="payment-action-card"><button class="pay-button" type="button" :disabled="submitting || !session || paymentExpired" @click="submit">{{ paymentExpired ? 'Payment expired' : submitting ? 'Processing...' : 'Pay now' }}</button></section>
         </main>
         <aside class="payment-summary">
           <h2>{{ order.items[0]?.snapshot?.title || 'Lvyv journey' }}</h2><div class="summary-divider" /><h3>Price details</h3>
@@ -43,6 +43,7 @@ const paymentDeadline = computed(() => {
   const seconds = Math.floor((remaining % 60000) / 1000)
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
 })
+const paymentExpired = computed(() => paymentExpireAt.value !== null && paymentExpireAt.value <= now.value)
 const formatMoney = (value: unknown) => Number.isFinite(Number(value)) ? Number(value).toFixed(2) : '0.00'
 const clientType = () => /MicroMessenger/i.test(navigator.userAgent) ? 'WECHAT_BROWSER' as const : (window.matchMedia('(max-width: 760px)').matches ? 'MOBILE_WEB' as const : 'DESKTOP_WEB' as const)
 type OceanpaymentSdk = { init?: (...args: unknown[]) => unknown; checkout?: (fields: Record<string, string>) => unknown }
@@ -125,7 +126,7 @@ const mount = async () => {
 }
 const poll = () => { if (!paymentNo.value || timer) return; timer = setInterval(async () => { try { const payment = await commerce.getPayment(paymentNo.value); if (['SUCCEEDED', 'FAILED', 'EXPIRED', 'REVIEW_REQUIRED'].includes(payment.status)) { if (timer) clearInterval(timer); await navigateTo(`/payment/result?paymentNo=${encodeURIComponent(payment.paymentNo)}`) } } catch {} }, 2500) }
 const submit = () => {
-  if (!session.value || submitting.value) return
+  if (!session.value || submitting.value || paymentExpired.value) return
   const sdk = getSdk()
   if (typeof sdk?.checkout !== 'function') { sdkMessage.value = 'Payment form is temporarily unavailable. Please try again.'; return }
   submitting.value = true
@@ -162,8 +163,10 @@ const load = async () => {
     order.value = loadedOrder
     const payment = await commerce.createPayment(loadedOrder.order.orderNo, 'CREDIT_CARD' as PaymentChannel, clientType())
     paymentNo.value = payment.paymentNo
-    const expiresAt = payment.expireTime ? Date.parse(payment.expireTime) : NaN
-    paymentExpireAt.value = Number.isFinite(expiresAt) ? expiresAt : null
+    const deadlines = [loadedOrder.order.expireTime, payment.expireTime]
+      .map(value => value ? Date.parse(value) : NaN)
+      .filter(Number.isFinite)
+    paymentExpireAt.value = deadlines.length > 0 ? Math.min(...deadlines) : null
     if (payment.status === 'SUCCEEDED') {
       await navigateTo(`/payment/result?paymentNo=${encodeURIComponent(payment.paymentNo)}`)
       return
@@ -292,7 +295,6 @@ onBeforeUnmount(() => { if (timer) clearInterval(timer); if (deadlineTimer) clea
 }
 
 .payment-card {
-  min-height: 589px;
   padding: 28px;
 }
 
@@ -332,7 +334,6 @@ onBeforeUnmount(() => { if (timer) clearInterval(timer); if (deadlineTimer) clea
   padding: 20px 16px;
   border: 1px solid #c6cfc6;
   border-radius: 4px;
-  min-height: 479px;
 }
 
 .payment-method-heading {
@@ -364,9 +365,8 @@ onBeforeUnmount(() => { if (timer) clearInterval(timer); if (deadlineTimer) clea
 }
 
 .oceanpayment-element {
-  min-height: 367px;
   margin-top: 16px;
-  padding: 42px 40px;
+  padding: 24px 40px;
   border: 1px solid #203d33;
   border-radius: 4px;
   background: #f8faf8;
@@ -529,7 +529,6 @@ onBeforeUnmount(() => { if (timer) clearInterval(timer); if (deadlineTimer) clea
   }
 
   .payment-card {
-    min-height: 0;
     padding: 24px 20px;
   }
 
@@ -545,7 +544,6 @@ onBeforeUnmount(() => { if (timer) clearInterval(timer); if (deadlineTimer) clea
 
   .payment-method-panel {
     padding: 18px 12px;
-    min-height: 0;
   }
 
   .payment-method-heading {
@@ -558,8 +556,7 @@ onBeforeUnmount(() => { if (timer) clearInterval(timer); if (deadlineTimer) clea
   }
 
   .oceanpayment-element {
-    min-height: 367px;
-    padding: 24px 16px;
+    padding: 20px 16px;
   }
 
   .payment-action-card {
