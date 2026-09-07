@@ -57,7 +57,7 @@
             :class="{ 'wish-card--actionable': wish.hasItinerary }"
             :tabindex="wish.hasItinerary ? 0 : undefined"
             :role="wish.hasItinerary ? 'link' : undefined"
-            :aria-label="wish.hasItinerary ? `View itinerary for ${wish.cityLabel || wish.cityCode}` : undefined"
+            :aria-label="wish.hasItinerary ? `View itinerary for ${cityName(wish)}` : undefined"
             @click="openWish(wish)"
             @keydown.enter="openWish(wish)"
           >
@@ -65,8 +65,9 @@
               <img
                 class="wish-card__image"
                 :src="imageForWish(wish)"
-                :alt="`${wish.cityLabel || wish.cityCode} travel wish`"
+                :alt="`${cityName(wish)} travel wish`"
                 :loading="index < 4 ? 'eager' : 'lazy'"
+                @error="handleCoverError"
               >
             </div>
 
@@ -112,13 +113,14 @@ useNoIndex()
 
 interface WishItem {
   id: number
-  cityCode: string
-  cityLabel: string
+  cityCodes: string[]
+  cities: Array<{ code: string; label: string }>
   status: string
   statusLabel: string
   createTime: string
   hasItinerary: boolean
-  itineraryNo?: string
+  itineraryNo?: string | null
+  coverImageUrl?: string | null
 }
 
 interface PageResult<T> {
@@ -143,19 +145,7 @@ const wishTrack = ref<HTMLElement | null>(null)
 const canScrollPrevious = ref(false)
 const canScrollNext = ref(false)
 
-const cityImages: Record<string, string> = {
-  BEIJING: '/images/wish/cards/beijing.webp',
-  XIAN: '/images/wish/cards/xian.webp',
-  CHENGDU: '/images/wish/cards/chengdu.webp',
-  XIANBEIJING: '/images/wish/cards/xian-beijing.webp',
-}
-
-const fallbackImages = [
-  '/images/wish/cards/beijing.webp',
-  '/images/wish/cards/xian.webp',
-  '/images/wish/cards/chengdu.webp',
-  '/images/wish/cards/xian-beijing.webp',
-]
+const defaultWishCover = '/images/wish/cover.webp'
 
 const headers = computed(() => ({
   Authorization: `Bearer ${auth.token.value}`,
@@ -185,22 +175,13 @@ const fetchWishes = async () => {
   }
 }
 
-const normalizeCity = (value: string) => value.toUpperCase().replace(/[^A-Z]/g, '')
+const cityName = (wish: WishItem) => wish.cities.map(city => city.label || city.code).join(' + ') || 'China'
 
-const cityName = (wish: WishItem) => {
-  const code = normalizeCity(wish.cityCode || wish.cityLabel || '')
-  const labels: Record<string, string> = {
-    BEIJING: 'Beijing',
-    XIAN: 'XI’AN',
-    CHENGDU: 'CHENGDU',
-    XIANBEIJING: 'XI’AN+BEIJING',
-  }
-  return labels[code] || (wish.cityLabel || wish.cityCode || 'China').toUpperCase()
-}
+const imageForWish = (wish: WishItem) => wish.coverImageUrl || defaultWishCover
 
-const imageForWish = (wish: WishItem) => {
-  const code = normalizeCity(wish.cityCode || wish.cityLabel || '')
-  return cityImages[code] || fallbackImages[Math.abs(Number(wish.id)) % fallbackImages.length]
+const handleCoverError = (event: Event) => {
+  const image = event.target as HTMLImageElement
+  if (image.getAttribute('src') !== defaultWishCover) image.src = defaultWishCover
 }
 
 const relativeTime = (value: string) => {
@@ -429,8 +410,8 @@ useHead({
   color: #fff;
   font: 400 20px/1.2 'Inter', sans-serif;
   letter-spacing: -.02em;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .wish-card__age {

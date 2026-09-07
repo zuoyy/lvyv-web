@@ -66,14 +66,15 @@
             </div>
 
             <div v-else-if="currentStep === 0" class="wish-city-stage">
-              <div class="wish-city-grid" aria-label="Choose a destination">
+              <p v-if="citySelectionNotice" class="wish-submit-error" role="alert">{{ citySelectionNotice }}</p>
+              <div class="wish-city-grid" aria-label="Choose destinations">
                 <button
                   v-for="city in cityCards"
                   :key="city.code"
                   type="button"
                   class="wish-city-card"
-                  :class="{ 'is-selected': form.cityCode === city.code }"
-                  :aria-pressed="form.cityCode === city.code"
+                  :class="{ 'is-selected': form.cityCodes.includes(city.code) }"
+                  :aria-pressed="form.cityCodes.includes(city.code)"
                   :aria-label="`${city.englishName} ${city.chineseName}`"
                   @click="selectCity(city.code)"
                 >
@@ -82,7 +83,7 @@
                   <span class="wish-city-card__name">{{ city.englishName }}</span>
                   <span class="wish-city-card__zh">{{ city.chineseName }}</span>
                   <span class="wish-city-card__status" aria-hidden="true">
-                    <font-awesome-icon v-if="form.cityCode === city.code" :icon="['fas', 'check']" />
+                    <font-awesome-icon v-if="form.cityCodes.includes(city.code)" :icon="['fas', 'check']" />
                   </span>
                 </button>
               </div>
@@ -232,7 +233,7 @@
               <article class="wish-review">
                 <h2>Your Wish</h2>
                 <dl>
-                  <div><dt>City</dt><dd>{{ selectedCityLabel }}</dd></div>
+                  <div><dt>Cities</dt><dd>{{ selectedCityLabel }}</dd></div>
                   <div><dt>Duration</dt><dd>{{ form.tripDays }} Days</dd></div>
                   <div><dt>Travel Date</dt><dd>{{ reviewTravelDate }}</dd></div>
                   <div><dt>Interests</dt><dd class="wish-review__tags"><span v-for="interest in selectedInterestOptions" :key="interest.code">{{ interest.label }}</span></dd></div>
@@ -269,7 +270,7 @@
 
 <script setup lang="ts">
 interface WishDraft {
-  cityCode: string
+  cityCodes: string[]
   tripDays: number
   startDate: string
   endDate: string
@@ -290,13 +291,14 @@ interface CalendarDay {
   label: string
 }
 
-const DRAFT_KEY = 'lvyv_wish_builder_draft_v1'
+const DRAFT_KEY = 'lvyv_wish_builder_draft_v2'
+const LEGACY_DRAFT_KEY = 'lvyv_wish_builder_draft_v1'
 const auth = useMemberAuth()
 const { loading: configLoading, error: configError, load: loadWishConfig } = useWishConfig()
 const route = useRoute()
 
 const steps = [
-  { label: 'Choose City', prompt: 'Choose where to meet, you can choose multiple options' },
+  { label: 'Choose Cities', prompt: 'Choose where to meet, you can choose multiple options' },
   { label: 'Travel Dates', prompt: 'How long are you planning to wander?' },
   { label: 'Interests', prompt: '"What kind of encounters are you dreaming of? Pick as many as you like."' },
   { label: 'Budget', prompt: "What's your budget style? (Not including international flights)" },
@@ -366,7 +368,7 @@ const addDays = (date: Date, count: number) => {
 }
 
 const initialDraft = (): WishDraft => ({
-  cityCode: '',
+  cityCodes: [],
   tripDays: 0,
   startDate: '',
   endDate: '',
@@ -381,6 +383,8 @@ const form = reactive<WishDraft>(initialDraft())
 const stepCookie = useCookie<number>('lvyv_wish_step', { default: () => 0, maxAge: 86400 * 7 })
 const furthestCookie = useCookie<number>('lvyv_wish_furthest', { default: () => 0, maxAge: 86400 * 7 })
 
+let entryCityApplied = false
+const citySelectionNotice = ref('')
 const requestedCityCode = typeof route.query.city === 'string' ? route.query.city.trim().toLowerCase() : ''
 const queryStep = route.query.step ? Math.max(0, Math.min(6, Number(route.query.step) - 1)) : undefined
 const initialStep = queryStep !== undefined ? queryStep : Math.max(0, Math.min(6, Number(stepCookie.value) || 0))
@@ -418,9 +422,13 @@ const saveDraft = () => {
 const restoreDraft = () => {
   if (!import.meta.client) return
   try {
-    const saved = JSON.parse(sessionStorage.getItem(DRAFT_KEY) || '')
+    const saved = JSON.parse(sessionStorage.getItem(DRAFT_KEY) || sessionStorage.getItem(LEGACY_DRAFT_KEY) || '')
     if (!saved?.form) return
-    Object.assign(form, initialDraft(), saved.form)
+    const { cityCode: legacyCityCode, cityCodes: savedCityCodes, ...otherFields } = saved.form
+    const cityCodes = Array.isArray(savedCityCodes) ? savedCityCodes : typeof legacyCityCode === 'string' && legacyCityCode ? [legacyCityCode] : []
+    Object.assign(form, initialDraft(), otherFields, {
+      cityCodes: [...new Set(cityCodes.filter((code: unknown): code is string => typeof code === 'string' && code.length > 0))],
+    })
     selectedStoryCode.value = typeof saved.storyTemplateCode === 'string' ? saved.storyTemplateCode : ''
     const savedStep = Math.min(6, Math.max(0, Number(saved.step) || 0))
     const savedFurthest = Math.min(6, Math.max(savedStep, Number(saved.furthest) || 0))
@@ -448,6 +456,8 @@ const restoreDraft = () => {
       stepCookie.value = 1
       furthestCookie.value = 1
     }
+    saveDraft()
+    sessionStorage.removeItem(LEGACY_DRAFT_KEY)
   } catch {
     sessionStorage.removeItem(DRAFT_KEY)
   }
@@ -458,8 +468,7 @@ if (import.meta.client) {
 }
 
 const selectedCityLabel = computed(() => {
-  return cityCards.value.find(city => city.code === form.cityCode)?.englishName
-    || form.cityCode
+  return form.cityCodes.map(code => cityCards.value.find(city => city.code === code)?.englishName || code).join(', ')
 })
 const selectedInterestOptions = computed(() => interestOptions.value.filter(option => form.interestCodes.includes(option.code)))
 const selectedBudget = computed(() => budgetOptions.value.find(option => option.code === form.budgetLevel))
@@ -501,7 +510,7 @@ const reviewTravelDate = computed(() => {
 })
 
 const isStepValid = (stepIndex: number): boolean => {
-  if (stepIndex === 0) return Boolean(form.cityCode)
+  if (stepIndex === 0) return form.cityCodes.length > 0 && form.cityCodes.every(code => cityCards.value.some(city => city.code === code))
   if (stepIndex === 1) return hasCompleteTravelDates.value && form.tripDays >= 1
   if (stepIndex === 2) return form.interestCodes.length > 0
   if (stepIndex === 3) return Boolean(form.budgetLevel)
@@ -589,13 +598,20 @@ const applyWishConfig = async (preserveDraft: boolean, force = false) => {
     defaultSelected: option.defaultSelected,
   }))
   const requestedCityIsValid = cityCards.value.some(option => option.code === requestedCityCode)
-  const currentCityIsValid = cityCards.value.some(option => option.code === form.cityCode)
-  if (requestedCityIsValid) {
-    form.cityCode = requestedCityCode
+  if (!entryCityApplied && requestedCityIsValid) {
+    form.cityCodes = [requestedCityCode]
     currentStep.value = 0
   }
-  else if (!preserveDraft || !currentCityIsValid) {
-    form.cityCode = cityCards.value.find(option => option.defaultSelected)?.code || cityCards.value[0]?.code || ''
+  entryCityApplied = true
+  const validCityCodes = form.cityCodes.filter(code => cityCards.value.some(option => option.code === code))
+  if (validCityCodes.length !== form.cityCodes.length) {
+    citySelectionNotice.value = 'Some selected cities are no longer available. Please review your cities.'
+    currentStep.value = 0
+  }
+  form.cityCodes = validCityCodes
+  if (!form.cityCodes.length) {
+    currentStep.value = 0
+    furthestStep.value = 0
   }
   const validBudget = budgetOptions.value.some(option => option.code === form.budgetLevel)
   if (!preserveDraft || !validBudget) {
@@ -617,10 +633,13 @@ const applyWishConfig = async (preserveDraft: boolean, force = false) => {
   await nextTick()
   updateStoryScrollState()
 }
-const selectCity = async (cityCode: string) => {
+const selectCity = (cityCode: string) => {
   const city = cityCards.value.find(item => item.code === cityCode)
   if (!city) return
-  form.cityCode = cityCode
+  const index = form.cityCodes.indexOf(cityCode)
+  if (index >= 0) form.cityCodes.splice(index, 1)
+  else form.cityCodes.push(cityCode)
+  if (!form.cityCodes.length) furthestStep.value = 0
 }
 const reloadWishConfig = async () => {
   try {
@@ -651,9 +670,10 @@ const changeTripDays = (amount: number) => {
 }
 const submitWish = async () => {
   submitError.value = ''
-  if (!hasCompleteTravelDates.value || form.tripDays < 1) {
-    currentStep.value = 1
-    furthestStep.value = 1
+  const invalidStep = steps.slice(0, 6).findIndex((_, index) => !isStepValid(index))
+  if (configLoading.value || configError.value || invalidStep >= 0) {
+    currentStep.value = Math.max(0, invalidStep)
+    furthestStep.value = currentStep.value
     return
   }
   saveDraft()
@@ -665,7 +685,7 @@ const submitWish = async () => {
   submitting.value = true
   try {
     await auth.request<number>('/tour/wishes', {
-      cityCode: form.cityCode,
+      cityCodes: [...form.cityCodes],
       tripDays: form.tripDays,
       startDate: form.startDate || null,
       endDate: form.endDate || null,
@@ -680,7 +700,14 @@ const submitWish = async () => {
     stepCookie.value = 0
     furthestCookie.value = 0
   } catch (caught) {
-    submitError.value = caught instanceof Error ? caught.message : 'Unable to submit your wish. Please try again.'
+    if (caught instanceof ApiRequestError && caught.code === 1_003_100_005) {
+      citySelectionNotice.value = 'A selected city is no longer available. Please review your cities.'
+      currentStep.value = 0
+      await reloadWishConfig()
+    }
+    else {
+      submitError.value = caught instanceof Error ? caught.message : 'Unable to submit your wish. Please try again.'
+    }
     await reloadWishConfig()
   } finally {
     submitting.value = false
@@ -709,14 +736,15 @@ onMounted(async () => {
   window.addEventListener('resize', updateStoryScrollState)
   await applyWishConfig(true).catch(() => undefined)
   updateStoryScrollState()
-  if (route.query.resume === '1' && currentStep.value < 6) {
-    if (hasCompleteTravelDates.value) {
+  if (!configError.value && !citySelectionNotice.value) {
+    const invalidStep = steps.slice(0, 6).findIndex((_, index) => !isStepValid(index))
+    if (invalidStep >= 0 && (currentStep.value > invalidStep || route.query.resume === '1')) {
+      currentStep.value = invalidStep
+      furthestStep.value = invalidStep
+    }
+    else if (route.query.resume === '1' && invalidStep < 0 && !citySelectionNotice.value) {
       currentStep.value = 6
       furthestStep.value = 6
-    }
-    else {
-      currentStep.value = 1
-      furthestStep.value = 1
     }
   }
 })
@@ -914,7 +942,7 @@ useLvyvSeo({
 
 .wish-city-grid {
   display: grid;
-  grid-template-columns: repeat(3, 210px);
+  grid-template-columns: repeat(3, minmax(0, 210px));
   gap: 30px 40px;
   margin-top: 40px;
 }
@@ -1104,7 +1132,7 @@ useLvyvSeo({
   .wish-builder__shell { grid-template-columns: 260px minmax(0, 1fr); }
   .wish-progress { padding-inline: 32px 24px; }
   .wish-conversation { padding-inline: 52px; }
-  .wish-city-grid { grid-template-columns: repeat(3, minmax(140px, 210px)); gap: 24px; }
+  .wish-city-grid { grid-template-columns: repeat(3, minmax(0, 210px)); gap: 24px; }
   .wish-budget-grid { grid-template-columns: repeat(3, minmax(150px, 1fr)); }
 }
 
