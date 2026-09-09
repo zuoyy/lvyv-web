@@ -1,7 +1,6 @@
 <template>
   <AccountPageShell
     active-page="badges"
-    kicker="Milestones"
     title="My badges"
     description="Collect small reminders of the places, people and stories that shaped your travels."
     :ready="ready"

@@ -1,7 +1,6 @@
 <template>
   <AccountPageShell
     active-page="points"
-    kicker="Loyalty"
     title="Points & rewards"
     description="See your balance, membership progress and every point movement in one place."
     :ready="ready"
@@ -12,6 +11,7 @@
       <PointsCard :points="pointsData" />
       <TransactionList :transactions="transactions" :loading="loadingTransactions" :current-page="currentPage" :size="size" :total="total" :active-filter="activeFilter" :locale="memberLocale" @filter-change="handleFilterChange" @prev-page="handlePrevPage" @next-page="handleNextPage" />
     </template>
+  <div v-if="transactionsError" class="content-state error-state"><span>{{ transactionsError }}</span><button type="button" @click="fetchTransactions">Retry transactions</button></div>
   </AccountPageShell>
 </template>
 
@@ -29,6 +29,9 @@ const config = useRuntimeConfig()
 const pointsData = ref<PointsAccount | null>(null)
 const loadingAccount = ref(false)
 const accountError = ref('')
+const transactionsError = ref('')
+let accountRequest = 0
+let transactionsRequest = 0
 const activeFilter = ref<FilterType>(0)
 const transactions = ref<Transaction[]>([])
 const loadingTransactions = ref(false)
@@ -39,38 +42,41 @@ const memberLocale = computed(() => auth.member.value?.locale || 'en-US')
 const headers = computed(() => ({ Authorization: `Bearer ${auth.token.value}`, 'Accept-Language': memberLocale.value, 'X-Time-Zone': auth.member.value?.timezone || detectMemberTimeZone() }))
 
 const fetchTransactions = async () => {
+  const request = ++transactionsRequest
+  transactionsError.value = ''
   loadingTransactions.value = true
   try {
-    const response = await $fetch<ApiResult<TransactionPageResponse>>('/points/transactions/page', { baseURL: config.public.apiBase as string, headers: headers.value, params: { page: currentPage.value, size: size.value, ...(activeFilter.value ? { changeType: activeFilter.value } : {}) } })
-    if (response.code !== 200) throw new Error(response.msg || 'Request failed')
-    transactions.value = response.data.list
-    total.value = response.data.total
-    currentPage.value = response.data.page
-    size.value = response.data.size
-  } catch {
-    transactions.value = []
-    total.value = 0
-  } finally { loadingTransactions.value = false }
+    const params = new URLSearchParams({ page: String(currentPage.value), size: String(size.value), ...(activeFilter.value ? { changeType: String(activeFilter.value) } : {}) })
+    const data = await auth.request<TransactionPageResponse>(`/points/transactions/page?${params}`, undefined, 'GET')
+    if (request !== transactionsRequest) return
+    transactions.value = data.list
+    total.value = data.total
+    currentPage.value = data.page
+    size.value = data.size
+  } catch (caught) {
+    if (request === transactionsRequest) transactionsError.value = caught instanceof Error ? caught.message : 'Could not load transactions.'
+  } finally { if (request === transactionsRequest) loadingTransactions.value = false }
 }
 const fetchAccount = async () => {
+  const request = ++accountRequest
   loadingAccount.value = true
   accountError.value = ''
   try {
-    const response = await $fetch<ApiResult<PointsAccount>>('/points/account', { baseURL: config.public.apiBase as string, headers: headers.value })
-    if (response.code !== 200) throw new Error(response.msg || 'Request failed')
-    pointsData.value = response.data
-    await fetchTransactions()
+    const result = await auth.request<PointsAccount>('/points/account', undefined, 'GET')
+    if (request === accountRequest) pointsData.value = result
   } catch (caught) {
-    accountError.value = caught instanceof Error ? caught.message : 'Request failed.'
-  } finally { loadingAccount.value = false }
+    if (request === accountRequest) accountError.value = caught instanceof Error ? caught.message : 'Request failed.'
+  } finally { if (request === accountRequest) loadingAccount.value = false }
 }
 const handleFilterChange = (value: FilterType) => { activeFilter.value = value; currentPage.value = 1; fetchTransactions() }
 const handlePrevPage = () => { if (currentPage.value > 1) { currentPage.value--; fetchTransactions() } }
 const handleNextPage = () => { if (currentPage.value < Math.ceil(total.value / size.value)) { currentPage.value++; fetchTransactions() } }
 onMounted(async () => {
-  if (!await initializeAccount()) return
-  await fetchAccount()
+  if (!auth.token.value) { await initializeAccount(); return }
+  await Promise.all([initializeAccount(), fetchAccount(), fetchTransactions()])
 })
+onBeforeUnmount(() => { ++accountRequest; ++transactionsRequest })
+watch(auth.token, () => { ++accountRequest; ++transactionsRequest; pointsData.value = null; transactions.value = [] })
 </script>
 
 <style scoped>

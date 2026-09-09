@@ -1,7 +1,6 @@
 <template>
   <section class="settings">
     <header class="section-header">
-      <p class="section-kicker">Preferences</p>
       <h2>Settings</h2>
       <p class="section-desc">Choose how Lvyv communicates with you and how your trips appear to others.</p>
     </header>
@@ -107,7 +106,9 @@ const saveSettings = async () => {
   message.value = ''
   error.value = false
   try {
-    await auth.updatePreferences({ ...emailNotifications })
+    const changed = Object.fromEntries(Object.entries(emailNotifications)
+      .filter(([key, value]) => originalSettings.notifications[key as NotificationKey] !== value))
+    if (Object.keys(changed).length) await auth.updatePreferences(changed)
     originalSettings.selectedLanguage = selectedLanguage.value
     originalSettings.notifications = { ...emailNotifications }
     originalSettings.tripVisibility = tripVisibility.value

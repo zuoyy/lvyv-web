@@ -2,7 +2,6 @@
   <section class="personal-info">
     <header class="section-header">
       <div>
-        <p class="section-kicker">Profile</p>
         <h2>Personal information</h2>
         <p class="section-desc">The details that help us shape a better trip for you.</p>
       </div>

@@ -124,7 +124,24 @@ const mount = async () => {
   if (typeof init !== 'function') throw new Error('Payment form is temporarily unavailable.')
   init.call(sdk, session.value.sandbox, '', '')
 }
-const poll = () => { if (!paymentNo.value || timer) return; timer = setInterval(async () => { try { const payment = await commerce.getPayment(paymentNo.value); if (['SUCCEEDED', 'FAILED', 'EXPIRED', 'REVIEW_REQUIRED'].includes(payment.status)) { if (timer) clearInterval(timer); await navigateTo(`/payment/result?paymentNo=${encodeURIComponent(payment.paymentNo)}`) } } catch {} }, 2500) }
+let polling = false
+let disposed = false
+const poll = () => {
+  if (!paymentNo.value || timer) return
+  timer = setInterval(async () => {
+    if (polling || disposed) return
+    polling = true
+    try {
+      const payment = await commerce.getPayment(paymentNo.value)
+      if (!disposed && ['SUCCEEDED', 'FAILED', 'EXPIRED', 'REVIEW_REQUIRED'].includes(payment.status)) {
+        if (timer) clearInterval(timer)
+        timer = undefined
+        await navigateTo(`/payment/result?paymentNo=${encodeURIComponent(payment.paymentNo)}`)
+      }
+    } catch { /* The next interval retries status only; it never creates another payment. */ }
+    finally { polling = false }
+  }, 2500)
+}
 const submit = () => {
   if (!session.value || submitting.value || paymentExpired.value) return
   const sdk = getSdk()
@@ -228,7 +245,7 @@ onMounted(() => {
   }
   void load()
 })
-onBeforeUnmount(() => { if (timer) clearInterval(timer); if (deadlineTimer) clearInterval(deadlineTimer); delete (window as any).oceanpaymentCallBack })
+onBeforeUnmount(() => { disposed = true; if (timer) clearInterval(timer); if (deadlineTimer) clearInterval(deadlineTimer); delete (window as any).oceanpaymentCallBack })
 </script>
 
 <style scoped>

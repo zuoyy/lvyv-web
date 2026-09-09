@@ -1,7 +1,6 @@
 <template>
   <section class="account-security">
     <header class="section-header">
-      <p class="section-kicker">Account</p>
       <h2>Account security</h2>
       <p class="section-desc">Protect your account and decide who we can contact when you are travelling.</p>
     </header>
@@ -79,7 +78,7 @@
     <Teleport to="body">
       <div v-if="showContactDialog" class="modal-backdrop" @click.self="closeContactDialog">
         <section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="contact-title">
-          <div class="modal-heading"><div><p class="section-kicker">Safety</p><h3 id="contact-title">Emergency contact</h3></div><button class="modal-close" type="button" aria-label="Close" @click="closeContactDialog">×</button></div>
+          <div class="modal-heading"><div><h3 id="contact-title">Emergency contact</h3></div><button class="modal-close" type="button" aria-label="Close" @click="closeContactDialog">×</button></div>
           <form class="contact-form" @submit.prevent="saveContact">
             <label class="field"><span>Name</span><input v-model="contactForm.name" class="text-input" type="text" placeholder="Contact name"></label>
             <label class="field"><span>Phone number</span><input v-model="contactForm.phone" class="text-input" type="tel" placeholder="+1 202 555 0123"></label>

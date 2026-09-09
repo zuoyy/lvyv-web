@@ -6,55 +6,53 @@
     </div>
 
     <template v-else>
-      <header class="profile-heading">
-        <div>
-          <p class="profile-eyebrow">My account</p>
-          <h1>Profile &amp; preferences</h1>
-          <p>Keep your travel details, security and communication choices up to date.</p>
-        </div>
-        <button class="mobile-menu-button" type="button" @click="showSidebar = true">
-          <font-awesome-icon :icon="['fas', 'bars']" />
-          <span>Account menu</span>
-        </button>
-      </header>
-
-      <div v-if="needsPassportCompletion" class="profile-completion-banner" role="status">
-        <font-awesome-icon :icon="['fas', 'circle-exclamation']" />
-        <div>
-          <strong>One detail left</strong>
-          <span>Add your passport country before you start planning.</span>
-        </div>
-      </div>
-
       <div class="profile-layout">
         <div v-if="showSidebar" class="sidebar-overlay" @click="showSidebar = false" />
         <ProfileSidebar
-          v-model:active-tab="activeTab"
+          :active-tab="activeTab"
           :show="showSidebar"
           :display-name="displayName"
           :email="form.email"
           :avatar="avatarUrl"
+          @update:active-tab="handleSidebarTab"
           @close="showSidebar = false"
         />
 
         <section class="profile-workspace" :aria-label="activeSectionLabel">
-          <PersonalInfo
-            v-if="activeTab === 'personal-info'"
-            :email="form.email"
-            :nickname="form.nickname"
-            :mobile="form.mobile"
-            :passport-country-code="form.passportCountryCode"
-            :bio="form.bio"
-            :gender="form.gender"
-            :birthday="form.birthday"
-            :preferences="preferences"
-            :avatar-object-key="avatar"
-            :timezone="form.timezone"
-            :timezone-mode="form.timezoneMode"
-            :on-save="saveProfile"
-          />
-          <AccountSecurity v-else-if="activeTab === 'account-security'" />
-          <Settings v-else-if="activeTab === 'settings'" />
+          <div class="workspace-header-mobile">
+            <button class="mobile-menu-button" type="button" @click="showSidebar = true">
+              <font-awesome-icon :icon="['fas', 'bars']" />
+              <span>Account menu</span>
+            </button>
+          </div>
+
+          <div v-if="needsPassportCompletion" class="profile-completion-banner" role="status">
+            <font-awesome-icon :icon="['fas', 'circle-exclamation']" />
+            <div>
+              <strong>One detail left</strong>
+              <span>Add your passport country before you start planning.</span>
+            </div>
+          </div>
+
+          <div class="profile-card">
+            <PersonalInfo
+              v-if="activeTab === 'personal-info'"
+              :email="form.email"
+              :nickname="form.nickname"
+              :mobile="form.mobile"
+              :passport-country-code="form.passportCountryCode"
+              :bio="form.bio"
+              :gender="form.gender"
+              :birthday="form.birthday"
+              :preferences="preferences"
+              :avatar-object-key="avatar"
+              :timezone="form.timezone"
+              :timezone-mode="form.timezoneMode"
+              :on-save="saveProfile"
+            />
+            <AccountSecurity v-else-if="activeTab === 'account-security'" />
+            <Settings v-else-if="activeTab === 'settings'" />
+          </div>
         </section>
       </div>
     </template>
@@ -120,6 +118,12 @@ const activeSectionLabel = computed(() => ({
   settings: 'Settings',
 })[activeTab.value])
 
+const handleSidebarTab = (tab: string) => {
+  if (validSections.includes(tab as ProfileSection)) {
+    activeTab.value = tab as ProfileSection
+  }
+}
+
 watch(activeTab, (section) => {
   router.replace({ query: { ...route.query, section, complete: undefined } })
 })
@@ -147,8 +151,7 @@ onMounted(async () => {
     avatarUrl.value = member.avatarUrl || ''
     needsPassportCompletion.value = !form.passportCountryCode && route.query.complete === 'passport'
   } catch {
-    auth.clearSession()
-    await navigateTo('/login/?redirect=/profile')
+    if (!auth.token.value) await navigateTo('/login/?redirect=/profile')
     return
   } finally {
     loading.value = false
@@ -187,70 +190,42 @@ const saveProfile = async (draft: ProfileDraft) => {
 <style scoped>
 .profile-page {
   min-height: 100vh;
-  padding: 124px 32px 96px;
-  background: #f4f6f3;
+  padding: 108px 20px 80px;
+  background: #f5f6f3;
   color: #1c2925;
+  box-sizing: border-box;
 }
 
-.profile-heading,
-.profile-layout,
-.profile-completion-banner {
-  width: min(1180px, 100%);
+.profile-layout {
+  width: 100%;
+  max-width: 1240px;
   margin-inline: auto;
-}
-
-.profile-heading {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 28px;
-  margin-bottom: 38px;
+  align-items: flex-start;
+  gap: 20px;
 }
 
-.profile-eyebrow {
-  margin: 0 0 10px;
-  color: #65746e;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
+.profile-workspace {
+  min-width: 0;
+  flex: 1;
+  max-width: 940px;
 }
 
-.profile-heading h1 {
-  margin: 0;
-  color: #163e34;
-  font-family: 'Playfair Display', Georgia, serif;
-  font-size: clamp(34px, 4vw, 50px);
-  font-weight: 600;
-  line-height: 1.05;
-}
-
-.profile-heading p:last-child {
-  max-width: 620px;
-  margin: 13px 0 0;
-  color: #63716c;
-  font-size: 15px;
-  line-height: 1.6;
-}
-
-.mobile-menu-button {
-  min-height: 44px;
-  display: none;
-  align-items: center;
-  gap: 9px;
-  padding: 0 15px;
-  border: 1px solid #cad3ce;
-  background: #fff;
-  color: #174d40;
-  font: 700 13px/1 'Inter', sans-serif;
-  cursor: pointer;
+.profile-card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 6px 6px 0 rgba(0, 0, 0, 0.03);
+  padding: 32px;
+  box-sizing: border-box;
 }
 
 .profile-completion-banner {
   display: flex;
   align-items: center;
   gap: 14px;
-  margin-bottom: 28px;
+  margin-bottom: 20px;
   padding: 16px 18px;
+  border-radius: 8px;
   border-left: 4px solid #bfdc72;
   background: #f8fbe9;
   color: #30472c;
@@ -272,19 +247,23 @@ const saveProfile = async (draft: ProfileDraft) => {
   color: #203a2a;
 }
 
-.profile-layout {
-  display: flex;
-  align-items: flex-start;
-  gap: 52px;
+.workspace-header-mobile {
+  display: none;
+  margin-bottom: 16px;
 }
 
-.profile-workspace {
-  min-width: 0;
-  flex: 1;
-  padding: 38px 42px 44px;
-  border: 1px solid #dfe5e1;
+.mobile-menu-button {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 14px;
+  border: 1px solid #cad3ce;
+  border-radius: 4px;
   background: #fff;
-  box-shadow: 0 14px 38px rgba(28, 56, 47, 0.06);
+  color: #174d40;
+  font: 700 13px/1 'Inter', sans-serif;
+  cursor: pointer;
 }
 
 .profile-loading {
@@ -316,37 +295,20 @@ const saveProfile = async (draft: ProfileDraft) => {
 
 @media (max-width: 980px) {
   .profile-layout {
-    gap: 30px;
-  }
-
-  .profile-workspace {
-    padding: 32px;
+    gap: 16px;
   }
 }
 
 @media (max-width: 820px) {
   .profile-page {
-    padding: 104px 20px 72px;
+    padding: 96px 16px 60px;
   }
-
-  .profile-heading {
-    align-items: flex-start;
-    margin-bottom: 28px;
-  }
-
-  .profile-heading h1 {
-    font-size: 36px;
-  }
-
-  .mobile-menu-button {
+  .workspace-header-mobile {
     display: flex;
-    flex: 0 0 auto;
   }
-
   .profile-layout {
     display: block;
   }
-
   .sidebar-overlay {
     position: fixed;
     z-index: 1090;
@@ -354,33 +316,8 @@ const saveProfile = async (draft: ProfileDraft) => {
     display: block;
     background: rgba(10, 25, 20, 0.46);
   }
-
-  .profile-workspace {
-    padding: 28px 24px 34px;
-  }
-}
-
-@media (max-width: 560px) {
-  .profile-page {
-    padding-inline: 14px;
-  }
-
-  .profile-heading {
-    display: block;
-  }
-
-  .profile-heading h1 {
-    font-size: 32px;
-  }
-
-  .mobile-menu-button {
-    width: 100%;
-    justify-content: center;
-    margin-top: 20px;
-  }
-
-  .profile-workspace {
-    padding: 24px 18px 30px;
+  .profile-card {
+    padding: 24px 18px;
   }
 }
 </style>

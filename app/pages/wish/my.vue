@@ -11,7 +11,10 @@
         <div class="wish-carousel__track wish-carousel__track--loading">
           <article v-for="item in 4" :key="item" class="wish-card wish-card--skeleton">
             <span class="wish-card__skeleton-image" />
-            <span class="wish-card__skeleton-line wish-card__skeleton-line--title" />
+            <div class="wish-card__skeleton-header">
+              <span class="wish-card__skeleton-line wish-card__skeleton-line--title" />
+              <span class="wish-card__skeleton-line wish-card__skeleton-line--age" />
+            </div>
             <span class="wish-card__skeleton-line" />
             <span class="wish-card__skeleton-line wish-card__skeleton-line--short" />
           </article>
@@ -57,7 +60,7 @@
             :class="{ 'wish-card--actionable': wish.hasItinerary }"
             :tabindex="wish.hasItinerary ? 0 : undefined"
             :role="wish.hasItinerary ? 'link' : undefined"
-            :aria-label="wish.hasItinerary ? `View itinerary for ${cityName(wish)}` : undefined"
+            :aria-label="wish.hasItinerary ? `View itinerary for ${fullCityNames(wish)}` : undefined"
             @click="openWish(wish)"
             @keydown.enter="openWish(wish)"
           >
@@ -65,15 +68,24 @@
               <img
                 class="wish-card__image"
                 :src="imageForWish(wish)"
-                :alt="`${cityName(wish)} travel wish`"
+                :alt="`${fullCityNames(wish)} travel wish`"
                 :loading="index < 4 ? 'eager' : 'lazy'"
                 @error="handleCoverError"
               >
+              <div v-if="wish.cities && wish.cities.length > 1" class="wish-card__city-badge">
+                <font-awesome-icon :icon="['fas', 'location-dot']" aria-hidden="true" />
+                <span>{{ wish.cities.length }} Cities</span>
+              </div>
             </div>
 
             <div class="wish-card__body">
               <div class="wish-card__heading">
-                <h2>{{ cityName(wish) }}</h2>
+                <h2
+                  :title="fullCityNames(wish)"
+                  :class="{ 'wish-card__title--multi': wish.cities && wish.cities.length > 1 }"
+                >
+                  {{ formatCityNames(wish) }}
+                </h2>
                 <span class="wish-card__age">{{ relativeTime(wish.createTime) }}</span>
                 <font-awesome-icon class="wish-card__open" :icon="['fas', 'arrow-up-right']" aria-hidden="true" />
               </div>
@@ -130,14 +142,7 @@ interface PageResult<T> {
   size: number
 }
 
-interface ApiResult<T> {
-  code: number
-  msg?: string
-  data: T
-}
-
 const { auth, initializeAccount } = useAccountPage('/wish/my')
-const config = useRuntimeConfig()
 const wishes = ref<WishItem[]>([])
 const loading = ref(true)
 const loadError = ref('')
@@ -147,35 +152,39 @@ const canScrollNext = ref(false)
 
 const defaultWishCover = '/images/wish/cover.webp'
 
-const headers = computed(() => ({
-  Authorization: `Bearer ${auth.token.value}`,
-  'Accept-Language': auth.member.value?.locale || 'en-US',
-  'X-Time-Zone': auth.member.value?.timezone || detectMemberTimeZone(),
-}))
-
+let wishesRequest = 0
 const fetchWishes = async () => {
+  const request = ++wishesRequest
   loading.value = true
   loadError.value = ''
   try {
-    const response = await $fetch<ApiResult<PageResult<WishItem>>>('/tour/wishes/page', {
-      baseURL: config.public.apiBase as string,
-      headers: headers.value,
-      params: { page: 1, size: 50 },
-    })
-    if (response.code !== 200) throw new Error(response.msg || 'Request failed')
-    wishes.value = response.data.list
+    const response = await auth.request<PageResult<WishItem>>('/tour/wishes/page?page=1&size=50', undefined, 'GET')
+    if (request !== wishesRequest) return
+    wishes.value = response.list
     await nextTick()
     updateScrollState()
   }
   catch (caught) {
-    loadError.value = caught instanceof Error ? caught.message : 'Please try again in a moment.'
+    if (request === wishesRequest) loadError.value = caught instanceof Error ? caught.message : 'Please try again in a moment.'
   }
   finally {
-    loading.value = false
+    if (request === wishesRequest) loading.value = false
   }
 }
 
-const cityName = (wish: WishItem) => wish.cities.map(city => city.label || city.code).join(' + ') || 'China'
+const fullCityNames = (wish: WishItem) => {
+  if (!wish.cities || !wish.cities.length) return 'China'
+  return wish.cities.map(city => city.label || city.code).join(', ')
+}
+
+const formatCityNames = (wish: WishItem) => {
+  if (!wish.cities || !wish.cities.length) return 'China'
+  const names = wish.cities.map(city => city.label || city.code)
+  if (names.length <= 2) {
+    return names.join(' · ')
+  }
+  return `${names.slice(0, 2).join(' · ')} +${names.length - 2}`
+}
 
 const imageForWish = (wish: WishItem) => wish.coverImageUrl || defaultWishCover
 
@@ -249,8 +258,13 @@ const scrollWishes = (direction: -1 | 1) => {
 }
 
 onMounted(async () => {
-  if (!await initializeAccount()) return
-  await fetchWishes()
+  // 令牌已经存在时并行加载账户和列表，首屏耗时取两者较慢的一项。
+  if (!auth.token.value) {
+    await initializeAccount()
+    return
+  }
+  const [accountReady] = await Promise.all([initializeAccount(), fetchWishes()])
+  if (!accountReady) return
   window.addEventListener('resize', updateScrollState)
 })
 
@@ -262,6 +276,8 @@ useHead({
     { rel: 'preload', as: 'image', type: 'image/webp', href: '/images/wish/my-wishes-bg.webp', fetchpriority: 'high' },
   ],
 })
+onBeforeUnmount(() => { ++wishesRequest })
+watch(auth.token, () => { ++wishesRequest; wishes.value = [] })
 </script>
 
 <style scoped>
@@ -379,6 +395,27 @@ useHead({
   border-radius: 10px;
 }
 
+.wish-card__city-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(14, 27, 22, .72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(207, 243, 128, .35);
+  color: #cff380;
+  font: 600 11px/1.2 'Inter', sans-serif;
+  letter-spacing: .01em;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .3);
+  pointer-events: none;
+}
+
 .wish-card__image {
   width: 100%;
   height: 100%;
@@ -404,29 +441,40 @@ useHead({
 }
 
 .wish-card__heading h2 {
-  max-width: 65%;
+  flex: 1;
+  min-width: 0;
   margin: 0;
-  overflow: hidden;
   color: #fff;
-  font: 400 20px/1.2 'Inter', sans-serif;
+  font: 500 19px/1.2 'Inter', sans-serif;
   letter-spacing: -.02em;
-  white-space: normal;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wish-card__heading h2.wish-card__title--multi {
+  font-size: 16px;
+  letter-spacing: -.01em;
 }
 
 .wish-card__age {
-  overflow: hidden;
+  flex-shrink: 0;
   color: rgba(255, 255, 255, .74);
   font: 400 10px/1.2 'Inter', sans-serif;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .wish-card__open {
-  width: 20px;
-  margin-left: auto;
+  width: 16px;
+  flex-shrink: 0;
+  margin-left: 2px;
   color: #cff380;
-  font-size: 20px;
+  font-size: 16px;
+  transition: transform .2s ease;
+}
+
+.wish-card--actionable:hover .wish-card__open {
+  transform: translate(2px, -2px);
 }
 
 .wish-card__footer {
@@ -626,6 +674,13 @@ useHead({
   border-radius: 10px;
 }
 
+.wish-card__skeleton-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 13px;
+}
+
 .wish-card__skeleton-line {
   width: 100%;
   height: 8px;
@@ -633,13 +688,19 @@ useHead({
 }
 
 .wish-card__skeleton-line--title {
-  width: 62%;
-  height: 13px;
+  flex: 1;
+  height: 14px;
+  margin-top: 0;
+}
+
+.wish-card__skeleton-line--age {
+  width: 45px;
+  height: 10px;
   margin-top: 0;
 }
 
 .wish-card__skeleton-line--short {
-  width: 46%;
+  width: 48%;
 }
 
 @keyframes shimmer {

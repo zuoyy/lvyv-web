@@ -1,3 +1,7 @@
+// In-flight state belongs to a Nuxt app and is never shared between SSR users.
+const accountRequests = new WeakMap<object, Map<string, Promise<unknown>>>()
+const memberRequests = new WeakMap<object, { token: string; promise: Promise<MemberProfile | null> }>()
+
 interface ApiResult<T> { code: number; msg?: string; data: T }
 interface LoginResult { accessToken: string; tokenType: string }
 
@@ -31,58 +35,91 @@ export interface MemberProfile {
 
 export const useMemberAuth = () => {
   const config = useRuntimeConfig()
+  const app = useNuxtApp()
+  let pending = accountRequests.get(app)
+  if (!pending) { pending = new Map(); accountRequests.set(app, pending) }
+  const requests = pending
   const token = useCookie<string | null>('token', { sameSite: 'lax', secure: import.meta.env.PROD })
   const member = useState<MemberProfile | null>('member-profile', () => null)
+  const profileError = useState('member-profile-error', () => '')
 
   const executeRequest = async <T>(path: string, body: Record<string, unknown> | undefined,
     method: 'GET' | 'POST' | 'PUT', authenticated: boolean, timeout?: number) => {
+    const requestToken = token.value
     try {
       const response = await $fetch<ApiResult<T>>(path, {
         baseURL: (import.meta.server && !authenticated ? config.contentApiBase : config.public.apiBase) as string,
         method,
         body: method === 'GET' ? undefined : body,
         headers: {
-          'X-Time-Zone': detectMemberTimeZone(),
+          'X-Time-Zone': member.value?.timezone || detectMemberTimeZone(),
+          'Accept-Language': member.value?.locale || 'en-US',
           ...(authenticated && token.value ? { Authorization: `Bearer ${token.value}` } : {}),
         },
-        ...(timeout ? { timeout } : {}),
+        timeout: timeout || (method === 'GET' ? 15000 : 30000),
+        retry: 0,
       })
+      if (authenticated && token.value !== requestToken) throw new ApiRequestError(499, 'Account session changed.')
       if (response.code !== 200) throw new ApiRequestError(response.code, response.msg || 'Request failed')
       return response.data
     } catch (error: any) {
+      if (authenticated && requestToken === token.value && (error?.code === 401 || error?.status === 401 || error?.statusCode === 401 || error?.data?.code === 401)) clearSession()
       if (error instanceof ApiRequestError) throw error
       const message = error?.data?.msg || error?.response?._data?.msg || error?.message
-      const code = Number(error?.data?.code || error?.response?._data?.code || 500)
+      const code = Number(error?.data?.code || error?.response?._data?.code || error?.statusCode || error?.status || 500)
       throw new ApiRequestError(code, message || 'Request failed')
     }
   }
 
-  const request = <T>(path: string, body?: Record<string, unknown>, method: 'GET' | 'POST' | 'PUT' = 'POST') =>
-    executeRequest<T>(path, body, method, true)
+  const request = <T>(path: string, body?: Record<string, unknown>, method: 'GET' | 'POST' | 'PUT' = 'POST'): Promise<T> => {
+    if (method !== 'GET') return executeRequest<T>(path, body, method, true)
+    const key = `${token.value}:${member.value?.locale}:${member.value?.timezone}:${path}`
+    const existing = requests.get(key)
+    if (existing) return existing as Promise<T>
+    const result = executeRequest<T>(path, body, method, true).finally(() => {
+      if (requests.get(key) === result) requests.delete(key)
+    })
+    requests.set(key, result)
+    return result
+  }
 
   const publicRequest = <T>(path: string, method: 'GET' = 'GET', timeout?: number) =>
     executeRequest<T>(path, undefined, method, false, timeout)
 
-  const loadMember = async () => {
-    if (!token.value) {
-      member.value = null
-      return null
-    }
-    const loaded = await request<MemberProfile>('/auth/info')
-    if (import.meta.client && loaded.timezoneMode === 0) {
-      const detected = detectMemberTimeZone()
-      if (detected !== loaded.timezone) {
-        await request<void>('/auth/timezone', { timezone: detected, timezoneMode: 0 }, 'PUT')
-        loaded.timezone = detected
+  const loadMember = (): Promise<MemberProfile | null> => {
+    const session = token.value
+    if (!session) { member.value = null; return Promise.resolve(null) }
+    const existing = memberRequests.get(app)
+    if (existing?.token === session) return existing.promise
+    profileError.value = ''
+    const promise = request<MemberProfile>('/auth/info').then((loaded) => {
+      if (token.value !== session || memberRequests.get(app)?.promise !== promise) return member.value
+      member.value = loaded
+      if (import.meta.client && loaded.timezoneMode === 0) {
+        const detected = detectMemberTimeZone()
+        if (detected !== loaded.timezone) {
+          void request<void>('/auth/timezone', { timezone: detected, timezoneMode: 0 }, 'PUT').then(() => {
+            if (token.value === session && member.value === loaded) loaded.timezone = detected
+          }).catch(() => { /* A timezone sync failure must not block the account. */ })
+        }
       }
-    }
-    member.value = loaded
-    return member.value
+      return loaded
+    }).catch((caught) => {
+      if (token.value === session) profileError.value = caught instanceof Error ? caught.message : 'Could not load your account.'
+      throw caught
+    }).finally(() => {
+      if (memberRequests.get(app)?.promise === promise) memberRequests.delete(app)
+    })
+    memberRequests.set(app, { token: session, promise })
+    return promise
   }
 
   const clearSession = () => {
     token.value = null
     member.value = null
+    requests.clear()
+    profileError.value = ''
+    memberRequests.delete(app)
   }
 
   const login = async (account: string, password: string) => {
@@ -107,6 +144,7 @@ export const useMemberAuth = () => {
     publicRequest,
     token,
     member,
+    profileError,
     login,
     googleLogin,
     googleExchange: (ticket: string) => request<LoginResult>('/auth/google/exchange', { ticket }),
@@ -119,8 +157,15 @@ export const useMemberAuth = () => {
     forgotPassword: (email: string) => request<void>('/auth/forgot-password', { email }),
     resetPassword: (value: string, password: string) => request<void>('/auth/reset-password', { token: value, password }),
     updateProfile: async (data: { email: string; mobile?: string; nickname?: string; locale: string; timezone: string; timezoneMode: number; passportCountryCode: string; avatarObjectKey?: string; bio?: string; gender?: number; birthday?: string | null }) => {
-      await request<void>('/auth/profile', data, 'PUT')
-      return loadMember()
+      memberRequests.delete(app)
+      const previousEmail = member.value?.email
+      const updated = await request<MemberProfile>('/auth/profile', data, 'PUT')
+      requests.clear()
+      if (previousEmail && previousEmail.toLowerCase() !== updated.email.toLowerCase()) {
+        clearSession()
+        await navigateTo('/login/?redirect=/profile')
+      } else member.value = updated
+      return updated
     },
     updateTimezone: (timezone: string, timezoneMode = 0) => request<void>('/auth/timezone', { timezone, timezoneMode }, 'PUT'),
     getPreferences: () => request<{ emailMasked: string; emailVerified: number; subscriptions: { key: string; subscribed: boolean }[] }>('/mail/preferences', undefined, 'GET'),

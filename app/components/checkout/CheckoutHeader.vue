@@ -177,16 +177,14 @@ watch(memberToken, async (value) => {
   if (!member.value) {
     try {
       await loadMember()
-    } catch {
-      clearSession()
-    }
+    } catch { /* Keep the session on temporary network errors. */ }
   }
 })
 
 onMounted(() => {
   document.addEventListener('click', handleDocumentClick)
   if (memberToken.value && !member.value) {
-    loadMember().catch(clearSession)
+    loadMember().catch(() => {})
   }
 })
 

@@ -14,17 +14,22 @@ export const useAccountPage = (redirectPath: string) => {
       return false
     }
 
+    accountError.value = ''
     try {
       if (!auth.member.value) await auth.loadMember()
       ready.value = true
       return true
     } catch (caught) {
-      auth.clearSession()
       accountError.value = caught instanceof Error ? caught.message : 'Unable to load your account.'
-      await redirectToLogin()
+      if (!auth.token.value) await redirectToLogin()
+      ready.value = true
       return false
     }
   }
 
+  watch(auth.token, (value) => {
+    ready.value = false
+    if (!value) void redirectToLogin()
+  })
   return { auth, ready, accountError, initializeAccount }
 }

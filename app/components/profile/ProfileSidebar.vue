@@ -10,66 +10,66 @@
     <div class="member-summary">
       <div class="member-avatar" aria-hidden="true">
         <img v-if="avatar" :src="avatar" alt="">
-        <span v-else>{{ initials }}</span>
+        <img v-else src="/images/profile/default-avatar.webp" alt="">
       </div>
       <div class="member-copy">
-        <strong>{{ displayName || 'Lvyv traveller' }}</strong>
-        <span>{{ email }}</span>
+        <strong>{{ displayName || 'Alex lee' }}</strong>
+        <span>{{ bioText }}</span>
       </div>
     </div>
 
     <nav class="sidebar-nav">
-      <p class="nav-group-label">Profile</p>
       <ul class="nav-list">
         <li :class="{ active: activeTab === 'personal-info' }">
           <button class="nav-link" type="button" @click="handleTabChange('personal-info')">
-            <font-awesome-icon :icon="['fas', 'user']" class="nav-icon" />
-            <span>Personal Info</span>
+            <span class="nav-icon icon-profile" aria-hidden="true" />
+            <span>Profile</span>
           </button>
         </li>
         <li :class="{ active: activeTab === 'wishes' }">
           <NuxtLink to="/wish/my" class="nav-link" @click="emit('close')">
-            <font-awesome-icon :icon="['fas', 'heart']" class="nav-icon" />
+            <span class="nav-icon icon-wishes" aria-hidden="true" />
             <span>My Wishes</span>
           </NuxtLink>
         </li>
         <li :class="{ active: activeTab === 'trips' }">
           <NuxtLink to="/trips" class="nav-link" @click="emit('close')">
-            <font-awesome-icon :icon="['fas', 'location-dot']" class="nav-icon" />
+            <span class="nav-icon icon-trips" aria-hidden="true" />
             <span>My Trips</span>
           </NuxtLink>
         </li>
         <li :class="{ active: activeTab === 'orders' }">
           <NuxtLink to="/orders" class="nav-link" @click="emit('close')">
-            <font-awesome-icon :icon="['fas', 'credit-card']" class="nav-icon" />
+            <span class="nav-icon icon-orders" aria-hidden="true" />
             <span>My Orders</span>
           </NuxtLink>
         </li>
         <li :class="{ active: activeTab === 'badges' }">
           <NuxtLink to="/badges" class="nav-link" @click="emit('close')">
-            <font-awesome-icon :icon="['fas', 'medal']" class="nav-icon" />
+            <span class="nav-icon icon-badges" aria-hidden="true" />
             <span>My Badges</span>
           </NuxtLink>
         </li>
         <li :class="{ active: activeTab === 'points' }">
           <NuxtLink to="/points" class="nav-link" @click="emit('close')">
-            <font-awesome-icon :icon="['fas', 'gift']" class="nav-icon" />
+            <span class="nav-icon icon-points" aria-hidden="true" />
             <span>Points &amp; Rewards</span>
           </NuxtLink>
         </li>
       </ul>
 
-      <p class="nav-group-label account-label">Account</p>
+      <div class="nav-divider" role="separator" />
+
       <ul class="nav-list">
         <li :class="{ active: activeTab === 'account-security' }">
           <button class="nav-link" type="button" @click="handleTabChange('account-security')">
-            <font-awesome-icon :icon="['fas', 'lock']" class="nav-icon" />
+            <span class="nav-icon icon-security" aria-hidden="true" />
             <span>Account Security</span>
           </button>
         </li>
         <li :class="{ active: activeTab === 'settings' }">
           <button class="nav-link" type="button" @click="handleTabChange('settings')">
-            <font-awesome-icon :icon="['fas', 'gear']" class="nav-icon" />
+            <span class="nav-icon icon-settings" aria-hidden="true" />
             <span>Settings</span>
           </button>
         </li>
@@ -97,9 +97,8 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const initials = computed(() => {
-  const source = props.displayName.trim() || props.email.trim() || 'L'
-  return source.slice(0, 1).toUpperCase()
+const bioText = computed(() => {
+  return props.email || 'Customer Operations'
 })
 
 const handleTabChange = (tab: string) => {
@@ -111,11 +110,15 @@ const handleTabChange = (tab: string) => {
 <style scoped>
 .profile-sidebar {
   position: sticky;
-  top: 104px;
-  width: 220px;
-  height: fit-content;
-  flex: 0 0 220px;
+  top: 108px;
+  width: 280px;
+  min-height: 672px;
+  flex: 0 0 280px;
+  background: #ffffff;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
   color: #1c2925;
+  box-sizing: border-box;
 }
 
 .sidebar-topbar {
@@ -126,70 +129,63 @@ const handleTabChange = (tab: string) => {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 4px 8px 24px;
-  border-bottom: 1px solid #dfe5e1;
+  padding: 24px 20px 20px;
+  border-bottom: 1px solid #dadfe6;
 }
 
 .member-avatar {
-  width: 44px;
-  height: 44px;
-  flex: 0 0 44px;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
+  width: 56px;
+  height: 56px;
+  flex: 0 0 56px;
   border-radius: 50%;
-  background: #174d40;
-  color: #fff;
-  font: 700 17px/1 'Inter', sans-serif;
+  overflow: hidden;
+  background: #f0f3f1;
 }
 
 .member-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
 }
 
 .member-copy {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 
-.member-copy strong,
-.member-copy span {
+.member-copy strong {
+  font-family: 'Inter', sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: #333333;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.member-copy strong {
-  font-size: 14px;
-  font-weight: 700;
-}
-
 .member-copy span {
-  color: #718079;
-  font-size: 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  color: rgba(51, 51, 51, 0.6);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sidebar-nav {
-  padding-top: 22px;
-}
-
-.nav-group-label {
-  margin: 0 0 8px 12px;
-  color: #8b9691;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.account-label {
-  margin-top: 24px;
+  padding: 24px 0;
 }
 
 .nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -197,48 +193,100 @@ const handleTabChange = (tab: string) => {
 
 .nav-list li {
   position: relative;
-  margin: 2px 0;
-}
-
-.nav-list li.active::before {
-  position: absolute;
-  inset: 8px auto 8px 0;
-  width: 3px;
-  background: #174d40;
-  content: '';
+  height: 36px;
 }
 
 .nav-link {
   width: 100%;
-  min-height: 44px;
+  height: 36px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
+  gap: 8px;
+  padding: 0 20px;
   border: 0;
+  border-left: 3px solid transparent;
   background: transparent;
-  color: #52605b;
-  font: 500 14px/1.3 'Inter', sans-serif;
+  color: #000000;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 16px;
   text-align: left;
   text-decoration: none;
   cursor: pointer;
+  box-sizing: border-box;
+  transition: background-color 150ms ease, color 150ms ease;
 }
 
 .nav-link:hover {
-  background: #edf1ee;
-  color: #174d40;
+  background: #f5f7f6;
+  color: #2a573f;
 }
 
-.active .nav-link {
-  background: #e7efe9;
-  color: #174d40;
+.nav-list li.active .nav-link {
+  background: #e8efea;
+  border-left-color: #2a573f;
+  color: #2a573f;
   font-weight: 700;
 }
 
 .nav-icon {
-  width: 18px;
-  color: currentColor;
-  text-align: center;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  background-color: currentColor;
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+}
+
+.icon-profile {
+  mask-image: url('/images/profile/icon-profile.svg');
+  -webkit-mask-image: url('/images/profile/icon-profile.svg');
+}
+
+.icon-wishes {
+  mask-image: url('/images/profile/icon-wishes.svg');
+  -webkit-mask-image: url('/images/profile/icon-wishes.svg');
+}
+
+.icon-trips {
+  mask-image: url('/images/profile/icon-trips.svg');
+  -webkit-mask-image: url('/images/profile/icon-trips.svg');
+}
+
+.icon-orders {
+  mask-image: url('/images/profile/icon-orders.svg');
+  -webkit-mask-image: url('/images/profile/icon-orders.svg');
+}
+
+.icon-badges {
+  mask-image: url('/images/profile/icon-badges.svg');
+  -webkit-mask-image: url('/images/profile/icon-badges.svg');
+}
+
+.icon-points {
+  mask-image: url('/images/profile/icon-points.svg');
+  -webkit-mask-image: url('/images/profile/icon-points.svg');
+}
+
+.icon-security {
+  mask-image: url('/images/profile/icon-security.svg');
+  -webkit-mask-image: url('/images/profile/icon-security.svg');
+}
+
+.icon-settings {
+  mask-image: url('/images/profile/icon-settings.svg');
+  -webkit-mask-image: url('/images/profile/icon-settings.svg');
+}
+
+.nav-divider {
+  height: 1px;
+  margin: 16px 20px;
+  background: #dadfe6;
 }
 
 .icon-button {
@@ -260,9 +308,9 @@ const handleTabChange = (tab: string) => {
     top: 0;
     width: min(320px, 88vw);
     height: 100dvh;
-    padding: 0 20px 28px;
+    padding: 0 0 28px;
     overflow-y: auto;
-    background: #f7f8f6;
+    background: #ffffff;
     box-shadow: 18px 0 48px rgba(22, 43, 36, 0.15);
     transform: translateX(-105%);
     transition: transform 220ms ease;
@@ -273,16 +321,18 @@ const handleTabChange = (tab: string) => {
   }
 
   .sidebar-topbar {
-    min-height: 76px;
+    min-height: 64px;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    padding: 0 20px;
+    border-bottom: 1px solid #dadfe6;
     font-size: 15px;
     font-weight: 700;
   }
 
   .member-summary {
-    padding-top: 8px;
+    padding: 20px 20px 16px;
   }
 }
 </style>

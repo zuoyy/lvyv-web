@@ -1028,12 +1028,36 @@ useLvyvSeo({
 
 .wish-calendar { display: grid; grid-template-columns: repeat(7, 1fr); padding: 0 16px 9px; }
 .wish-calendar__weekday { height: 32px; display: grid; place-items: center; color: #8d8d8d; font-size: 10px; }
-.wish-calendar__day { position: relative; height: 38px; border: 0; background: transparent; color: #333; font-size: 12px; cursor: pointer; isolation: isolate; }
+.wish-calendar__day {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 38px;
+  border: 0;
+  background: transparent;
+  color: #333;
+  font-size: 12px;
+  cursor: pointer;
+  isolation: isolate;
+}
 .wish-calendar__day span { position: relative; z-index: 2; }
-.wish-calendar__day:hover:not(:disabled) { background: #edf9e1; }
+.wish-calendar__day:not(.is-edge):hover:not(:disabled)::after,
+.wish-calendar__day:not(.is-edge):focus-visible:not(:disabled)::after {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 50%;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #edf9e1;
+  content: '';
+  transform: translate(-50%, -50%);
+}
 .wish-calendar__day.is-outside.is-disabled { color: #aeb4b0; }
 .wish-calendar__day.is-disabled { color: #d1d4d2; cursor: not-allowed; }
 .wish-calendar__day.is-range::before { position: absolute; z-index: 0; inset: 0; background: #d8f5c3; content: ''; }
+.wish-calendar__day.is-range:not(.is-edge):hover:not(:disabled)::after { background: #c3eeb0; }
 .wish-calendar__day.is-start::before { left: 50%; }
 .wish-calendar__day.is-end::before { right: 50%; }
 .wish-calendar__day.is-edge { color: #fff; }

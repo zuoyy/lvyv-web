@@ -178,12 +178,21 @@ export interface OrderSnapshot {
 
 export interface OrderView {
   order: { id: number; orderNo: string; status: string; currency: string; sourceType: string; subtotal: string | number; promotionDiscountAmount: string | number; couponDiscountAmount: string | number; discountAmount: string | number; pointsAmount: string | number; pointsPerUsdSnapshot?: number; pointsTransactionNo?: string; pointsRefundTransactionNo?: string; taxAmount: string | number; manualAdjustmentAmount: string | number; totalAmount: string | number; expireTime?: string; createTime?: string }
-  items: Array<{ item: { id: number; itemType: string; adultCount: number; childCount: number; adultListUnitPrice: string | number; adultUnitPrice: string | number; childListUnitPrice: string | number; childUnitPrice: string | number; promotionDiscountAmount?: string | number; taxAmount?: string | number; startDate?: string; endDate?: string; customItineraryId?: number; customItineraryVersionId?: number; itineraryInstanceId?: number }; snapshot?: OrderSnapshot; itineraryNo?: string }>
+  items: Array<{ item: { id: number; itemType: string; adultCount: number; childCount: number; adultListUnitPrice: string | number; adultUnitPrice: string | number; childListUnitPrice: string | number; childUnitPrice: string | number; promotionDiscountAmount?: string | number; taxAmount?: string | number; startDate?: string; endDate?: string; customItineraryId?: number; customItineraryVersionId?: number; itineraryInstanceId?: number }; snapshot?: OrderSnapshot; itineraryNo?: string; coverUrl?: string }>
   entitlements: Entitlement[]
   coupon?: { couponNo: string; discountType: string; discountValue: string | number; discountAmount: string | number; status: string }
   activeOnlinePayment: boolean
   originalPayableAmount: string | number
 }
+
+export interface AccountPage<T> { list: T[]; total: number; page: number; size: number }
+export type ItinerarySummary = Omit<ItineraryInstance, 'content'> & { summary?: string; dateText?: string; dayCount: number }
+export interface OrderSummary {
+  order: Pick<OrderView['order'], 'id' | 'orderNo' | 'status' | 'currency' | 'sourceType' | 'subtotal' | 'promotionDiscountAmount' | 'couponDiscountAmount' | 'pointsAmount' | 'manualAdjustmentAmount' | 'totalAmount' | 'createTime' | 'expireTime'>
+  items: Array<{ item: Pick<OrderView['items'][number]['item'], 'adultCount' | 'childCount' | 'adultUnitPrice' | 'startDate' | 'endDate'>; snapshot?: Pick<OrderSnapshot, 'title' | 'productCode' | 'currency' | 'contentSummary'>; itineraryNo?: string; coverUrl?: string }>
+  activeOnlinePayment: boolean
+}
+export interface OfferSummary { itineraryId: number; offerCount: number; latestOffer?: CustomOfferView; pendingOffer?: CustomOfferView }
 
 export type PaymentChannel = 'CREDIT_CARD' | 'WECHAT_PAY' | 'ALIPAY'
 export type PaymentStatus = 'CREATED' | 'PENDING' | 'UNKNOWN' | 'SUCCEEDED' | 'FAILED' | 'EXPIRED' | 'REVIEW_REQUIRED'
@@ -341,13 +350,17 @@ export const useTourCommerce = () => {
     getPointsEarnRules: () => auth.publicRequest<PointsEarnRule[]>('/points/earn-rules', 'GET', 8000),
     previewStandardOrder: (productCode: string, adultCount: number, childCount: number, startDate: string, memberCouponId?: number, requestedPoints = 0) => auth.request<OrderPricingQuote>('/commerce/orders/standard/preview', { productCode, adultCount, childCount, currency: 'USD', startDate, memberCouponId, requestedPoints }),
     createStandardOrder: (productCode: string, adultCount: number, childCount: number, startDate: string, memberCouponId: number | undefined, requestedPoints: number, contact: BillingDetails) => auth.request<OrderView>('/commerce/orders/standard', { productCode, adultCount, childCount, currency: 'USD', startDate, memberCouponId, requestedPoints, contact }),
+    pageItineraries: (page = 1, filter = 'all') => auth.request<AccountPage<ItinerarySummary>>(`/tour/itineraries/page?page=${page}&size=10&filter=${encodeURIComponent(filter)}`, undefined, 'GET'),
+    pageOrders: (page = 1, filter = 'ALL') => auth.request<AccountPage<OrderSummary> & { statusCounts: Record<string, number> }>(`/commerce/orders/page?page=${page}&size=10&filter=${encodeURIComponent(filter)}`, undefined, 'GET'),
+    offerSummaries: (ids: number[]) => ids.length ? auth.request<OfferSummary[]>(`/commerce/custom-offers/summaries?itineraryIds=${ids.join(',')}`, undefined, 'GET') : Promise.resolve([]),
+    offerHistory: (id: number, page = 1) => auth.request<AccountPage<CustomOfferView>>(`/commerce/custom-offers/page?itineraryId=${id}&page=${page}&size=10`, undefined, 'GET'),
     listOrders: () => auth.request<OrderView[]>('/commerce/orders', undefined, 'GET'),
     listCustomOffers: () => auth.request<CustomOfferView[]>('/commerce/custom-offers', undefined, 'GET'),
     getOrder: (orderNo: string) => auth.request<OrderView>(`/commerce/orders/${encodeURIComponent(orderNo)}`, undefined, 'GET'),
     getOffer: (offerNo: string) => auth.request<CustomOfferConfirmationView>(`/commerce/custom-offers/${encodeURIComponent(offerNo)}`, undefined, 'GET'),
     previewOffer: (offerNo: string, adultCount: number, childCount: number, requestedPoints = 0) => auth.request<CustomOfferQuote>(`/commerce/custom-offers/${encodeURIComponent(offerNo)}/quote?adultCount=${adultCount}&childCount=${childCount}&requestedPoints=${requestedPoints}`, undefined, 'GET'),
     confirmOffer: (offerNo: string, adultCount: number, childCount: number, requestedPoints = 0) => auth.request<OrderView>(`/commerce/custom-offers/${encodeURIComponent(offerNo)}/confirm`, { adultCount, childCount, requestedPoints }),
-    requestRevision: (offerNo: string, requestContent: string) => auth.request(`/commerce/custom-offers/${encodeURIComponent(offerNo)}/request-revision`, { requestContent }),
+    requestRevision: (offerNo: string, requestContent: string) => auth.request<CustomOfferConfirmationView>(`/commerce/custom-offers/${encodeURIComponent(offerNo)}/request-revision`, { requestContent }),
     cancelOrder: (orderNo: string) => auth.request<OrderView>(`/commerce/orders/${encodeURIComponent(orderNo)}/cancel`),
     listPaymentChannels: () => auth.request<PaymentChannelView[]>('/commerce/payments/channels', undefined, 'GET'),
     createPayment: (orderNo: string, channel: PaymentChannel, clientType: 'DESKTOP_WEB' | 'MOBILE_WEB' | 'WECHAT_BROWSER', billing?: BillingDetails) =>

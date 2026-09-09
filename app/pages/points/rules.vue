@@ -1,7 +1,6 @@
 <template>
   <AccountPageShell
     active-page="points"
-    kicker="Loyalty"
     title="Points rules"
     description="A clear view of how points are earned, spent and tied to membership levels."
     :ready="ready"

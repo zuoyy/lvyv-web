@@ -350,7 +350,7 @@ watch(() => member.value?.avatarUrl, () => { avatarFailed.value = false })
 watch(memberToken, async (value) => {
   if (!value) { accountOpen.value = false; return }
   if (!member.value) {
-    try { await loadMember() } catch { clearSession() }
+    try { await loadMember() } catch { /* The request layer clears only expired sessions. */ }
   }
 })
 
@@ -364,7 +364,7 @@ onMounted(() => {
   handleScroll()
   window.addEventListener('scroll', handleScroll, { passive: true })
   document.addEventListener('click', handleDocumentClick)
-  if (memberToken.value && !member.value) loadMember().catch(clearSession)
+  if (memberToken.value && !member.value) loadMember().catch(() => {})
 })
 
 onBeforeUnmount(() => {
