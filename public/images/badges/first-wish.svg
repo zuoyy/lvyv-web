@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
+  <defs>
+    
+    <!-- 共享金属与光泽渐变 -->
+    <linearGradient id="gold-bevel" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF8D6"/>
+      <stop offset="25%" stop-color="#F5BA38"/>
+      <stop offset="50%" stop-color="#D97706"/>
+      <stop offset="75%" stop-color="#92400E"/>
+      <stop offset="100%" stop-color="#FBBF24"/>
+    </linearGradient>
+    <linearGradient id="gold-bright" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="30%" stop-color="#FDE68A"/>
+      <stop offset="70%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#B45309"/>
+    </linearGradient>
+    <linearGradient id="gold-rim" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FDE68A"/>
+      <stop offset="50%" stop-color="#92400E"/>
+      <stop offset="100%" stop-color="#FEF3C7"/>
+    </linearGradient>
+    
+    <!-- 顶级物理阴影滤镜 -->
+    <filter id="badge-drop-shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#050B14" flood-opacity="0.45"/>
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.3"/>
+    </filter>
+    <filter id="inner-emboss" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="-1.5" stdDeviation="1" flood-color="#000000" flood-opacity="0.6"/>
+      <feDropShadow dx="0" dy="1.5" stdDeviation="1" flood-color="#FFFFFF" flood-opacity="0.7"/>
+    </filter>
+    <filter id="core-glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+
+    <radialGradient id="flame-core" cx="50%" cy="60%" r="50%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="30%" stop-color="#FEF08A"/>
+      <stop offset="60%" stop-color="#F97316"/>
+      <stop offset="100%" stop-color="#EA580C"/>
+    </radialGradient>
+    <radialGradient id="wish-bg" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#431407"/>
+      <stop offset="65%" stop-color="#1C0A05"/>
+      <stop offset="100%" stop-color="#0A0302"/>
+    </radialGradient>
+    <linearGradient id="ruby-gem" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FCA5A5"/>
+      <stop offset="40%" stop-color="#DC2626"/>
+      <stop offset="100%" stop-color="#7F1D1D"/>
+    </linearGradient>
+  </defs>
+  <g filter="url(#badge-drop-shadow)">
+    <!-- 1. 六角切面黄金勋章基座 -->
+    <polygon points="64,10 108,35 108,93 64,118 20,93 20,35" fill="url(#gold-bevel)"/>
+    <polygon points="64,14 104,37 104,91 64,114 24,91 24,37" fill="#7C2D12"/>
+    <polygon points="64,18 100,39 100,89 64,110 28,89 28,39" fill="url(#wish-bg)"/>
+    
+    <!-- 2. 六角红宝石镶嵌钉 -->
+    <polygon points="64,11 68,15 64,19 60,15" fill="url(#ruby-gem)"/>
+    <polygon points="107,35 107,41 101,38 103,33" fill="url(#ruby-gem)"/>
+    <polygon points="107,93 103,96 101,90 107,87" fill="url(#ruby-gem)"/>
+    <polygon points="64,117 60,113 64,109 68,113" fill="url(#ruby-gem)"/>
+    <polygon points="21,93 21,87 27,90 25,96" fill="url(#ruby-gem)"/>
+    <polygon points="21,35 25,33 27,38 21,41" fill="url(#ruby-gem)"/>
+    
+    <!-- 3. 中央微缩祈愿星云金球 -->
+    <circle cx="64" cy="66" r="30" fill="none" stroke="url(#gold-bevel)" stroke-width="1.8"/>
+    <circle cx="64" cy="66" r="28" fill="#2A0B05" opacity="0.6"/>
+    
+    <!-- 4. 跃动的多层立体愿望圣火 -->
+    <!-- 外焰 (深橙红) -->
+    <path d="M64 30 C64 30 79 50 79 69 C79 81 72 89 64 91 C56 89 49 81 49 69 C49 52 64 30 64 30 Z" fill="#EA580C" opacity="0.9"/>
+    <!-- 中焰 (金红至暖黄) -->
+    <path d="M64 40 C64 40 74 56 74 71 C74 80 69 86 64 87 C59 86 54 80 54 71 C54 58 64 40 64 40 Z" fill="url(#flame-core)" filter="url(#core-glow)"/>
+    <!-- 内焰白金核心 (灵光火苗) -->
+    <path d="M64 52 C64 52 70 64 70 73 C70 78 67 82 64 83 C61 82 58 78 58 73 C58 65 64 52 64 52 Z" fill="#FFFFFF"/>
+    
+    <!-- 5. 飘扬迸发的愿望星屑 -->
+    <polygon points="44,48 46,52 50,53 46,55 44,59 42,55 38,53 42,52" fill="#FDE047"/>
+    <polygon points="84,50 85.5,53 88.5,54 85.5,55 84,58 82.5,55 79.5,54 82.5,53" fill="#FDE047"/>
+    <polygon points="76,82 78,85 81,86 78,87 76,90 74,87 71,86 74,85" fill="#FEF08A"/>
+    <circle cx="64" cy="27" r="2.5" fill="#FFFBEB" filter="url(#core-glow)"/>
+  </g>
+</svg>

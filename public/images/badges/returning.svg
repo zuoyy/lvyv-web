@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
+  <defs>
+    
+    <!-- 共享金属与光泽渐变 -->
+    <linearGradient id="gold-bevel" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF8D6"/>
+      <stop offset="25%" stop-color="#F5BA38"/>
+      <stop offset="50%" stop-color="#D97706"/>
+      <stop offset="75%" stop-color="#92400E"/>
+      <stop offset="100%" stop-color="#FBBF24"/>
+    </linearGradient>
+    <linearGradient id="gold-bright" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="30%" stop-color="#FDE68A"/>
+      <stop offset="70%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#B45309"/>
+    </linearGradient>
+    <linearGradient id="gold-rim" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FDE68A"/>
+      <stop offset="50%" stop-color="#92400E"/>
+      <stop offset="100%" stop-color="#FEF3C7"/>
+    </linearGradient>
+    
+    <!-- 顶级物理阴影滤镜 -->
+    <filter id="badge-drop-shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#050B14" flood-opacity="0.45"/>
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.3"/>
+    </filter>
+    <filter id="inner-emboss" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="-1.5" stdDeviation="1" flood-color="#000000" flood-opacity="0.6"/>
+      <feDropShadow dx="0" dy="1.5" stdDeviation="1" flood-color="#FFFFFF" flood-opacity="0.7"/>
+    </filter>
+    <filter id="core-glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+
+    <linearGradient id="rose-rim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDA4AF"/>
+      <stop offset="50%" stop-color="#E11D48"/>
+      <stop offset="100%" stop-color="#881337"/>
+    </linearGradient>
+    <radialGradient id="ring-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFF1F2"/>
+      <stop offset="50%" stop-color="#F43F5E"/>
+      <stop offset="100%" stop-color="#4C0519"/>
+    </radialGradient>
+  </defs>
+  <g filter="url(#badge-drop-shadow)">
+    <!-- 1. 八角如意金花盘 -->
+    <circle cx="64" cy="64" r="54" fill="url(#gold-bevel)"/>
+    <circle cx="64" cy="64" r="50" fill="#4C0519"/>
+    <circle cx="64" cy="64" r="47" fill="url(#rose-rim)"/>
+    <circle cx="64" cy="64" r="43" fill="#1F040C"/>
+    
+    <!-- 2. 莫比乌斯双重无限重逢环 -->
+    <!-- 环一 (赤金向右倾) -->
+    <ellipse cx="50" cy="64" rx="26" ry="17" fill="none" stroke="url(#gold-bevel)" stroke-width="5" transform="rotate(-25 50 64)" filter="url(#inner-emboss)"/>
+    <!-- 环二 (玫瑰玛瑙向左倾交织) -->
+    <ellipse cx="78" cy="64" rx="26" ry="17" fill="none" stroke="url(#rose-rim)" stroke-width="5" transform="rotate(25 78 64)" filter="url(#inner-emboss)"/>
+    
+    <!-- 3. 交汇处耀世星芒 (相逢璀璨星) -->
+    <g filter="url(#core-glow)">
+      <circle cx="64" cy="64" r="8" fill="#FFF1F2"/>
+      <polygon points="64,46 66.5,60 80,64 66.5,68 64,82 61.5,68 48,64 61.5,60" fill="#FFFFFF"/>
+      <polygon points="64,52 65.5,61 74,64 65.5,67 64,76 62.5,67 54,64 62.5,61" fill="#FDE047"/>
+    </g>
+    
+    <!-- 4. 相伴双生小星 -->
+    <circle cx="36" cy="56" r="3.5" fill="#FDE047" filter="url(#core-glow)"/>
+    <circle cx="92" cy="72" r="3.5" fill="#FDA4AF" filter="url(#core-glow)"/>
+    <!-- 底托重逢蝴蝶结印 -->
+    <polygon points="64,96 52,106 64,103 76,106" fill="url(#gold-bevel)"/>
+  </g>
+</svg>

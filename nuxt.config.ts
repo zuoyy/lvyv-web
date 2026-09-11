@@ -15,6 +15,8 @@ export default defineNuxtConfig({
   // 本地开发时直连 lvyv-server；生产静态站点仍由 Nginx 代理 /web-api。
   nitro: {
     routeRules: {
+      '/badges': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
+      '/badges/**': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
       '/r/**': { headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
       '/collect/**': { headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
       '/encounters': { headers: { 'cache-control': 'no-store, max-age=0' } },
@@ -41,7 +43,7 @@ export default defineNuxtConfig({
         '/terms',
         '/intellectual-property-rights'
       ],
-      // 积分页中的未来功能入口尚未实现，不参与静态路由爬取。
+      // 会员私有页面及动态内容不参与静态路由爬取。
       ignore: [
         '/badges',
         '/trips',

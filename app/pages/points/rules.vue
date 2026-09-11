@@ -198,7 +198,7 @@ const earnRules: EarnRule[] = [
 
 const spendRules: SpendRule[] = [
   { method: 'Order amount deduction', points: '100 points = $1.00 USD', description: 'Use points to offset part of an order.', icon: ['fas', 'circle-minus'] },
-  { method: 'Redeem exclusive badges', points: '500-2000 points', description: 'Special event rewards with limited availability.', icon: ['fas', 'award'] },
+  { method: 'Redeem event badges', points: 'Varies by badge', description: 'Available during the event, subject to stock and your points balance.', icon: ['fas', 'award'] },
   { method: 'Redeem free modification', points: '200 points / time', description: 'Use points after the free modification quota is used.', icon: ['fas', 'pen-to-square'] },
 ]
 

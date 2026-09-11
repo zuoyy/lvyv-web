@@ -35,6 +35,7 @@
           </div>
 
           <div class="profile-card">
+            <MemberBadgeStrip v-if="activeTab === 'personal-info'" />
             <PersonalInfo
               v-if="activeTab === 'personal-info'"
               :email="form.email"

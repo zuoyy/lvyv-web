@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
+  <defs>
+    
+    <!-- 共享金属与光泽渐变 -->
+    <linearGradient id="gold-bevel" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF8D6"/>
+      <stop offset="25%" stop-color="#F5BA38"/>
+      <stop offset="50%" stop-color="#D97706"/>
+      <stop offset="75%" stop-color="#92400E"/>
+      <stop offset="100%" stop-color="#FBBF24"/>
+    </linearGradient>
+    <linearGradient id="gold-bright" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="30%" stop-color="#FDE68A"/>
+      <stop offset="70%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#B45309"/>
+    </linearGradient>
+    <linearGradient id="gold-rim" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FDE68A"/>
+      <stop offset="50%" stop-color="#92400E"/>
+      <stop offset="100%" stop-color="#FEF3C7"/>
+    </linearGradient>
+    
+    <!-- 顶级物理阴影滤镜 -->
+    <filter id="badge-drop-shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#050B14" flood-opacity="0.45"/>
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.3"/>
+    </filter>
+    <filter id="inner-emboss" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="-1.5" stdDeviation="1" flood-color="#000000" flood-opacity="0.6"/>
+      <feDropShadow dx="0" dy="1.5" stdDeviation="1" flood-color="#FFFFFF" flood-opacity="0.7"/>
+    </filter>
+    <filter id="core-glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+
+    <radialGradient id="sky-dawn" cx="50%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FDE68A"/>
+      <stop offset="40%" stop-color="#38BDF8"/>
+      <stop offset="80%" stop-color="#0369A1"/>
+      <stop offset="100%" stop-color="#082F49"/>
+    </radialGradient>
+    <linearGradient id="wave-grad1" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#0284C7"/>
+    </linearGradient>
+    <linearGradient id="wave-grad2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0284C7"/>
+      <stop offset="100%" stop-color="#0C4A6E"/>
+    </linearGradient>
+  </defs>
+  <g filter="url(#badge-drop-shadow)">
+    <!-- 1. 舵轮齿纹金质大勋章 -->
+    <circle cx="64" cy="64" r="54" fill="url(#gold-bevel)"/>
+    <circle cx="64" cy="64" r="50" fill="#0C4A6E"/>
+    <circle cx="64" cy="64" r="47" fill="url(#gold-bevel)"/>
+    <circle cx="64" cy="64" r="43" fill="url(#sky-dawn)"/>
+    
+    <!-- 2. 朝阳金辉与云霞 -->
+    <circle cx="64" cy="50" r="16" fill="#FEF08A" opacity="0.9" filter="url(#core-glow)"/>
+    
+    <!-- 3. 远山叠翠剪影 -->
+    <path d="M21 72 L38 56 L54 72 Z" fill="#065F46" opacity="0.7"/>
+    <path d="M46 72 L62 58 L78 72 Z" fill="#047857" opacity="0.6"/>
+    <path d="M70 72 L88 54 L106 72 Z" fill="#065F46" opacity="0.7"/>
+    
+    <!-- 4. 乘风破浪帆船 (立体金白风帆) -->
+    <!-- 桅杆与主缆 -->
+    <line x1="62" y1="34" x2="62" y2="76" stroke="#FEF3C7" stroke-width="2"/>
+    <!-- 主前帆 -->
+    <path d="M60 38 L60 72 L42 69 Z" fill="#FFFFFF" filter="url(#inner-emboss)"/>
+    <path d="M60 38 L60 72 L48 69 Z" fill="#E2E8F0" opacity="0.6"/>
+    <!-- 后大帆 -->
+    <path d="M64 42 L64 71 L82 70 Z" fill="#FEF08A"/>
+    <path d="M64 42 L64 71 L75 70 Z" fill="#F59E0B" opacity="0.5"/>
+    <!-- 飞舟船体 -->
+    <path d="M38 74 L86 74 C82 82 74 86 62 86 C50 86 42 82 38 74 Z" fill="url(#gold-bevel)" stroke="#78350F" stroke-width="1.2"/>
+    <!-- 船头破浪金矛 -->
+    <polygon points="86,74 94,72 86,77" fill="#FDE68A"/>
+    
+    <!-- 5. 激荡的海浪层叠立体波涛 -->
+    <path d="M21 78 C32 74 42 82 54 77 C66 72 78 80 90 75 C98 72 104 76 107 78 L107 98 C96 104 80 106 64 107 C48 106 32 104 21 98 Z" fill="url(#wave-grad2)"/>
+    <path d="M22 84 C34 80 46 86 58 82 C70 78 82 84 94 80 C100 78 104 80 106 82 L106 100 C92 106 78 107 64 107 C50 107 36 106 22 100 Z" fill="url(#wave-grad1)"/>
+    <!-- 浪花泡沫金光线 -->
+    <path d="M24 84 C36 80 46 86 58 82 C70 78 82 84 94 80" fill="none" stroke="#BAE6FD" stroke-width="1.8" stroke-linecap="round"/>
+  </g>
+</svg>
