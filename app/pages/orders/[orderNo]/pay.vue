@@ -31,7 +31,7 @@
 <script setup lang="ts">
 import CheckoutHeader from '~/components/checkout/CheckoutHeader.vue'
 import type { OrderView, PaymentChannel, PaymentView } from '~/composables/useTourCommerce'
-definePageMeta({ layout: false }); useNoIndex(); useHead({ htmlAttrs: { style: 'background-color: #203d33;' }, bodyAttrs: { style: 'background-color: #203d33; margin: 0; padding: 0;' } })
+definePageMeta({ layout: false, middleware: 'member-auth' }); useNoIndex(); useHead({ htmlAttrs: { style: 'background-color: #203d33;' }, bodyAttrs: { style: 'background-color: #203d33; margin: 0; padding: 0;' } })
 const route = useRoute(); const commerce = useTourCommerce(); const auth = useMemberAuth()
 const order = ref<OrderView>(); const session = ref<PaymentView['session']>(); const paymentNo = ref(''); const paymentExpireAt = ref<number | null>(null); const now = ref(Date.now()); const loading = ref(true); const submitting = ref(false); const error = ref(''); const sdkMessage = ref(''); let timer: ReturnType<typeof setInterval> | undefined; let deadlineTimer: ReturnType<typeof setInterval> | undefined
 const cardBrands = [{ name: 'Visa', src: '/images/payment/visa.png' }, { name: 'Mastercard', src: '/images/payment/mastercard.png' }, { name: 'JCB', src: '/images/payment/jcb.png' }, { name: 'American Express', src: '/images/payment/american-express.png' }, { name: 'Maestro', src: '/images/payment/maestro.png' }, { name: 'Diners Club', src: '/images/payment/diners-club.png' }, { name: 'Discover', src: '/images/payment/discover.png' }]
@@ -171,7 +171,7 @@ const load = async () => {
       commerce.listPaymentChannels()
     ])
     if (loadedOrder.order.status === 'COMPLETED') {
-      await navigateTo(auth.token.value ? '/trips' : '/encounters')
+      await navigateTo('/trips')
       return
     }
     if (!channels.some(item => item.enabled && item.channel === 'CREDIT_CARD')) {

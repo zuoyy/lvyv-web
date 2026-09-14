@@ -113,7 +113,7 @@
               </div>
             </label>
 
-            <div v-if="isLoggedIn" class="redeem-row">
+            <div class="redeem-row">
               <input v-model="redeemCode" placeholder="Have a coupon code?" class="field-input redeem-input">
               <button type="button" class="redeem-button" @click="redeem">Apply</button>
             </div>
@@ -132,7 +132,7 @@
               <span class="points-text">{{ itineraryCompletedPointsText }} Lvyv Coins After Your Trip</span>
             </div>
 
-            <div v-if="isLoggedIn" class="points-controls">
+            <div class="points-controls">
               <input
                 v-model.number="requestedPoints"
                 type="number"
@@ -254,7 +254,8 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faCalendarDays, faLocationDot, faPenToSquare, faUsers, faCoins } from '@fortawesome/free-solid-svg-icons'
 
 definePageMeta({
-  layout: false
+  layout: false,
+  middleware: 'member-auth'
 })
 
 useNoIndex()
@@ -265,7 +266,6 @@ useHead({
 const route = useRoute()
 const commerce = useTourCommerce()
 const auth = useMemberAuth()
-const isLoggedIn = computed(() => Boolean(auth.token.value))
 const productCode = computed(() => String(route.query.product || ''))
 
 const dateAfter = (days: number) => {
@@ -420,7 +420,7 @@ const refreshQuote = async () => {
       Math.max(0, childCount.value),
       startDate.value,
       selectedCouponId.value,
-      isLoggedIn.value ? requestedPoints.value : 0
+      requestedPoints.value
     )
     if (requestId !== quoteRequestId) return
     quote.value = nextQuote
@@ -481,25 +481,21 @@ const load = async () => {
   void commerce.getPointsEarnRules()
     .then((rules) => { pointsEarnRules.value = rules })
     .catch(() => { pointsEarnRules.value = [] })
-  if (isLoggedIn.value) {
-    void commerce.listCoupons()
-      .then((availableCoupons) => { coupons.value = availableCoupons })
-      .catch(() => undefined)
-    void Promise.all([commerce.getPointsAccount(), commerce.getPointsRedemptionConfig()])
-      .then(([account, config]) => {
-        availablePoints.value = account.availablePoints
-        pointsPerUsd.value = config.pointsPerUsd
-      })
-      .catch(() => undefined)
-  }
+  void commerce.listCoupons()
+    .then((availableCoupons) => { coupons.value = availableCoupons })
+    .catch(() => undefined)
+  void Promise.all([commerce.getPointsAccount(), commerce.getPointsRedemptionConfig()])
+    .then(([account, config]) => {
+      availablePoints.value = account.availablePoints
+      pointsPerUsd.value = config.pointsPerUsd
+    })
+    .catch(() => undefined)
 
-  if (isLoggedIn.value) {
-    try {
-      const member = auth.member.value || await auth.loadMember()
-      if (member) applyMemberContact(member)
-    } catch {
-      auth.clearSession()
-    }
+  try {
+    const member = auth.member.value || await auth.loadMember()
+    if (member) applyMemberContact(member)
+  } catch {
+    auth.clearSession()
   }
   loading.value = false
 }
@@ -539,10 +535,10 @@ const submit = async () => {
       Math.max(0, childCount.value),
       startDate.value,
       selectedCouponId.value,
-      isLoggedIn.value ? requestedPoints.value : 0,
+      requestedPoints.value,
       { ...contact, country: contact.country.toUpperCase() }
     )
-    if (isLoggedIn.value && auth.member.value) {
+    if (auth.member.value) {
       Object.assign(auth.member.value, {
         firstName: contact.firstName.trim(),
         lastName: contact.lastName.trim(),
@@ -553,7 +549,7 @@ const submit = async () => {
     }
     await navigateTo(
       order.order.status === 'COMPLETED'
-        ? (isLoggedIn.value ? '/trips' : '/encounters')
+        ? '/trips'
         : `/orders/${encodeURIComponent(order.order.orderNo)}/pay`
     )
   } catch (caught) {

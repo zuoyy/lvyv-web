@@ -11,15 +11,14 @@
 </template>
 <script setup lang="ts">
 import type { PaymentView } from '~/composables/useTourCommerce'
+definePageMeta({ middleware: 'member-auth' })
 useNoIndex()
-const route = useRoute(); const commerce = useTourCommerce(); const auth = useMemberAuth()
+const route = useRoute(); const commerce = useTourCommerce()
 const payment = ref<PaymentView>(); const loading = ref(true); let timer: ReturnType<typeof setTimeout> | undefined; let attempts = 0
 const terminalFailure = computed(() => ['FAILED','EXPIRED','REVIEW_REQUIRED'].includes(payment.value?.status || ''))
 const retryableFailure = computed(() => ['FAILED','EXPIRED'].includes(payment.value?.status || ''))
-const isLoggedIn = computed(() => Boolean(auth.token.value))
-const returnPath = computed(() => isLoggedIn.value ? (payment.value?.status === 'SUCCEEDED' ? '/trips' : '/orders') : '/encounters')
+const returnPath = computed(() => payment.value?.status === 'SUCCEEDED' ? '/trips' : '/orders')
 const actionLabel = computed(() => {
-  if (!isLoggedIn.value) return retryableFailure.value ? 'Choose another encounter' : 'Back to encounters'
   if (payment.value?.status === 'SUCCEEDED') return 'View my journeys'
   return retryableFailure.value ? 'Try another payment method' : 'View order status'
 })

@@ -266,6 +266,7 @@ interface EncounterDetail {
 
 const route = useRoute()
 const commerce = useTourCommerce()
+const auth = useMemberAuth()
 const { cities, load: loadCities } = useTourCities()
 const productCode = computed(() => String(route.params.productCode || ''))
 
@@ -545,10 +546,17 @@ const downloadItinerary = async () => {
   await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
   window.print()
 }
-const bookNow = async () => navigateTo({
-  path: '/checkout',
-  query: { product: detail.value.productCode, date: departureDate.value, adultCount: String(adults.value), childCount: String(children.value) }
-})
+const bookNow = async () => {
+  const checkoutPath = `/checkout?${new URLSearchParams({
+    product: detail.value.productCode,
+    date: departureDate.value,
+    adultCount: String(adults.value),
+    childCount: String(children.value)
+  })}`
+  await navigateTo(auth.token.value
+    ? checkoutPath
+    : `/login/?redirect=${encodeURIComponent(checkoutPath)}`)
+}
 
 onMounted(async () => {
   void loadCities().catch(() => undefined)
