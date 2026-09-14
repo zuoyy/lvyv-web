@@ -58,7 +58,11 @@ export default defineNuxtConfig({
         '/en/faq/**',
         '/zh/faq',
         '/zh/faq/',
-        '/zh/faq/**'
+        '/zh/faq/**',
+        '/activity',
+        '/activity/**',
+        '/luxury/activity',
+        '/luxury/activity/**'
       ]
     }
   },
