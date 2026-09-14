@@ -314,20 +314,21 @@ const showToast = (msg: string) => {
 
 .activity-main-container {
   flex: 1;
-  max-width: 860px;
+  max-width: 540px;
   width: 100%;
   margin: 0 auto;
-  padding: 24px 16px 48px;
+  padding: 0 0 48px;
   box-sizing: border-box;
 }
 
-/* 顶部富文本样式 */
+/* 顶部富文本展示区：纯净自然展示，不放在卡片中 */
 .activity-top-section {
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 28px 24px;
-  box-shadow: 0 4px 20px rgba(18, 48, 38, 0.05);
-  margin-bottom: 32px;
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+  margin-bottom: 24px;
+  width: 100%;
 }
 
 .activity-rich-content {
@@ -342,13 +343,14 @@ const showToast = (msg: string) => {
   font-weight: 700;
   color: #123026;
   margin: 20px 0 16px;
+  padding: 0 16px;
 }
 
 .activity-rich-content :deep(h2) {
   font-size: 1.4rem;
   font-weight: 600;
   color: #123026;
-  margin: 24px 0 14px;
+  margin: 24px 16px 14px;
   border-left: 4px solid #1a5643;
   padding-left: 10px;
 }
@@ -358,21 +360,34 @@ const showToast = (msg: string) => {
   font-weight: 600;
   color: #1a382e;
   margin: 18px 0 12px;
+  padding: 0 16px;
 }
 
 .activity-rich-content :deep(p) {
-  margin: 0 0 16px;
+  margin: 0;
   color: #364d42;
 }
 
+.activity-rich-content :deep(p:not(:has(img))) {
+  padding: 0 16px;
+  margin-bottom: 14px;
+}
+
+.activity-rich-content :deep(p:has(img)) {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 0;
+}
+
+/* 图片专属样式：专为手机页面设计，满宽全屏贴边，不包裹在卡片中 */
 .activity-rich-content :deep(img) {
   width: 100% !important;
   max-width: 100% !important;
   height: auto !important;
-  border-radius: 12px;
-  margin: 16px auto;
+  border-radius: 0 !important;
+  margin: 0 auto !important;
   display: block;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  box-shadow: none !important;
   object-fit: contain;
   /* 允许微信/Safari长按图片唤起保存或识别二维码菜单 */
   -webkit-touch-callout: default !important;
@@ -381,7 +396,8 @@ const showToast = (msg: string) => {
 
 .activity-rich-content :deep(ul),
 .activity-rich-content :deep(ol) {
-  padding-left: 24px;
+  padding-left: 36px;
+  padding-right: 16px;
   margin-bottom: 16px;
 }
 
@@ -390,7 +406,7 @@ const showToast = (msg: string) => {
 }
 
 .activity-rich-content :deep(blockquote) {
-  margin: 20px 0;
+  margin: 20px 16px;
   padding: 14px 18px;
   background: #f1f7f4;
   border-left: 4px solid #3d8870;
@@ -405,7 +421,7 @@ const showToast = (msg: string) => {
   border-radius: 16px;
   padding: 32px 20px;
   box-shadow: 0 4px 20px rgba(18, 48, 38, 0.05);
-  margin-bottom: 32px;
+  margin: 0 16px 32px;
 }
 
 .staff-header {
@@ -816,18 +832,21 @@ const showToast = (msg: string) => {
 
 @media (max-width: 640px) {
   .activity-main-container {
-    padding: 12px 10px 32px;
+    padding: 0 0 36px;
+    max-width: 100%;
   }
   .activity-top-section {
-    padding: 14px 10px;
-    border-radius: 12px;
+    padding: 0;
+    border-radius: 0;
+    margin-bottom: 20px;
   }
   .activity-rich-content :deep(img) {
-    margin: 8px auto;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    margin: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
   }
   .activity-mid-section {
+    margin: 0 10px 24px;
     padding: 20px 12px;
     border-radius: 12px;
   }
@@ -848,9 +867,9 @@ const showToast = (msg: string) => {
     max-width: 110px;
   }
   .activity-recommend-section {
+    margin: 18px 10px 0;
     padding: 18px 10px 14px;
     border-radius: 12px;
-    margin-top: 18px;
   }
   .recommend-title {
     font-size: 1.15rem;
