@@ -908,6 +908,7 @@ onBeforeUnmount(() => {
 .calendar__days button.in-range { background: #d8f3bf; }
 .calendar__days button.range-start { background: linear-gradient(to right, transparent 0 50%, #d8f3bf 50% 100%); }
 .calendar__days button.range-end { background: linear-gradient(to right, #d8f3bf 0 50%, transparent 50% 100%); }
+.calendar__days button.range-start.range-end { background: transparent; }
 .calendar__days button.range-start,
 .calendar__days button.range-end { color: #fff; font-weight: 700; }
 .calendar__days button.range-start::after,
