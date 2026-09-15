@@ -221,7 +221,7 @@ const activeCity = ref('all')
 const activeDuration = ref('all')
 const selectedThemes = ref(new Set(['all']))
 const sortBy = ref('recommended')
-const visibleCount = ref(5)
+const visibleCount = ref(10)
 const priceFloor = ref(0)
 const priceCeiling = ref(0)
 const priceMin = ref(0)
@@ -269,7 +269,7 @@ const visibleProducts = computed(() => filteredProducts.value.slice(0, visibleCo
 const hasMore = computed(() => visibleCount.value < filteredProducts.value.length)
 
 watch([activeCity, activeDuration, priceMin, priceMax, sortBy, selectedThemes], () => {
-  visibleCount.value = 5
+  visibleCount.value = 10
 })
 
 const cityLabel = (cityCode: string) => cities.value.find(city => city.code === cityCode)?.label || cityCode
