@@ -13,6 +13,7 @@
     "optimize:images": "node scripts/optimize-images.mjs",
     "preview": "nuxt preview",
     "typecheck": "nuxt typecheck",
+    "test:luxury": "node --test scripts/test-luxury-site.mjs",
     "postinstall": "nuxt prepare"
   },
   "devDependencies": {

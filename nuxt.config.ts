@@ -15,6 +15,7 @@ export default defineNuxtConfig({
   // 本地开发时直连 lvyv-server；生产静态站点仍由 Nginx 代理 /web-api。
   nitro: {
     routeRules: {
+      '/activity/**': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0' } },
       '/badges': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
       '/badges/**': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
       '/r/**': { headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
@@ -27,8 +28,8 @@ export default defineNuxtConfig({
       '/en/faq/**': { swr: 60 },
       '/zh/faq/**': { swr: 60 },
       '/sitemap.xml': { swr: 300 },
-      '/sitemaps/**': { swr: 300 },
-      '/robots.txt': { swr: 300 }
+      '/sitemaps/**': { swr: 300 }
+      // robots.txt 按域名生成，仅使用 HTTP 缓存，避免 Nitro 按路径复用主站内容。
     },
     devProxy: {
       '/web-api': {
