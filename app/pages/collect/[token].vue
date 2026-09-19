@@ -17,10 +17,6 @@
           </div>
           <p v-else-if="collection.status === 'PAID' && collection.paidTime" class="deadline">付款时间 {{ dateTime(collection.paidTime) }}</p>
           <p v-else-if="collection.status === 'EXPIRED'" class="deadline">已于 {{ dateTime(collection.validUntil) }} 过期</p>
-          <div v-if="['PENDING_PAYMENT', 'EXPIRED'].includes(collection.status)" class="payment-status" aria-live="polite">
-            <p>{{ refreshError || '付款后将自动更新结果，请勿重复付款。' }}</p>
-            <button type="button" class="copy-btn" :disabled="refreshing" @click="load">{{ refreshing ? '正在查询…' : '刷新支付结果' }}</button>
-          </div>
         </section>
 
         <section v-if="collection.status === 'PAID'" class="result success">
@@ -499,15 +495,6 @@ onBeforeUnmount(() => {
   margin: 0;
   color: #7b8882;
   font-size: 13px;
-}
-.payment-status {
-  margin-top: 16px;
-  color: #7b8882;
-  font-size: 12px;
-  line-height: 1.6;
-}
-.payment-status p {
-  margin: 0 0 8px;
 }
 .deadline-badge {
   display: inline-flex;
