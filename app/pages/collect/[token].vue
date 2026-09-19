@@ -3,7 +3,10 @@
     <section class="collection-card">
       <header><span class="brand-mark">北京旅遇国际</span><p>安全收款</p></header>
       <div v-if="loading" class="state"><span class="spinner" />正在读取收款信息…</div>
-      <div v-else-if="errorMessage" class="state error"><strong>链接不可用</strong><p>{{ errorMessage }}</p></div>
+      <div v-else-if="errorMessage" class="state error">
+        <strong>暂时无法读取收款信息</strong><p>{{ errorMessage }}</p>
+        <button type="button" class="copy-btn" :disabled="refreshing" @click="load">重新加载</button>
+      </div>
       <template v-else-if="collection">
         <section class="summary">
           <p class="label">付款事由</p><h1>{{ collection.purpose }}</h1>
@@ -14,6 +17,10 @@
           </div>
           <p v-else-if="collection.status === 'PAID' && collection.paidTime" class="deadline">付款时间 {{ dateTime(collection.paidTime) }}</p>
           <p v-else-if="collection.status === 'EXPIRED'" class="deadline">已于 {{ dateTime(collection.validUntil) }} 过期</p>
+          <div v-if="['PENDING_PAYMENT', 'EXPIRED'].includes(collection.status)" class="payment-status" aria-live="polite">
+            <p>{{ refreshError || '付款后将自动更新结果，请勿重复付款。' }}</p>
+            <button type="button" class="copy-btn" :disabled="refreshing" @click="load">{{ refreshing ? '正在查询…' : '刷新支付结果' }}</button>
+          </div>
         </section>
 
         <section v-if="collection.status === 'PAID'" class="result success">
@@ -106,7 +113,7 @@
                   <button
                     type="button"
                     class="alipay-pay-btn"
-                    :disabled="submitting || wechatBrowser"
+                    :disabled="submitting || wechatBrowser || remainingSeconds <= 0"
                     @click="payWithAlipay"
                   >
                     {{ submitting ? '正在前往支付宝…' : (wechatBrowser ? '请在系统浏览器中打开' : '使用支付宝付款') }}
@@ -134,7 +141,7 @@
                   <button
                     type="button"
                     class="wechat-pay-btn"
-                    :disabled="submitting"
+                    :disabled="submitting || remainingSeconds <= 0"
                     @click="payWithWechat"
                   >
                     {{ submitting ? '正在发起微信支付…' : '使用微信支付付款' }}
@@ -183,6 +190,8 @@ const config = useRuntimeConfig()
 const token = computed(() => String(route.params.token || ''))
 const collection = ref<CollectionView>()
 const loading = ref(true)
+const refreshing = ref(false)
+const refreshError = ref('')
 const submitting = ref(false)
 const errorMessage = ref('')
 const toast = ref('')
@@ -191,7 +200,8 @@ const now = ref(Date.now())
 const selectedMethod = ref<PaymentMethodType>('BANK_TRANSFER')
 let pollTimer: ReturnType<typeof setTimeout> | undefined
 let countdownTimer: ReturnType<typeof setInterval> | undefined
-let pollCount = 0
+let disposed = false
+let pageActive = true
 
 // 检查各支付路由是否在后端返回的 channels 中启用
 const bankChannel = computed(() => collection.value?.channels?.find(item => item.channel === 'BANK_TRANSFER'))
@@ -308,33 +318,44 @@ const countdownText = computed(() => {
   return `${minutes}分${String(seconds).padStart(2, '0')}秒`
 })
 
-watch(remainingSeconds, (val) => {
-  if (val <= 0 && collection.value && collection.value.status === 'PENDING_PAYMENT') {
-    collection.value.status = 'EXPIRED'
-  }
-})
-
 const request = async <T>(path: string, method: 'GET' | 'POST' = 'GET', body?: Record<string, unknown>) => {
   const response = await $fetch<ApiResult<T>>(path, { baseURL: config.public.apiBase as string, method, body,
-    headers: { 'Cache-Control': 'no-store' } })
+    headers: { 'Cache-Control': 'no-store' }, timeout: 10000, retry: 0 })
   if (response.code !== 200) throw new Error(response.msg || '请求失败')
   return response.data
 }
+const stopPolling = () => {
+  if (pollTimer) clearTimeout(pollTimer)
+  pollTimer = undefined
+}
+const isPageVisible = () => document.visibilityState !== 'hidden'
 const load = async () => {
+  if (disposed || !pageActive || !isPageVisible() || refreshing.value) return
+  stopPolling()
+  refreshing.value = true
   try {
-    collection.value = await request<CollectionView>(`/commerce/public-collections/${encodeURIComponent(token.value)}`)
+    const latest = await request<CollectionView>(`/commerce/public-collections/${encodeURIComponent(token.value)}`)
+    if (disposed) return
+    collection.value = latest
+    now.value = Date.now()
     errorMessage.value = ''
-    // 确保默认选中最高优先级（若启用了银行转账则必选银行转账）
-    if (bankChannel.value) {
-      selectedMethod.value = 'BANK_TRANSFER'
-    } else if (alipayChannel.value) {
-      selectedMethod.value = 'ALIPAY'
-    } else if (wechatChannel.value) {
-      selectedMethod.value = 'WECHAT'
-    }
+    refreshError.value = ''
   } catch (error: any) {
-    errorMessage.value = error?.data?.msg || error?.message || '收款链接不存在或已失效'
-  } finally { loading.value = false }
+    if (disposed) return
+    if (!collection.value) errorMessage.value = error?.data?.msg || error?.message || '暂时无法读取收款信息'
+    else refreshError.value = '暂时无法获取最新结果，正在重试；如已付款，请勿重复付款。'
+  } finally {
+    if (!disposed) {
+      loading.value = false
+      refreshing.value = false
+      // 不依赖支付宝返回参数；异步通知可能晚于收款截止时间到达，过期页也继续核对结果。
+      if (pageActive && isPageVisible()
+        && (!collection.value || ['PENDING_PAYMENT', 'EXPIRED'].includes(collection.value.status))) {
+        const delay = errorMessage.value || refreshError.value ? 10000 : collection.value?.status === 'EXPIRED' ? 15000 : 3000
+        pollTimer = setTimeout(load, delay)
+      }
+    }
+  }
 }
 const payWithAlipay = async () => {
   submitting.value = true
@@ -362,13 +383,18 @@ const payWithWechat = async () => {
     setTimeout(() => { toast.value = '' }, 3000)
   } finally { submitting.value = false }
 }
-const pollPayment = async (paymentNo: string) => {
-  try {
-    const payment = await request<PaymentView>(`/commerce/public-collections/${encodeURIComponent(token.value)}/payments/${encodeURIComponent(paymentNo)}`)
-    if (payment.status === 'SUCCEEDED') { await load(); return }
-    if (!['CREATED', 'PENDING', 'UNKNOWN'].includes(payment.status) || pollCount++ >= 40) return
-    pollTimer = setTimeout(() => pollPayment(paymentNo), 3000)
-  } catch { if (pollCount++ < 40) pollTimer = setTimeout(() => pollPayment(paymentNo), 3000) }
+const resume = () => {
+  pageActive = true
+  now.value = Date.now()
+  void load()
+}
+const suspend = () => {
+  pageActive = false
+  stopPolling()
+}
+const visibilityChanged = () => {
+  if (document.visibilityState === 'hidden') stopPolling()
+  else resume()
 }
 const copy = async (value?: string) => {
   if (!value) return
@@ -381,13 +407,20 @@ onMounted(async () => {
   countdownTimer = setInterval(() => {
     now.value = Date.now()
   }, 1000)
+  document.addEventListener('visibilitychange', visibilityChanged)
+  window.addEventListener('pageshow', resume)
+  window.addEventListener('pagehide', suspend)
+  window.addEventListener('focus', resume)
   await load()
-  const paymentNo = typeof route.query.paymentNo === 'string' ? route.query.paymentNo : ''
-  if (paymentNo) pollPayment(paymentNo)
 })
 onBeforeUnmount(() => {
-  if (pollTimer) clearTimeout(pollTimer)
+  disposed = true
+  stopPolling()
   if (countdownTimer) clearInterval(countdownTimer)
+  document.removeEventListener('visibilitychange', visibilityChanged)
+  window.removeEventListener('pageshow', resume)
+  window.removeEventListener('pagehide', suspend)
+  window.removeEventListener('focus', resume)
 })
 </script>
 
@@ -466,6 +499,15 @@ onBeforeUnmount(() => {
   margin: 0;
   color: #7b8882;
   font-size: 13px;
+}
+.payment-status {
+  margin-top: 16px;
+  color: #7b8882;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.payment-status p {
+  margin: 0 0 8px;
 }
 .deadline-badge {
   display: inline-flex;
@@ -693,10 +735,14 @@ onBeforeUnmount(() => {
   white-space: nowrap;
   transition: all .15s ease;
 }
-.copy-btn:hover {
+.copy-btn:hover:not(:disabled) {
   background: #105446;
   color: #fff;
   border-color: #105446;
+}
+.copy-btn:disabled {
+  opacity: .6;
+  cursor: wait;
 }
 .bank-warning {
   margin: 14px 0 0;
