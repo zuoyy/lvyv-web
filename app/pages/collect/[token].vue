@@ -6,13 +6,13 @@
       <div v-else-if="errorMessage" class="state error"><strong>链接不可用</strong><p>{{ errorMessage }}</p></div>
       <template v-else-if="collection">
         <section class="summary">
-          <p class="label">收款事由</p><h1>{{ collection.purpose }}</h1>
+          <p class="label">付款事由</p><h1>{{ collection.purpose }}</h1>
           <p class="amount"><small>¥</small>{{ money(collection.amount) }}</p>
           <div v-if="collection.status === 'PENDING_PAYMENT'" class="deadline-badge">
             <span class="countdown-icon">⏱</span>
             <span>剩余支付时间：<strong>{{ countdownText }}</strong></span>
           </div>
-          <p v-else-if="collection.status === 'PAID' && collection.paidTime" class="deadline">收款时间 {{ dateTime(collection.paidTime) }}</p>
+          <p v-else-if="collection.status === 'PAID' && collection.paidTime" class="deadline">付款时间 {{ dateTime(collection.paidTime) }}</p>
           <p v-else-if="collection.status === 'EXPIRED'" class="deadline">已于 {{ dateTime(collection.validUntil) }} 过期</p>
         </section>
 
@@ -21,7 +21,7 @@
           <p>感谢您的付款，请勿重复支付。</p><code v-if="collection.paymentReference">参考号 {{ collection.paymentReference }}</code>
         </section>
         <section v-else-if="collection.status !== 'PENDING_PAYMENT'" class="result unavailable">
-          <span class="result-icon">!</span><h2>{{ statusText }}</h2><p>当前收款单已无法继续付款，请联系收款方。</p>
+          <span class="result-icon">!</span><h2>{{ statusText }}</h2><p>当前付款单已无法继续付款，请联系收款方。</p>
         </section>
         <template v-else>
           <!-- 仅在有启用的支付路由时展示 -->
@@ -148,7 +148,7 @@
           <p v-else class="no-method">暂未配置可用付款方式，请联系收款方。</p>
         </template>
       </template>
-      <footer>本页面由北京旅遇国际旅游有限公司提供安全支付服务 · 付款前请仔细核对收款事由及金额</footer>
+      <footer>本页面由北京旅遇国际旅游有限公司提供安全支付服务 · 付款前请仔细核对付款事由及金额</footer>
     </section>
     <div v-if="toast" class="toast">{{ toast }}</div>
   </main>
