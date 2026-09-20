@@ -15,6 +15,14 @@ export default defineNuxtConfig({
   // 本地开发时直连 lvyv-server；生产静态站点仍由 Nginx 代理 /web-api。
   nitro: {
     routeRules: {
+      '/login': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'referrer-policy': 'no-referrer', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
+      '/login/**': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'referrer-policy': 'no-referrer', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
+      '/referrals': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
+      '/referrals/**': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
+      '/register': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
+      '/register/**': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
+      '/auth/**': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
+
       '/activity/**': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0' } },
       '/badges': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
       '/badges/**': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
@@ -46,6 +54,8 @@ export default defineNuxtConfig({
       ],
       // 会员私有页面及动态内容不参与静态路由爬取。
       ignore: [
+        '/login', '/login/**',
+        '/referrals', '/referrals/**', '/register', '/register/**', '/auth/**',
         '/badges',
         '/trips',
         '/encounters',

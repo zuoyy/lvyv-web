@@ -60,6 +60,7 @@ const safeRedirect = (value: unknown) => {
 onMounted(async () => {
   const error = typeof route.query.error === 'string' ? route.query.error : ''
   const ticket = typeof route.query.ticket === 'string' ? route.query.ticket : ''
+  if (error === 'invite_invalid') { await navigateTo('/register/?error=invite_invalid', { replace: true }); return }
   if (error || !ticket) {
     title.value = 'Unable to sign in'
     message.value = error === 'access_denied' ? 'Google authorization was cancelled.' : 'Google sign in could not be completed.'

@@ -7,21 +7,24 @@
 
         <p v-if="message" class="modern-auth-message" :class="{ error }" role="alert">{{ message }}</p>
 
-        <button class="modern-auth-google" type="button" :disabled="loading" @click="handleGoogleLogin">
+        <p v-if="!ready" class="modern-auth-message" role="status">Loading sign-in. If this message remains, refresh the page and make sure JavaScript is enabled.</p>
+
+        <button class="modern-auth-google" type="button" :disabled="!ready || loading" @click="handleGoogleLogin">
           <img src="/images/auth/google-icon.svg" alt="">
           <span>{{ loading ? 'Redirecting...' : 'Log in with Google' }}</span>
         </button>
 
         <div class="modern-auth-divider"><span>OR</span></div>
 
-        <form class="modern-auth-form" novalidate @submit.prevent="submit">
+        <form class="modern-auth-form" method="post" action="/login/" @submit.prevent="submit">
           <label class="modern-auth-field" for="email">
             <span>E-mail</span>
             <input
               id="email"
+              ref="emailInput"
               v-model.trim="email"
               type="email"
-              autocomplete="email"
+              autocomplete="username"
               required
               placeholder="example@gmail.com"
             >
@@ -32,6 +35,7 @@
             <span class="modern-auth-password">
               <input
                 id="password"
+                ref="passwordInput"
                 v-model="password"
                 :type="showPassword ? 'text' : 'password'"
                 autocomplete="current-password"
@@ -52,7 +56,7 @@
             <NuxtLink to="/auth/forgot-password/">Forgot Password?</NuxtLink>
           </div>
 
-          <button class="modern-auth-primary" :disabled="loading || !isLoginFormValid">
+          <button class="modern-auth-primary" type="submit" :disabled="!ready || loading">
             {{ loading ? 'Logging in...' : 'Log in' }}
           </button>
         </form>
@@ -78,16 +82,15 @@ const email = ref(typeof route.query.account === 'string'
   ? route.query.account
   : typeof route.query.email === 'string' ? route.query.email : '')
 const password = ref('')
+const emailInput = ref<HTMLInputElement | null>(null)
+const passwordInput = ref<HTMLInputElement | null>(null)
+const ready = ref(false)
 const showPassword = ref(false)
 const rememberMe = ref(false)
 const loading = ref(false)
 const message = ref('')
 const error = ref(false)
 const auth = useMemberAuth()
-
-const isLoginFormValid = computed(() => {
-  return email.value.trim().length > 0 && password.value.length > 0
-})
 
 const handleGoogleLogin = async () => {
   loading.value = true
@@ -139,9 +142,15 @@ watch(rememberMe, () => {
 
 onMounted(() => {
   loadRememberedInfo()
+  ready.value = true
 })
 
 const submit = async () => {
+  if (!ready.value || loading.value) return
+
+  // 自动填充可能不触发 input 事件，读取实际输入值；不设置 name，防止原生提交序列化凭证。
+  email.value = (emailInput.value?.value ?? '').trim()
+  password.value = passwordInput.value?.value ?? ''
   loading.value = true
   message.value = ''
   error.value = false

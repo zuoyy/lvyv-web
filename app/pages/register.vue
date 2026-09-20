@@ -59,7 +59,19 @@
             <small v-if="confirmError">{{ confirmError }}</small>
           </label>
 
-          <button class="modern-auth-primary" :disabled="loading || !isRegisterFormValid">
+          <label class="modern-auth-field" for="reg-invitation">
+            <span>Invitation code <span>(optional)</span></span>
+            <span class="modern-auth-password" :class="{ invalid: inviteError }">
+              <input id="reg-invitation" v-model.trim="inviteCode" maxlength="32" autocomplete="off" placeholder="Enter an invitation code" :disabled="inviteLoading || loading" @input="inviteError = ''; inviteEdited = true">
+              <button v-if="inviteCode || inviteError" type="button" aria-label="Clear invitation code" title="Clear invitation code" :disabled="inviteLoading || loading" @click="removeInvitation">
+                <span aria-hidden="true">×</span>
+              </button>
+            </span>
+            <small v-if="inviteError" role="alert">{{ inviteError }}</small>
+            <small v-else-if="inviteCode" class="invitation-hint">Your invitation will be linked when you create your account.</small>
+          </label>
+
+          <button class="modern-auth-primary" :disabled="loading || inviteLoading || !isRegisterFormValid">
             {{ loading ? 'Signing up...' : 'Sign up' }}
           </button>
         </form>
@@ -70,7 +82,7 @@
 
         <div class="modern-auth-divider"><span>OR</span></div>
 
-        <button class="modern-auth-google" type="button" :disabled="loading" @click="handleGoogleLogin">
+        <button class="modern-auth-google" type="button" :disabled="loading || inviteLoading" @click="handleGoogleLogin">
           <img src="/images/auth/google-icon.svg" alt="">
           <span>{{ loading ? 'Redirecting...' : 'Continue with Google' }}</span>
         </button>
@@ -89,6 +101,37 @@ useNoIndex()
 
 const route = useRoute()
 const auth = useMemberAuth()
+const referralApi = useReferrals()
+const inviteCode = ref('')
+const inviteError = ref('')
+const inviteLoading = ref(true)
+const inviteEdited = ref(false)
+const removeInvitation = async () => {
+  inviteLoading.value = true
+  try {
+    await referralApi.clear()
+    inviteCode.value = ''; inviteError.value = ''; inviteEdited.value = true
+    const { invite, error: referralError, ...query } = route.query
+    await navigateTo({ path: route.path, query }, { replace: true })
+  } catch { inviteError.value = 'Could not remove the invitation. Please try again.' }
+  finally { inviteLoading.value = false }
+}
+const validateInvitation = async () => {
+  if (!inviteCode.value) return !inviteError.value
+  try { inviteCode.value = (await referralApi.validate(inviteCode.value)).inviteCode; inviteError.value = ''; return true }
+  catch (e) { inviteError.value = e instanceof Error ? e.message : 'Please check your invitation code or remove it to continue.'; return false }
+}
+onMounted(async () => {
+  try {
+    const value = typeof route.query.invite === 'string' ? route.query.invite : ''
+    const context = value ? await referralApi.capture(value) : await referralApi.context()
+    if (!inviteEdited.value) inviteCode.value = context.inviteCode || ''
+  } catch (e) {
+    inviteCode.value = typeof route.query.invite === 'string' ? route.query.invite : ''
+    inviteError.value = e instanceof Error ? e.message : 'Could not load the invitation. You may remove it to continue.'
+  } finally { inviteLoading.value = false }
+  if (route.query.error === 'invite_invalid') inviteError.value = 'This invitation is no longer available. Change or remove the code, then try Google again.'
+})
 const form = reactive({
   email: typeof route.query.verify === 'string' ? route.query.verify : '',
   password: '',
@@ -234,6 +277,7 @@ const submit = async () => {
   error.value = false
   message.value = ''
   try {
+    if (!(await validateInvitation())) return
     form.timezone = detectMemberTimeZone()
     await auth.register({
       email: form.email,
@@ -241,6 +285,7 @@ const submit = async () => {
       avatarObjectKey: randomRegistrationAvatar(),
       timezone: form.timezone,
       verificationCode: verificationCode.value,
+      inviteCode: inviteCode.value || undefined,
     })
     await navigateTo(`/login/?account=${encodeURIComponent(form.email)}`)
   } catch (caught) {
@@ -251,10 +296,17 @@ const submit = async () => {
   }
 }
 
-const handleGoogleLogin = () => {
+const handleGoogleLogin = async () => {
   loading.value = true
-  auth.googleLogin('/wish')
+  if (!(await validateInvitation())) { loading.value = false; return }
+  auth.googleLogin('/wish', inviteCode.value)
 }
 
 onBeforeUnmount(() => { if (cooldownTimer) clearInterval(cooldownTimer) })
 </script>
+
+<style scoped>
+.modern-auth-field .invitation-hint {
+  color: #67728a;
+}
+</style>

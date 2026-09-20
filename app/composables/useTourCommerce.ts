@@ -229,7 +229,7 @@ export interface PaymentView {
 }
 
 export interface MemberCouponView {
-  coupon: { id: number; couponNo: string; status: string; validFrom: string; validTo: string }
+  coupon: { id: number; couponNo: string; status: string; validFrom: string; validTo: string | null }
   template: { name: string; discountType: string; discountValue: string | number; maxDiscountAmount?: string | number; minimumOrderAmount: string | number; currency: string }
 }
 

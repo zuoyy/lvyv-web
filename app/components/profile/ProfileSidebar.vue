@@ -50,6 +50,11 @@
             <span>My Badges</span>
           </NuxtLink>
         </li>
+        <li :class="{ active: activeTab === 'referrals' }">
+          <NuxtLink to="/referrals" class="nav-link" @click="emit('close')">
+            <span class="nav-icon icon-profile" aria-hidden="true" /><span>Invite friends</span>
+          </NuxtLink>
+        </li>
         <li :class="{ active: activeTab === 'points' }">
           <NuxtLink to="/points" class="nav-link" @click="emit('close')">
             <span class="nav-icon icon-points" aria-hidden="true" />

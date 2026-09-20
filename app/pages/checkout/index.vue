@@ -494,8 +494,8 @@ const load = async () => {
   try {
     const member = auth.member.value || await auth.loadMember()
     if (member) applyMemberContact(member)
-  } catch {
-    auth.clearSession()
+  } catch (caught) {
+    error.value = caught instanceof Error ? caught.message : 'Could not load your contact details. Please try again.'
   }
   loading.value = false
 }
