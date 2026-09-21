@@ -105,8 +105,8 @@
               <div class="select-wrapper">
                 <select v-model="selectedCouponId" class="field-select" @change="refreshQuote">
                   <option :value="undefined">No coupon</option>
-                  <option v-for="coupon in coupons" :key="coupon.coupon.id" :value="coupon.coupon.id">
-                    {{ coupon.template.name }} · {{ couponLabel(coupon) }}
+                  <option v-for="coupon in coupons" :key="coupon.coupon.id" :value="coupon.coupon.id" :disabled="coupon.eligibilityStatus != null && coupon.eligibilityStatus !== 'ELIGIBLE'">
+                    {{ coupon.template.eligibilityType === 'FIRST_ORDER' ? 'First order · ' : '' }}{{ coupon.template.name }} · {{ couponLabel(coupon) }}{{ coupon.eligibilityStatus && coupon.eligibilityStatus !== 'ELIGIBLE' ? ' (not currently eligible)' : '' }}
                   </option>
                 </select>
                 <span class="select-chevron" aria-hidden="true" />
@@ -196,13 +196,23 @@
           <span class="summary-formula">US$ {{ formatPrice(quote.childSaleUnitPrice) }}×{{ quote.childCount }}</span>
         </div>
 
-        <div v-if="Number(quote.promotionDiscountAmount) > 0" class="summary-line discount-line">
+        <div v-if="productPromotionDiscount > 0" class="summary-line discount-line">
           <span class="summary-label">Promotion</span>
-          <strong class="summary-value discount-val">- US${{ formatPrice(quote.promotionDiscountAmount) }}</strong>
+          <strong class="summary-value discount-val">- US${{ formatPrice(productPromotionDiscount) }}</strong>
         </div>
 
+        <div v-if="quote.firstOrder?.applied" class="summary-line discount-line">
+          <span class="summary-label">First order · {{ quote.firstOrder.discountPercent }}% off</span>
+          <strong class="summary-value discount-val">- US${{ formatPrice(quote.firstOrder.discountAmount) }}</strong>
+        </div>
+        <p v-if="firstOrderMessage" class="first-order-note">{{ firstOrderMessage }}
+          <NuxtLink v-if="quote.firstOrder?.reservedOrderNo" :to="`/orders/${encodeURIComponent(quote.firstOrder.reservedOrderNo)}/pay`">View your reserved order</NuxtLink>
+        </p>
+        <p v-if="quote.firstOrder?.applied && selectedCouponId" class="first-order-note">The automatic offer saves at least as much. Your selected coupon will be kept.</p>
+        <p v-else-if="quote.coupon && quote.firstOrder?.discountAmount && Number(quote.firstOrder.discountAmount) > 0" class="first-order-note">Your selected coupon gives a better discount. No campaign place is reserved.</p>
+        <p v-if="quote.paymentDeadline" class="first-order-note">Estimated payment deadline: {{ new Date(quote.paymentDeadline).toLocaleString() }}. The exact deadline is shown after you place the order.</p>
         <div v-if="Number(quote.couponDiscountAmount) > 0" class="summary-line discount-line">
-          <span class="summary-label">Coupon</span>
+          <span class="summary-label">{{ quote.coupon?.template.eligibilityType === 'FIRST_ORDER' ? 'First-order coupon' : 'Coupon' }}</span>
           <strong class="summary-value discount-val">- US${{ formatPrice(quote.couponDiscountAmount) }}</strong>
         </div>
 
@@ -291,6 +301,24 @@ const pointsEarnRules = ref<PointsEarnRule[]>([])
 const coupons = ref<MemberCouponView[]>([])
 const quote = ref<OrderPricingQuote | null>(null)
 const quoteError = ref('')
+let checkoutRequestId: string | undefined
+let checkoutRequestPayload = ''
+const productPromotionDiscount = computed(() => Number(quote.value?.promotionDiscountAmount || 0) - (quote.value?.firstOrder?.applied ? Number(quote.value.firstOrder.discountAmount) : 0))
+const firstOrderMessage = computed(() => {
+  const benefit = quote.value?.firstOrder
+  if (!benefit) return ''
+  const messages: Record<string, string> = {
+    NOT_FIRST_ORDER: 'First-order offers are only available before your first successful purchase.',
+    RESERVED: 'Your first-order benefit is reserved by another order. Pay or safely cancel that order first.',
+    REVIEW_REQUIRED: 'Your reserved order has a payment awaiting verification. The offer remains held.',
+    PAYMENT_PENDING: 'Another payment is being verified. Your first-order eligibility will update after verification.',
+    PRODUCT_NOT_APPLICABLE: 'This product is outside the current first-order campaign.',
+    QUOTA_RESERVED: 'All campaign places are temporarily reserved. Check again later.',
+    EXHAUSTED: 'All first-order campaign places have been used.',
+    NO_ACTIVE_CAMPAIGN: 'No first-order campaign is currently available.'
+  }
+  return messages[benefit.status] || (benefit.applied ? `First-order offer applied, up to US$${benefit.maxDiscountAmount}.` : '')
+})
 const catalog = ref<CatalogProductView | null>(null)
 const agreed = ref(false)
 
@@ -427,6 +455,7 @@ const refreshQuote = async () => {
     quoteError.value = ''
   } catch (caught) {
     if (requestId !== quoteRequestId) return
+    quote.value = null
     quoteError.value = caught instanceof Error ? caught.message : 'Could not calculate the price.'
   } finally {
     if (requestId === quoteRequestId) quoteLoading.value = false
@@ -527,6 +556,9 @@ const submit = async () => {
     error.value = 'A departure date is required.'
     return
   }
+  if (!quote.value?.confirmationToken || quoteLoading.value) { await refreshQuote(); return }
+  const payload = JSON.stringify([productCode.value, adultCount.value, childCount.value, startDate.value, selectedCouponId.value, requestedPoints.value, contact])
+  if (!checkoutRequestId || payload !== checkoutRequestPayload) { checkoutRequestId = crypto.randomUUID(); checkoutRequestPayload = payload }
   submitting.value = true
   try {
     const order = await commerce.createStandardOrder(
@@ -536,7 +568,8 @@ const submit = async () => {
       startDate.value,
       selectedCouponId.value,
       requestedPoints.value,
-      { ...contact, country: contact.country.toUpperCase() }
+      { ...contact, country: contact.country.toUpperCase() },
+      quote.value.confirmationToken, checkoutRequestId
     )
     if (auth.member.value) {
       Object.assign(auth.member.value, {
@@ -554,6 +587,8 @@ const submit = async () => {
     )
   } catch (caught) {
     error.value = caught instanceof Error ? caught.message : 'Could not create the order.'
+    agreed.value = false
+    await refreshQuote()
   } finally {
     submitting.value = false
   }
@@ -571,6 +606,7 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.first-order-note { font-size: 12px; line-height: 1.5; color: #37584b; margin: 12px 0; }
 .checkout-page-shell {
   position: relative;
   min-height: 100vh;

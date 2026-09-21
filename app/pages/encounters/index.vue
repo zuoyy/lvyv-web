@@ -147,6 +147,7 @@
 
               <div class="encounter-card__body">
                 <h2>{{ cardTitle(product) }}</h2>
+                <FirstOrderOffer :promotion="product.firstOrderPromotion" />
                 <p v-if="product.features.length" class="encounter-card__features">{{ product.features.join('  |  ') }}</p>
 
                 <div class="encounter-card__summary">
@@ -196,6 +197,7 @@ interface EncounterProduct {
   themes: string[]
   features: string[]
   reviewCount: number
+  firstOrderPromotion?: import('~/composables/useTourCommerce').FirstOrderPromotion | null
   priceNote?: string
 }
 
@@ -334,6 +336,7 @@ const applyCatalog = (catalog: import('~/composables/useTourCommerce').CatalogPr
           item.travelType
         ].filter((value): value is string => Boolean(value?.trim()))
         return {
+          firstOrderPromotion: item.firstOrderPromotion,
           productCode: item.productCode,
           title: item.name,
           cityCode: item.cityCode,

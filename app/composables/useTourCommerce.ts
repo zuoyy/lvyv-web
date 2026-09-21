@@ -1,3 +1,12 @@
+export interface FirstOrderPromotion {
+  id: number; name: string; discountPercent: number; maxDiscountAmount: number; totalQuota: number;
+  availableQuota: number; endTime: string; status: string; allProducts: boolean; catalogProductIds: number[]
+}
+export interface FirstOrderBenefit {
+  status: string; campaignId?: number; name?: string; discountAmount: string | number;
+  discountPercent?: number; maxDiscountAmount?: number; totalQuota?: number; availableQuota?: number;
+  endTime?: string; reservedOrderNo?: string; applied: boolean
+}
 export interface Entitlement {
   id: number
   orderItemId: number
@@ -65,6 +74,7 @@ export interface StandardItineraryView {
 }
 
 export interface CatalogProductView {
+  firstOrderPromotion?: FirstOrderPromotion | null
   product: { id: number; productCode: string; name: string; summary?: string; cityCode: string; travelType?: string; guaranteedDeparture?: boolean; shoppingPolicy?: string; adultAgeLabel?: string; childAgeLabel?: string; minimumAdvanceDays?: number; priceNote?: string; standardItineraryVersionId: number; status: string }
   themes: string[]
   serviceLanguages: string[]
@@ -98,6 +108,7 @@ const catalogProductRequests = new Map<string, Promise<CatalogProductView>>()
 const CATALOG_CACHE_TTL_MS = 2 * 60 * 1000
 
 export interface CatalogProductListView {
+  firstOrderPromotion?: FirstOrderPromotion | null
   id: number
   productCode: string
   name: string
@@ -177,7 +188,7 @@ export interface OrderSnapshot {
 }
 
 export interface OrderView {
-  order: { id: number; orderNo: string; status: string; currency: string; sourceType: string; subtotal: string | number; promotionDiscountAmount: string | number; couponDiscountAmount: string | number; discountAmount: string | number; pointsAmount: string | number; pointsPerUsdSnapshot?: number; pointsTransactionNo?: string; pointsRefundTransactionNo?: string; taxAmount: string | number; manualAdjustmentAmount: string | number; totalAmount: string | number; expireTime?: string; createTime?: string }
+  order: { firstOrderDiscountAmount?: string | number; firstOrderBenefitName?: string; id: number; orderNo: string; status: string; currency: string; sourceType: string; subtotal: string | number; promotionDiscountAmount: string | number; couponDiscountAmount: string | number; discountAmount: string | number; pointsAmount: string | number; pointsPerUsdSnapshot?: number; pointsTransactionNo?: string; pointsRefundTransactionNo?: string; taxAmount: string | number; manualAdjustmentAmount: string | number; totalAmount: string | number; expireTime?: string; createTime?: string }
   items: Array<{ item: { id: number; itemType: string; adultCount: number; childCount: number; adultListUnitPrice: string | number; adultUnitPrice: string | number; childListUnitPrice: string | number; childUnitPrice: string | number; promotionDiscountAmount?: string | number; taxAmount?: string | number; startDate?: string; endDate?: string; customItineraryId?: number; customItineraryVersionId?: number; itineraryInstanceId?: number }; snapshot?: OrderSnapshot; itineraryNo?: string; coverUrl?: string }>
   entitlements: Entitlement[]
   coupon?: { couponNo: string; discountType: string; discountValue: string | number; discountAmount: string | number; status: string }
@@ -188,7 +199,7 @@ export interface OrderView {
 export interface AccountPage<T> { list: T[]; total: number; page: number; size: number }
 export type ItinerarySummary = Omit<ItineraryInstance, 'content'> & { summary?: string; dateText?: string; dayCount: number }
 export interface OrderSummary {
-  order: Pick<OrderView['order'], 'id' | 'orderNo' | 'status' | 'currency' | 'sourceType' | 'subtotal' | 'promotionDiscountAmount' | 'couponDiscountAmount' | 'pointsAmount' | 'manualAdjustmentAmount' | 'totalAmount' | 'createTime' | 'expireTime'>
+  order: Pick<OrderView['order'], 'id' | 'orderNo' | 'status' | 'currency' | 'sourceType' | 'subtotal' | 'promotionDiscountAmount' | 'firstOrderDiscountAmount' | 'firstOrderBenefitName' | 'couponDiscountAmount' | 'pointsAmount' | 'manualAdjustmentAmount' | 'totalAmount' | 'createTime' | 'expireTime'>
   items: Array<{ item: Pick<OrderView['items'][number]['item'], 'adultCount' | 'childCount' | 'adultUnitPrice' | 'startDate' | 'endDate'>; snapshot?: Pick<OrderSnapshot, 'title' | 'productCode' | 'currency' | 'contentSummary'>; itineraryNo?: string; coverUrl?: string }>
   activeOnlinePayment: boolean
 }
@@ -229,11 +240,17 @@ export interface PaymentView {
 }
 
 export interface MemberCouponView {
+  eligibilityStatus?: string
   coupon: { id: number; couponNo: string; status: string; validFrom: string; validTo: string | null }
-  template: { name: string; discountType: string; discountValue: string | number; maxDiscountAmount?: string | number; minimumOrderAmount: string | number; currency: string }
+  template: { eligibilityType?: 'ALL' | 'FIRST_ORDER'; name: string; discountType: string; discountValue: string | number; maxDiscountAmount?: string | number; minimumOrderAmount: string | number; currency: string }
 }
 
 export interface OrderPricingQuote {
+  firstOrder?: FirstOrderBenefit
+  confirmationToken?: string
+  paymentDeadline?: string
+  coupon?: { coupon: { id: number }; template: { eligibilityType?: string; name: string } }
+
   productId: number
   adultCount: number
   childCount: number
@@ -349,7 +366,7 @@ export const useTourCommerce = () => {
     getPointsRedemptionConfig: () => auth.request<PointsRedemptionConfig>('/points/redemption-config', undefined, 'GET'),
     getPointsEarnRules: () => auth.publicRequest<PointsEarnRule[]>('/points/earn-rules', 'GET', 8000),
     previewStandardOrder: (productCode: string, adultCount: number, childCount: number, startDate: string, memberCouponId?: number, requestedPoints = 0) => auth.request<OrderPricingQuote>('/commerce/orders/standard/preview', { productCode, adultCount, childCount, currency: 'USD', startDate, memberCouponId, requestedPoints }),
-    createStandardOrder: (productCode: string, adultCount: number, childCount: number, startDate: string, memberCouponId: number | undefined, requestedPoints: number, contact: BillingDetails) => auth.request<OrderView>('/commerce/orders/standard', { productCode, adultCount, childCount, currency: 'USD', startDate, memberCouponId, requestedPoints, contact }),
+    createStandardOrder: (productCode: string, adultCount: number, childCount: number, startDate: string, memberCouponId: number | undefined, requestedPoints: number, contact: BillingDetails, confirmationToken?: string, requestId?: string) => auth.request<OrderView>('/commerce/orders/standard', { productCode, adultCount, childCount, currency: 'USD', startDate, memberCouponId, requestedPoints, contact, confirmationToken, requestId }),
     pageItineraries: (page = 1, filter = 'all') => auth.request<AccountPage<ItinerarySummary>>(`/tour/itineraries/page?page=${page}&size=10&filter=${encodeURIComponent(filter)}`, undefined, 'GET'),
     pageOrders: (page = 1, filter = 'ALL') => auth.request<AccountPage<OrderSummary> & { statusCounts: Record<string, number> }>(`/commerce/orders/page?page=${page}&size=10&filter=${encodeURIComponent(filter)}`, undefined, 'GET'),
     offerSummaries: (ids: number[]) => ids.length ? auth.request<OfferSummary[]>(`/commerce/custom-offers/summaries?itineraryIds=${ids.join(',')}`, undefined, 'GET') : Promise.resolve([]),

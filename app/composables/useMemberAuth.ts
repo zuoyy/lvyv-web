@@ -6,9 +6,18 @@ const loginRedirects = new WeakMap<object, Promise<void>>()
 interface ApiResult<T> { code: number; msg?: string; data: T }
 interface LoginResult { accessToken: string; tokenType: string }
 
+const commerceMessages: Record<number, string> = {
+  1005000053: 'This offer is only available before your first successful purchase.',
+  1005000054: 'Please pay or safely cancel the order holding your first-order offer.',
+  1005000055: 'A payment is awaiting verification. Please wait for its result before trying again.',
+  1005000056: 'Your offer or price has changed. Please review the updated total and confirm again.',
+  1005000057: 'This checkout request has already been used with different details. Please refresh and try again.',
+  1005000058: 'All first-order places are temporarily reserved. Please check again later.',
+}
+
 export class ApiRequestError extends Error {
   constructor(public readonly code: number, message: string) {
-    super(message)
+    super(commerceMessages[code] || message)
     this.name = 'ApiRequestError'
   }
 }

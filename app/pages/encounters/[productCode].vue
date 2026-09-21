@@ -26,6 +26,7 @@
               </template>
             </p>
           </header>
+          <FirstOrderOffer :promotion="firstOrderPromotion" />
 
           <section :class="['gallery', `gallery--${Math.min(galleryImages.length, 3)}`]" aria-label="Encounter photos">
             <button class="gallery__main" type="button" @click="openPhoto(galleryImages[0]!)">
@@ -270,6 +271,7 @@ const auth = useMemberAuth()
 const { cities, load: loadCities } = useTourCities()
 const productCode = computed(() => String(route.params.productCode || ''))
 
+const firstOrderPromotion = ref<import('~/composables/useTourCommerce').FirstOrderPromotion | null>()
 const detail = ref<EncounterDetail>({
   productCode: productCode.value,
   title: '',
@@ -360,6 +362,7 @@ const formatPrice = (value: number) => new Intl.NumberFormat('en-US', {
 }).format(value)
 
 const mapCatalog = (catalog: import('~/composables/useTourCommerce').CatalogProductView): EncounterDetail => {
+  firstOrderPromotion.value = catalog.firstOrderPromotion
   if (catalog.product.cityCode !== catalog.itinerary.cityCode) {
     throw new Error('This encounter has inconsistent city data.')
   }

@@ -21,6 +21,11 @@
         <aside class="payment-summary">
           <h2>{{ order.items[0]?.snapshot?.title || 'Lvyv journey' }}</h2><div class="summary-divider" /><h3>Price details</h3>
           <dl><div><dt>Prepay online</dt><dd>{{ order.order.currency }} {{ formatMoney(order.originalPayableAmount ?? order.order.subtotal) }}</dd></div></dl>
+          <p v-if="order.order.firstOrderBenefitName" class="sdk-message">
+            {{ Number(order.order.firstOrderDiscountAmount || 0) > 0 ? 'Automatic first-order offer' : 'First-order coupon' }}:
+            {{ order.order.firstOrderBenefitName }} (included in total)
+          </p>
+          <p v-if="order.order.expireTime" class="sdk-message">Pay before {{ new Date(order.order.expireTime).toLocaleString('en-US', { timeZone: 'UTC', timeZoneName: 'short' }) }}</p>
           <div class="summary-divider" /><div class="total"><strong>Total</strong><strong>{{ order.order.currency }} {{ formatMoney(order.order.totalAmount) }}</strong></div>
         </aside>
       </section>

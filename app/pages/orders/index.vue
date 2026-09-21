@@ -215,11 +215,13 @@
             </div>
             <div>
               <dt>Promotion discount</dt>
-              <dd>- {{ formatMoney(selectedOrder.order.promotionDiscountAmount, selectedOrder.order.currency) }}</dd>
+              <dd>- {{ formatMoney(Number(selectedOrder.order.promotionDiscountAmount) - Number(selectedOrder.order.firstOrderDiscountAmount || 0), selectedOrder.order.currency) }}</dd>
             </div>
             <div>
-              <dt>Coupon discount</dt>
+              <dt>{{ selectedOrder.order.firstOrderBenefitName && !Number(selectedOrder.order.firstOrderDiscountAmount || 0) ? 'First-order coupon' : 'Coupon discount' }}</dt>
               <dd>- {{ formatMoney(selectedOrder.order.couponDiscountAmount, selectedOrder.order.currency) }}</dd>
+              <dt v-if="Number(selectedOrder.order.firstOrderDiscountAmount || 0) > 0">First order offer</dt>
+              <dd v-if="Number(selectedOrder.order.firstOrderDiscountAmount || 0) > 0">- {{ formatMoney(selectedOrder.order.firstOrderDiscountAmount || 0, selectedOrder.order.currency) }}</dd>
             </div>
             <div>
               <dt>Points applied</dt>
