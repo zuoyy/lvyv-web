@@ -35,11 +35,12 @@
 
 <script setup lang="ts">
 import CheckoutHeader from '~/components/checkout/CheckoutHeader.vue'
+import { cardPaymentFailureMessage } from '~/utils/paymentMessages'
 import type { OrderView, PaymentChannel, PaymentView } from '~/composables/useTourCommerce'
 definePageMeta({ layout: false, middleware: 'member-auth' }); useNoIndex(); useHead({ htmlAttrs: { style: 'background-color: #203d33;' }, bodyAttrs: { style: 'background-color: #203d33; margin: 0; padding: 0;' } })
 const route = useRoute(); const commerce = useTourCommerce(); const auth = useMemberAuth()
 const order = ref<OrderView>(); const session = ref<PaymentView['session']>(); const paymentNo = ref(''); const paymentExpireAt = ref<number | null>(null); const now = ref(Date.now()); const loading = ref(true); const submitting = ref(false); const error = ref(''); const sdkMessage = ref(''); let timer: ReturnType<typeof setInterval> | undefined; let deadlineTimer: ReturnType<typeof setInterval> | undefined
-const cardBrands = [{ name: 'Visa', src: '/images/payment/visa.png' }, { name: 'Mastercard', src: '/images/payment/mastercard.png' }, { name: 'JCB', src: '/images/payment/jcb.png' }, { name: 'American Express', src: '/images/payment/american-express.png' }, { name: 'Maestro', src: '/images/payment/maestro.png' }, { name: 'Diners Club', src: '/images/payment/diners-club.png' }, { name: 'Discover', src: '/images/payment/discover.png' }]
+const cardBrands = [{ name: 'Visa', src: '/images/payment/visa.png' }, { name: 'Mastercard', src: '/images/payment/mastercard.png' }, { name: 'Maestro', src: '/images/payment/maestro.png' }, { name: 'Discover', src: '/images/payment/discover.png' }, { name: 'Diners Club', src: '/images/payment/diners-club.png' }]
 const paymentDeadline = computed(() => {
   if (!paymentExpireAt.value) return ''
   const remaining = Math.max(0, paymentExpireAt.value - now.value)
@@ -206,7 +207,7 @@ onMounted(() => {
   deadlineTimer = setInterval(() => { now.value = Date.now() }, 1000)
   ;(window as any).oceanpaymentCallBack = async (data: any) => {
     if (typeof data === 'object' && data?.msg) {
-      sdkMessage.value = data.msg
+      sdkMessage.value = cardPaymentFailureMessage(data.code, data.msg) || ''
       submitting.value = false
       return
     }
