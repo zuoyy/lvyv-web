@@ -449,7 +449,8 @@ const calendarDayClass = (day: number) => {
   return {
     'range-start': key === departureDate.value,
     'range-end': key === endDate.value,
-    'in-range': key > departureDate.value && key < endDate.value
+    'in-range': key > departureDate.value && key < endDate.value,
+    'single-day': key === departureDate.value && key === endDate.value
   }
 }
 
@@ -914,6 +915,13 @@ onBeforeUnmount(() => {
 .calendar__days button.range-start.range-end { background: transparent; }
 .calendar__days button.range-start,
 .calendar__days button.range-end { color: #fff; font-weight: 700; }
+.calendar__days button.single-day {
+  border-radius: 50%;
+  background: #3a654f;
+  color: #fff;
+  font-weight: 700;
+}
+.calendar__days button.single-day::after { display: none; }
 .calendar__days button.range-start::after,
 .calendar__days button.range-end::after {
   position: absolute;
