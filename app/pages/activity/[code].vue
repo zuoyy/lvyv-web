@@ -70,6 +70,7 @@
               v-for="(page, pageIdx) in recommendPages"
               :key="pageIdx"
               class="recommend-grid-page"
+              :class="{ 'recommend-grid-page--incomplete': page.length < 3 }"
             >
               <NuxtLink
                 v-for="item in page"
@@ -664,6 +665,17 @@ const showToast = (msg: string) => {
   box-sizing: border-box;
 }
 
+/* 末页不足一行时保持卡片宽度，并将卡片整体居中，避免贴在左侧造成布局断裂。 */
+.recommend-grid-page--incomplete {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.recommend-grid-page--incomplete .recommend-card {
+  flex: 0 0 calc((100% - 20px) / 3);
+}
+
 .recommend-card {
   display: flex;
   flex-direction: column;
@@ -898,6 +910,12 @@ const showToast = (msg: string) => {
   }
   .recommend-grid-page {
     gap: 8px 6px;
+  }
+  .recommend-grid-page--incomplete {
+    gap: 6px;
+  }
+  .recommend-grid-page--incomplete .recommend-card {
+    flex-basis: calc((100% - 12px) / 3);
   }
   .recommend-card-title {
     font-size: 11px;
