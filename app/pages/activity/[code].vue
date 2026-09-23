@@ -662,6 +662,7 @@ const showToast = (msg: string) => {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px 10px;
+  align-items: start;
   box-sizing: border-box;
 }
 
@@ -669,6 +670,7 @@ const showToast = (msg: string) => {
 .recommend-grid-page--incomplete {
   display: flex;
   justify-content: center;
+  align-items: flex-start;
   gap: 10px;
 }
 
@@ -736,7 +738,7 @@ const showToast = (msg: string) => {
   padding: 8px 6px 10px;
   display: flex;
   align-items: center;
-  flex: 1;
+  flex: 0 0 auto;
 }
 
 .recommend-card-title {
