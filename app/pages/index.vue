@@ -322,7 +322,7 @@
             <a href="https://www.instagram.com/lvyvofficial" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><font-awesome-icon :icon="['fab', 'instagram']" aria-hidden="true" /></a>
             <a href="https://x.com/lvyvofficial" target="_blank" rel="noopener noreferrer" aria-label="X"><font-awesome-icon :icon="['fab', 'twitter']" aria-hidden="true" /></a>
             <a href="https://www.tiktok.com/@lvyvofficial" target="_blank" rel="noopener noreferrer" aria-label="TikTok"><font-awesome-icon :icon="['fab', 'tiktok']" aria-hidden="true" /></a>
-            <a href="https://www.reddit.com/user/LvyvOfficial/" target="_blank" rel="noopener noreferrer" aria-label="Reddit"><font-awesome-icon :icon="['fab', 'reddit']" aria-hidden="true" /></a>
+            <a href="https://www.reddit.com/r/lvyvchina" target="_blank" rel="noopener noreferrer" aria-label="Reddit"><font-awesome-icon :icon="['fab', 'reddit']" aria-hidden="true" /></a>
           </div>
         </div>
       </div>
