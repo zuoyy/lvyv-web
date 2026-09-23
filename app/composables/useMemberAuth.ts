@@ -50,7 +50,12 @@ export const useMemberAuth = () => {
   let pending = accountRequests.get(app)
   if (!pending) { pending = new Map(); accountRequests.set(app, pending) }
   const requests = pending
-  const token = useCookie<string | null>('token', { sameSite: 'lax', secure: import.meta.env.PROD })
+  // 支付流程会从登录页回到结算页，必须让新会话在整个站点路径和支付返回页都可用。
+  const token = useCookie<string | null>('token', {
+    path: '/',
+    sameSite: 'lax',
+    secure: import.meta.env.PROD
+  })
   const member = useState<MemberProfile | null>('member-profile', () => null)
   const profileError = useState('member-profile-error', () => '')
 

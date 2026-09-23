@@ -182,7 +182,12 @@ const submit = async () => {
     saveRememberedInfo()
     const requestedRedirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
     const redirect = requestedRedirect.startsWith('/') && !requestedRedirect.startsWith('//') ? requestedRedirect : '/'
-    await navigateTo(redirect)
+    // 登录后重新加载目标页，让根路径 Cookie 在支付页/支付结果页的 SSR 请求中立即可见。
+    if (import.meta.client) {
+      window.location.replace(redirect)
+      return
+    }
+    await navigateTo(redirect, { replace: true })
   } catch (caught) {
     if (caught instanceof ApiRequestError && caught.code === 1_003_000_006) {
       await navigateTo(`/register/?verify=${encodeURIComponent(email.value)}`)
