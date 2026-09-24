@@ -99,8 +99,8 @@
             <div
               v-show="hasApplePay"
               class="wallet-btn-container"
-              :class="{ 'is-loading': applePayLoading, 'is-processing': walletProcessingChannel === 'APPLE_PAY' }"
-              @pointerdown="handleWalletPointerDown('APPLE_PAY')"
+              :class="{ 'is-loading': applePayLoading, 'is-processing': walletProcessingChannel === 'APPLE_PAY', 'is-blocked': walletProcessingChannel === 'GOOGLE_PAY' || submitting || locked }"
+              :aria-busy="walletProcessingChannel === 'APPLE_PAY'"
             >
               <div v-if="applePayLoading" class="wallet-skeleton" aria-hidden="true" />
               <div id="oceanpayment-applepayelement" class="wallet-element-slot" />
@@ -113,8 +113,8 @@
             <div
               v-show="hasGooglePay"
               class="wallet-btn-container"
-              :class="{ 'is-loading': googlePayLoading, 'is-processing': walletProcessingChannel === 'GOOGLE_PAY' }"
-              @pointerdown="handleWalletPointerDown('GOOGLE_PAY')"
+              :class="{ 'is-loading': googlePayLoading, 'is-processing': walletProcessingChannel === 'GOOGLE_PAY', 'is-blocked': walletProcessingChannel === 'APPLE_PAY' || submitting || locked }"
+              :aria-busy="walletProcessingChannel === 'GOOGLE_PAY'"
             >
               <div v-if="googlePayLoading" class="wallet-skeleton" aria-hidden="true" />
               <div id="oceanpayment-googlepayelement" class="wallet-element-slot" />
@@ -131,7 +131,7 @@
             <button
               type="button"
               class="place-order-button"
-              :disabled="submitting || preparing || resetting || locked || !sdkReady || paymentExpired"
+              :disabled="Boolean(walletProcessingChannel) || submitting || preparing || resetting || locked || !sdkReady || paymentExpired"
               @click="submitOrder"
             >
               {{ paymentExpired ? 'Payment expired' : submitting ? 'Processing...' : 'Place order' }}
@@ -172,7 +172,7 @@
     <!-- 快捷支付处理中全屏加载遮罩 -->
     <Teleport to="body">
       <Transition name="fade-overlay">
-        <div v-if="walletOverlayVisible" class="wallet-processing-overlay" role="dialog" aria-modal="true">
+        <div v-if="walletOverlayVisible" class="wallet-processing-overlay" role="status" aria-live="polite">
           <div class="wallet-processing-modal">
             <div class="processing-spinner-box">
               <span class="processing-spinner" />
@@ -184,11 +184,12 @@
               Please complete authorization in the payment window.
             </p>
             <button
+              v-if="walletActivationConfirmed"
               type="button"
               class="processing-cancel-btn"
               @click="cancelWalletProcessing"
             >
-              Cancel
+              Hide
             </button>
           </div>
         </div>
@@ -200,6 +201,7 @@
 import CheckoutHeader from '~/components/checkout/CheckoutHeader.vue'
 import { cardPaymentFailureMessage } from '~/utils/paymentMessages'
 import { embeddedAdapters, embeddedEvent, trustedSdkUrl, type EmbeddedChannel } from '~/utils/oceanpaymentEmbedded'
+import { observeWalletInteraction } from '~/utils/walletInteraction'
 import type { OrderView, PaymentView, PaymentChannelView, PaymentChannel, PaymentOptionsView } from '~/composables/useTourCommerce'
 
 definePageMeta({ middleware: 'member-auth', layout: false })
@@ -250,19 +252,17 @@ const googlePayLoading = ref(false)
 // 快捷钱包按钮点击交互与页面级加载浮层状态
 const walletProcessingChannel = ref<'APPLE_PAY' | 'GOOGLE_PAY' | null>(null)
 const walletOverlayVisible = ref(false)
-let walletOverlayTimer: ReturnType<typeof setTimeout> | undefined
+const walletActivationConfirmed = ref(false)
+let stopWalletInteraction: (() => void) | undefined
 let walletTimeoutTimer: ReturnType<typeof setTimeout> | undefined
 
-function handleWalletPointerDown(channel: 'APPLE_PAY' | 'GOOGLE_PAY') {
-  if (walletProcessingChannel.value || submitting.value || preparing.value || paymentExpired.value) return
+function startWalletProcessing(channel: 'APPLE_PAY' | 'GOOGLE_PAY', confirmed = false) {
+  if (walletProcessingChannel.value && walletProcessingChannel.value !== channel) return
+  if (submitting.value || resetting.value || locked.value || paymentExpired.value || orderUnavailable.value) return
+  if (!(channel === 'APPLE_PAY' ? hasApplePay.value : hasGooglePay.value)) return
   walletProcessingChannel.value = channel
-  if (walletOverlayTimer) clearTimeout(walletOverlayTimer)
-  // 150ms 延迟淡入页面级加载遮罩，确保用户手势在无遮挡状态下完整进入 iframe 激活 Apple/Google Pay 官方授权窗
-  walletOverlayTimer = setTimeout(() => {
-    if (walletProcessingChannel.value) {
-      walletOverlayVisible.value = true
-    }
-  }, 150)
+  walletActivationConfirmed.value ||= confirmed
+  walletOverlayVisible.value = true
 
   // 45 秒兜底超时自动重置
   if (walletTimeoutTimer) clearTimeout(walletTimeoutTimer)
@@ -272,11 +272,15 @@ function handleWalletPointerDown(channel: 'APPLE_PAY' | 'GOOGLE_PAY') {
 }
 
 function cancelWalletProcessing() {
+  const channel = walletProcessingChannel.value
   walletProcessingChannel.value = null
   walletOverlayVisible.value = false
-  if (walletOverlayTimer) {
-    clearTimeout(walletOverlayTimer)
-    walletOverlayTimer = undefined
+  walletActivationConfirmed.value = false
+  // 钱包取消后 iframe 可能仍持有焦点；释放它以便再次点击也能立即触发连接提示。
+  if (channel && typeof document !== 'undefined') {
+    const id = channel === 'APPLE_PAY' ? 'oceanpayment-iframe-applepay' : 'oceanpayment-iframe-googlepay'
+    const frame = document.getElementById(id)
+    if (frame && document.activeElement === frame) frame.blur()
   }
   if (walletTimeoutTimer) {
     clearTimeout(walletTimeoutTimer)
@@ -411,6 +415,8 @@ async function callback(channel: EmbeddedChannel, data: unknown) {
     } else {
       if (channel === 'GOOGLE_PAY') hasGooglePay.value = true
       if (channel === 'APPLE_PAY') hasApplePay.value = true
+      // 钱包 code=2 是请求开始付款的回调，也覆盖焦点未变化时的重复点击。
+      startWalletProcessing(channel, true)
     }
     return
   }
@@ -437,6 +443,7 @@ async function callback(channel: EmbeddedChannel, data: unknown) {
     return
   }
   if (event.kind !== 'result' || event.fields.order_number !== paymentNo.value) return
+  cancelWalletProcessing()
   cardCheckoutPending = false
   locked.value = true
   submitting.value = true
@@ -605,7 +612,7 @@ async function selectChannel(channel: PaymentChannel, channelOpt?: PaymentOption
 }
 
 async function submit() {
-  if (!session.value || submitting.value || preparing.value || resetting.value || locked.value || !sdkReady.value || paymentExpired.value || orderUnavailable.value) return
+  if (!session.value || (selected.value === 'CREDIT_CARD' && walletProcessingChannel.value) || submitting.value || preparing.value || resetting.value || locked.value || !sdkReady.value || paymentExpired.value || orderUnavailable.value) return
   submitting.value = true
   locked.value = true
   sdkMessage.value = ''
@@ -698,7 +705,7 @@ async function resetEmbeddedSession() {
 }
 
 function submitOrder() {
-  if (submitting.value || preparing.value || resetting.value || locked.value) return
+  if (walletProcessingChannel.value || submitting.value || preparing.value || resetting.value || locked.value) return
   if (selected.value !== 'CREDIT_CARD') {
     selectChannel('CREDIT_CARD').then(() => submit())
   } else {
@@ -839,6 +846,9 @@ async function load() {
 
 onMounted(() => {
   window.history.replaceState(window.history.state, '', `/orders/${encodeURIComponent(String(route.params.orderNo))}/pay`)
+  stopWalletInteraction = observeWalletInteraction(window, channel => startWalletProcessing(channel), () => {
+    if (!walletActivationConfirmed.value) cancelWalletProcessing()
+  })
   deadlineTimer = setInterval(() => { now.value = Date.now() }, 1000)
   for (const channel of Object.keys(embeddedAdapters) as EmbeddedChannel[]) {
     ;(window as unknown as Record<string, unknown>)[embeddedAdapters[channel].callback] = (data: unknown) => void callback(channel, data)
@@ -851,7 +861,7 @@ onBeforeUnmount(() => {
   if (pollTimer) clearInterval(pollTimer)
   if (deadlineTimer) clearInterval(deadlineTimer)
   if (readyTimer) clearTimeout(readyTimer)
-  if (walletOverlayTimer) clearTimeout(walletOverlayTimer)
+  stopWalletInteraction?.()
   if (walletTimeoutTimer) clearTimeout(walletTimeoutTimer)
   for (const adapter of Object.values(embeddedAdapters)) {
     ;(window as unknown as Record<string, unknown>)[adapter.callback] = () => {}
@@ -1196,6 +1206,10 @@ onBeforeUnmount(() => {
   opacity: 0.9;
 }
 
+.wallet-btn-container.is-blocked {
+  pointer-events: none;
+}
+
 .wallet-btn-loading-overlay {
   position: absolute;
   inset: 0;
@@ -1451,6 +1465,8 @@ onBeforeUnmount(() => {
 
 /* 快捷支付/订单提交页面级加载遮罩与弹窗 */
 .wallet-processing-overlay {
+  /* 焦点在 pointerdown 时进入 iframe，反馈不能截断随后 pointerup/click 的原生用户手势。 */
+  pointer-events: none;
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 20, 0.58);
@@ -1523,6 +1539,7 @@ onBeforeUnmount(() => {
 }
 
 .processing-cancel-btn {
+  pointer-events: auto;
   padding: 8px 24px;
   border-radius: 999px;
   border: 1px solid #d5ded9;

@@ -10,7 +10,7 @@ import * as messages from '../app/utils/paymentMessages.ts'
 const source = readFileSync(new URL('../app/pages/orders/[orderNo]/pay.vue', import.meta.url), 'utf8')
   .match(/<script setup lang="ts">([\s\S]*?)<\/script>/)[1]
 const compiled = ts.transpileModule(source +
-  '\nObject.assign(exports, { load, submit, selectChannel, selected, session, locked, paymentExpired, orderUnavailable, now, error, callback, sdkMessage, sdkReady, resetting, submitting, resetEmbeddedSession });', {
+  '\nObject.assign(exports, { load, submit, selectChannel, selected, session, locked, paymentExpired, orderUnavailable, now, error, callback, sdkMessage, sdkReady, resetting, submitting, resetEmbeddedSession, startWalletProcessing, cancelWalletProcessing, walletProcessingChannel, walletOverlayVisible, walletActivationConfirmed, hasApplePay, hasGooglePay });', {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText
 
@@ -194,4 +194,39 @@ test('校验失败后的新占位请求出错时允许重试，不清空卡片�
   assert.equal(page.sdkMessage.value, 'Unable to prepare payment. Please try again.')
   assert.equal(page.calls.filter(([name]) => name === 'init').length, 1)
   assert.equal(page.calls.filter(([name]) => name === 'issue').length, 1)
+})
+
+
+test('钱包焦点触发立即展示反馈，同时阻止信用卡重复提交', async () => {
+  for (const channel of ['APPLE_PAY', 'GOOGLE_PAY']) {
+    const page = setup()
+    await page.open()
+    page.hasApplePay.value = true
+    page.hasGooglePay.value = true
+    page.startWalletProcessing(channel)
+    assert.equal(page.walletProcessingChannel.value, channel)
+    assert.equal(page.walletOverlayVisible.value, true)
+    assert.equal(page.walletActivationConfirmed.value, false)
+    await page.submit()
+    assert.equal(page.calls.some(([name]) => name === 'issue'), false)
+    page.cancelWalletProcessing()
+    assert.equal(page.walletOverlayVisible.value, false)
+    assert.equal(page.walletProcessingChannel.value, null)
+  }
+})
+
+test('钱包 SDK 激活回调补充焦点反馈，取消或错误回调结束加载', async () => {
+  for (const channel of ['APPLE_PAY', 'GOOGLE_PAY']) {
+    const page = setup()
+    await page.open()
+    await page.callback(channel, { code: 2, msg: '' })
+    assert.equal(page.walletOverlayVisible.value, true)
+    assert.equal(page.walletActivationConfirmed.value, true)
+    await page.callback(channel, { code: 3, msg: '' })
+    assert.equal(page.walletOverlayVisible.value, false)
+    await page.callback(channel, { code: 2, msg: '' })
+    await page.callback(channel, { code: -1, msg: 'Wallet unavailable' })
+    assert.equal(page.walletOverlayVisible.value, false)
+    assert.equal(page.walletProcessingChannel.value, null)
+  }
 })
