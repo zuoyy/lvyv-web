@@ -546,7 +546,7 @@ function initWallets(optionChannels: PaymentOptionsView['channels'], availableCh
           type: 'buy',
           buttonHeight: 44,
           buttonRadius: 8,
-          buttonPaddingY: 9,
+          buttonPaddingY: 12,
           buttonPaddingX: 20
         }
         sdk.init(appleOpt.sandbox ? true : '', config)
@@ -1030,7 +1030,7 @@ onBeforeUnmount(() => {
   --apple-pay-button-width: 100% !important;
   --apple-pay-button-height: 44px !important;
   --apple-pay-button-border-radius: 8px !important;
-  --apple-pay-button-padding: 9px 20px !important;
+  --apple-pay-button-padding: 12px 20px !important;
   --apple-pay-button-box-sizing: border-box !important;
   width: 100% !important;
   height: 44px !important;
