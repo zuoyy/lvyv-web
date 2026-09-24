@@ -1,4 +1,9 @@
 export type EmbeddedChannel = 'CREDIT_CARD' | 'GOOGLE_PAY' | 'APPLE_PAY'
+
+/** 支付 SDK 通过 postMessage 传参；深拷贝 API 的 JSON 数据，避免 Vue Proxy 触发 DataCloneError。 */
+export function paymentSdkData<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T
+}
 export const embeddedAdapters = {
   CREDIT_CARD: { global: 'Oceanpayment', callback: 'oceanpaymentCallBack', container: 'oceanpayment-element', script: 'oceanpayment.js' },
   GOOGLE_PAY: { global: 'onePageGooglePay', callback: 'oceanpaymentGooglePayCallBack', container: 'oceanpayment-googlepayelement', script: 'oceanpayment-googlepay.js' },

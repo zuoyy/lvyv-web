@@ -10,11 +10,11 @@ import * as messages from '../app/utils/paymentMessages.ts'
 const source = readFileSync(new URL('../app/pages/orders/[orderNo]/pay.vue', import.meta.url), 'utf8')
   .match(/<script setup lang="ts">([\s\S]*?)<\/script>/)[1]
 const compiled = ts.transpileModule(source +
-  '\nObject.assign(exports, { load, submit, selectChannel, selected, session, locked, paymentExpired, orderUnavailable, now, error, callback, sdkMessage, sdkReady, resetting, submitting, resetEmbeddedSession, startWalletProcessing, cancelWalletProcessing, walletProcessingChannel, walletOverlayVisible, walletActivationConfirmed, hasApplePay, hasGooglePay });', {
+  '\nObject.assign(exports, { load, submit, selectChannel, selected, session, locked, paymentExpired, orderUnavailable, now, error, callback, sdkMessage, sdkReady, resetting, submitting, resetEmbeddedSession, startWalletProcessing, cancelWalletProcessing, walletProcessingChannel, walletOverlayVisible, walletActivationConfirmed, hasApplePay, hasGooglePay, initWallets });', {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText
 
-function setup({ status = 'PENDING_PAYMENT', expired = false, existing = null, attemptExpired = false, abortStatus = 'FAILED', abortThrows = false, autoReady = true, renewalThrows = false } = {}) {
+function setup({ status = 'PENDING_PAYMENT', expired = false, existing = null, attemptExpired = false, abortStatus = 'FAILED', abortThrows = false, autoReady = true, renewalThrows = false, checkoutError = null } = {}) {
   const exports = {}, calls = [], redirects = []
   const href = 'https://www.lvyv.com/orders/ORD_TEST/pay'
   const deadline = new Date(Date.now() + (expired ? -60_000 : 60_000)).toISOString()
@@ -23,10 +23,10 @@ function setup({ status = 'PENDING_PAYMENT', expired = false, existing = null, a
     session: { sdkUrl: `https://test-secure.oceanpayment.com/pages/js/${channel === 'CREDIT_CARD' ? 'oceanpayment.js' : 'oceanpayment-googlepay.js'}`,
       sandbox: true, fields: {}, initConfig: { backUrl: href } } })
   const sdk = {
-    init: (...args) => { calls.push(['init', ...args]); if (autoReady) queueMicrotask(() => exports.callback('CREDIT_CARD', { code: 1, msg: '' })) },
-    checkout: () => calls.push(['checkout']),
+    init: (...args) => { structuredClone(args); calls.push(['init', ...args]); if (autoReady) queueMicrotask(() => exports.callback('CREDIT_CARD', { code: 1, msg: '' })) },
+    checkout: fields => { structuredClone(fields); if (checkoutError) throw checkoutError; calls.push(['checkout']) },
   }
-  const window = { location: { href }, matchMedia: () => ({ matches: false }) }
+  const window = { location: { href, origin: 'https://www.lvyv.com' }, isSecureContext: true, ApplePaySession: {}, matchMedia: () => ({ matches: false }) }
   for (const adapter of Object.values(embedded.embeddedAdapters)) window[adapter.global] = sdk
   runInNewContext(compiled, {
     exports, ref, computed, nextTick, Error, URL,
@@ -229,4 +229,42 @@ test('钱包 SDK 激活回调补充焦点反馈，取消或错误回调结束加
     assert.equal(page.walletOverlayVisible.value, false)
     assert.equal(page.walletProcessingChannel.value, null)
   }
+})
+
+
+test('钱包初始化的嵌套响应式配置能够通过 postMessage 结构化克隆', async () => {
+  const page = setup()
+  await page.open()
+  const options = ref(['APPLE_PAY', 'GOOGLE_PAY'].map(channel => ({
+    channel, sandbox: true,
+    sdkUrl: `https://test-secure.oceanpayment.com/pages/js/oceanpayment-${channel === 'APPLE_PAY' ? 'applepay' : 'googlepay'}.js`,
+    initConfig: { transactionInfo: { orderCurrency: 'USD', orderAmount: '1.00' }, buttonStyle: { buttonRadius: 8 } },
+  })))
+  const before = page.calls.filter(([name]) => name === 'init').length
+  page.initWallets(options.value, options.value.map(({channel}) => ({channel, enabled: true})))
+  for (let i = 0; i < 20; i++) await Promise.resolve()
+  assert.equal(page.calls.filter(([name]) => name === 'init').length, before + 2)
+  assert.equal(page.hasApplePay.value, true)
+  assert.equal(page.hasGooglePay.value, true)
+})
+
+test('本地 DataCloneError 尚未送达 iframe，释放占位后保留可编辑表单', async () => {
+  const page = setup({checkoutError: new DOMException('Not cloneable', 'DataCloneError')})
+  await page.open()
+  await page.submit()
+  assert.equal(page.calls.filter(([name]) => name === 'abort').length, 1)
+  assert.equal(page.calls.filter(([name]) => name === 'checkout').length, 0)
+  assert.equal(page.locked.value, false)
+  assert.equal(page.submitting.value, false)
+  assert.ok(page.session.value)
+  assert.match(page.sdkMessage.value, /could not receive/)
+})
+
+test('其他 SDK 异常不能被假定为未提交，不自动释放未知支付', async () => {
+  const page = setup({checkoutError: new Error('SDK error')})
+  await page.open()
+  await page.submit()
+  assert.equal(page.calls.filter(([name]) => name === 'abort').length, 0)
+  assert.equal(page.locked.value, true)
+  assert.match(page.sdkMessage.value, /Confirming/)
 })

@@ -200,7 +200,7 @@
 <script setup lang="ts">
 import CheckoutHeader from '~/components/checkout/CheckoutHeader.vue'
 import { cardPaymentFailureMessage } from '~/utils/paymentMessages'
-import { embeddedAdapters, embeddedEvent, trustedSdkUrl, type EmbeddedChannel } from '~/utils/oceanpaymentEmbedded'
+import { embeddedAdapters, embeddedEvent, trustedSdkUrl, paymentSdkData, type EmbeddedChannel } from '~/utils/oceanpaymentEmbedded'
 import { observeWalletInteraction } from '~/utils/walletInteraction'
 import type { OrderView, PaymentView, PaymentChannelView, PaymentChannel, PaymentOptionsView } from '~/composables/useTourCommerce'
 
@@ -603,7 +603,7 @@ async function selectChannel(channel: PaymentChannel, channelOpt?: PaymentOption
           buttonRadius: 8
         }
       }
-      sdk.init(sandbox, config)
+      sdk.init(sandbox, paymentSdkData(config))
     }
   } catch (e) {
     preparing.value = false
@@ -613,6 +613,11 @@ async function selectChannel(channel: PaymentChannel, channelOpt?: PaymentOption
 
 async function submit() {
   if (!session.value || (selected.value === 'CREDIT_CARD' && walletProcessingChannel.value) || submitting.value || preparing.value || resetting.value || locked.value || !sdkReady.value || paymentExpired.value || orderUnavailable.value) return
+  const sdk = getSdk(selected.value)
+  if (!sdk) {
+    sdkMessage.value = 'The secure payment form is unavailable. Please reload the page to try again.'
+    return
+  }
   submitting.value = true
   locked.value = true
   sdkMessage.value = ''
@@ -660,14 +665,19 @@ async function submit() {
         if (err instanceof Error && err.message === 'Payment page address mismatch') throw err
       }
     }
-    const sdk = getSdk(selected.value)
-    if (!sdk) throw new Error('Payment SDK unavailable')
     cardCheckoutPending = selected.value === 'CREDIT_CARD'
-    sdk.checkout(signedFields.value)
+    sdk.checkout(paymentSdkData(signedFields.value))
     walletArmed.value = selected.value !== 'CREDIT_CARD'
     startPolling()
-  } catch {
+  } catch (caught) {
     cardCheckoutPending = false
+    // 结构化克隆失败发生在浏览器发送消息之前，不能把这类本地失败当成渠道结果未知。
+    if (selected.value === 'CREDIT_CARD' && caught && typeof caught === 'object'
+      && 'name' in caught && caught.name === 'DataCloneError') {
+      sdkMessage.value = 'The secure card form could not receive your payment request. Please try again.'
+      await recoverAfterCardValidationFailure()
+      return
+    }
     session.value = undefined
     sdkMessage.value = 'Confirming your payment status. Please do not start another payment.'
     startPolling()
@@ -750,7 +760,7 @@ function initWallets(optionChannels: PaymentOptionsView['channels'], availableCh
           buttonHeight: 44,
           buttonRadius: 8
         }
-        sdk.init(googleOpt.sandbox ? true : '', config)
+        sdk.init(googleOpt.sandbox ? true : '', paymentSdkData(config))
       })
       .catch(() => {
         hasGooglePay.value = false
@@ -773,7 +783,7 @@ function initWallets(optionChannels: PaymentOptionsView['channels'], availableCh
         if (!container) return
         const config = { ...(appleOpt.initConfig || {}) } as Record<string, unknown>
         configureApplePayButton(config)
-        sdk.init(appleOpt.sandbox ? true : '', config)
+        sdk.init(appleOpt.sandbox ? true : '', paymentSdkData(config))
       })
       .catch(() => {
         hasApplePay.value = false
