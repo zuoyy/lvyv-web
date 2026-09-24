@@ -6,6 +6,7 @@
     <div class="payment-page">
       <div v-if="loading" class="payment-state">Loading payment details...</div>
       <div v-else-if="error" class="payment-state error"><p>{{ error }}</p><button type="button" @click="load">Try again</button></div>
+      <div v-else-if="orderUnavailable" class="payment-state"><p>{{ orderUnavailable }}</p><NuxtLink to="/orders">Back to orders</NuxtLink></div>
       <section v-else-if="order" class="payment-layout">
         <main class="payment-main">
           <section class="payment-card">
@@ -26,6 +27,7 @@
           </section>
           <section class="payment-action-card">
             <button v-if="!walletArmed && session" class="pay-button" type="button" :disabled="submitting || preparing || !sdkReady || paymentExpired" @click="submit">{{ paymentExpired ? 'Payment expired' : submitting ? 'Processing...' : selected==='CREDIT_CARD' ? 'Pay now' : `Continue with ${channelName}` }}</button>
+            <button v-if="paymentExpired && !locked" type="button" :disabled="preparing" @click="selectChannel(selected)">Reload payment form</button>
             <p v-if="locked" role="status">{{ walletArmed ? `Use the ${channelName} button above to complete your payment.` : 'We are confirming your payment status. Please keep this page open.' }}</p>
             <NuxtLink v-if="paymentNo" :to="`/payment/result?paymentNo=${encodeURIComponent(paymentNo)}`">View payment status</NuxtLink>
           </section>
@@ -75,6 +77,19 @@ const signedFields = ref<Record<string, string>>()
 const channelName = computed(() => ({ CREDIT_CARD: 'Credit card', GOOGLE_PAY: 'Google Pay', APPLE_PAY: 'Apple Pay' }[selected.value]))
 const cardBrands = [{ name: 'Visa', src: '/images/payment/visa.png' }, { name: 'Mastercard', src: '/images/payment/mastercard.png' }, { name: 'Maestro', src: '/images/payment/maestro.png' }, { name: 'Discover', src: '/images/payment/discover.png' }, { name: 'Diners Club', src: '/images/payment/diners-club.png' }]
 const paymentExpired = computed(() => paymentExpireAt.value !== null && paymentExpireAt.value <= now.value)
+const orderExpiresAt = computed(() => {
+  const current = order.value?.order
+  if (current?.expireTime) return Date.parse(current.expireTime)
+  return current?.createTime ? Date.parse(current.createTime) + 24 * 60 * 60 * 1000 : NaN
+})
+const orderUnavailable = computed(() => {
+  const current = order.value?.order
+  if (!current) return ''
+  if (current.status === 'CANCELLED') return 'This order is closed. Please create a new booking to continue.'
+  if (current.status !== 'PENDING_PAYMENT') return 'This order is no longer awaiting payment.'
+  if (!locked.value && orderExpiresAt.value <= now.value) return 'The payment deadline has passed. This order can no longer be paid.'
+  return ''
+})
 const paymentDeadline = computed(() => {
   if (!paymentExpireAt.value) return ''
   const seconds = Math.max(0, Math.floor((paymentExpireAt.value - now.value) / 1000))
@@ -194,7 +209,7 @@ function startPolling() {
 }
 
 async function selectChannel(channel: PaymentChannel) {
-  if (!isEmbedded(channel) || locked.value || preparing.value || !order.value) return
+  if (!isEmbedded(channel) || locked.value || preparing.value || !order.value || orderUnavailable.value) return
   const currentGeneration = ++generation
   preparing.value = true
   sdkReady.value = false
@@ -208,7 +223,7 @@ async function selectChannel(channel: PaymentChannel) {
     const payment = await commerce.createPayment(order.value.order.orderNo, channel, clientType())
     if (disposed || generation !== currentGeneration) return
     paymentNo.value = payment.paymentNo
-    const deadlines = [order.value.order.expireTime, payment.expireTime].map(v => v ? Date.parse(v) : NaN).filter(Number.isFinite)
+    const deadlines = [orderExpiresAt.value, payment.expireTime ? Date.parse(payment.expireTime) : NaN].filter(Number.isFinite)
     paymentExpireAt.value = deadlines.length ? Math.min(...deadlines) : null
     if (isEmbedded(payment.channel)) selected.value = payment.channel
     if (payment.status === 'SUCCEEDED') { await navigateTo(`/payment/result?paymentNo=${encodeURIComponent(payment.paymentNo)}`); return }
@@ -246,7 +261,7 @@ async function selectChannel(channel: PaymentChannel) {
 }
 
 async function submit() {
-  if (!session.value || submitting.value || preparing.value || !sdkReady.value || paymentExpired.value) return
+  if (!session.value || submitting.value || preparing.value || !sdkReady.value || paymentExpired.value || orderUnavailable.value) return
   submitting.value = true
   locked.value = true
   sdkMessage.value = ''
@@ -282,7 +297,9 @@ async function load() {
       commerce.currentOrderPayment(String(route.params.orderNo))
     ])
     order.value = loadedOrder
+    now.value = Date.now()
     if (loadedOrder.order.status === 'COMPLETED') { await navigateTo('/trips'); return }
+    if (loadedOrder.order.status !== 'PENDING_PAYMENT') return
     channels.value = available.filter(item => item.enabled && isEmbedded(item.channel) && (item.channel !== 'APPLE_PAY' || (window.isSecureContext && 'ApplePaySession' in window)))
     if (existing && existing.status !== 'FAILED' && !existing.session) {
       paymentNo.value = existing.paymentNo
@@ -298,9 +315,11 @@ async function load() {
       startPolling()
       return
     }
+    if (orderUnavailable.value) return
     if (!channels.value.length) throw new Error('Payment is temporarily unavailable.')
     loading.value = false
-    const initial = channels.value.find(item => item.channel === 'CREDIT_CARD') || channels.value[0]!
+    const initial = channels.value.find(item => item.channel === existing?.channel)
+      || channels.value.find(item => item.channel === 'CREDIT_CARD') || channels.value[0]!
     await selectChannel(initial.channel)
   } catch (e) { error.value = e instanceof Error ? e.message : 'Unable to load payment details.' }
   finally { loading.value = false }
