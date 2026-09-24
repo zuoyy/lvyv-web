@@ -16,19 +16,14 @@
       <section v-else-if="order" class="payment-layout">
         <!-- 左侧区域：Contact info, Traveler details, Payment (Credit Card) -->
         <main class="payment-main">
-          <!-- Contact info 卡片 -->
+          <!-- Booking & Contact details 卡片（合并 Contact info 与 Traveler information） -->
           <section class="checkout-info-card">
-            <h2 class="section-title">Contact info</h2>
-            <div class="info-field-box">
-              <span class="field-label">Email address</span>
-              <span class="field-value">{{ contactEmail || 'Contact information from order' }}</span>
-            </div>
-          </section>
-
-          <!-- Traveler / Delivery 卡片 -->
-          <section class="checkout-info-card">
-            <h2 class="section-title">Traveler information</h2>
-            <div class="info-grid">
+            <h2 class="section-title">Booking & Contact details</h2>
+            <div class="info-grid" :class="{ 'has-departure': Boolean(tripDateText) }">
+              <div class="info-field-box">
+                <span class="field-label">Email address</span>
+                <span class="field-value">{{ contactEmail || 'Contact information from order' }}</span>
+              </div>
               <div class="info-field-box">
                 <span class="field-label">Traveler(s)</span>
                 <span class="field-value">{{ travelerCountText }}</span>
@@ -632,35 +627,45 @@ onBeforeUnmount(() => {
 }
 
 .checkout-info-card {
-  padding: 24px;
+  padding: 18px 24px;
 }
 
 .section-title {
-  margin: 0 0 16px;
-  font-size: 18px;
+  margin: 0 0 14px;
+  font-size: 16px;
   font-weight: 700;
   color: #112211;
-  line-height: 24px;
+  line-height: 22px;
 }
 
 .info-field-box {
   background: #f8faf8;
   border: 1px solid #e2e8e3;
   border-radius: 8px;
-  padding: 12px 16px;
+  padding: 10px 14px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .info-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
 }
 
+.info-grid.has-departure {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 820px) {
+  .info-grid.has-departure {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 .field-label {
-  font-size: 12px;
+  font-size: 11px;
   color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 0.04em;
