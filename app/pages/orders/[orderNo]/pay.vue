@@ -512,12 +512,11 @@ function initWallets(optionChannels: PaymentOptionsView['channels'], availableCh
         const container = await ensureContainer('oceanpayment-googlepayelement')
         if (!container) return
         const config = { ...(googleOpt.initConfig || {}) } as Record<string, unknown>
-        if (config.buttonStyle && typeof config.buttonStyle === 'object') {
-          config.buttonStyle = {
-            ...(config.buttonStyle as Record<string, unknown>),
-            buttonSizeMode: 'fill',
-            buttonRadius: 8
-          }
+        config.buttonStyle = {
+          ...(config.buttonStyle as Record<string, unknown> || {}),
+          buttonSizeMode: 'fill',
+          buttonHeight: 48,
+          buttonRadius: 8
         }
         sdk.init(googleOpt.sandbox ? true : '', config)
       })
@@ -540,7 +539,15 @@ function initWallets(optionChannels: PaymentOptionsView['channels'], availableCh
         if (disposed) return
         const container = await ensureContainer('oceanpayment-applepayelement')
         if (!container) return
-        sdk.init(appleOpt.sandbox ? true : '', appleOpt.initConfig)
+        const config = { ...(appleOpt.initConfig || {}) } as Record<string, unknown>
+        config.buttonStyle = {
+          ...(config.buttonStyle as Record<string, unknown> || {}),
+          buttonstyle: 'black',
+          type: 'buy',
+          buttonHeight: 48,
+          buttonRadius: 8
+        }
+        sdk.init(appleOpt.sandbox ? true : '', config)
       })
       .catch(() => {
         hasApplePay.value = false
@@ -597,14 +604,12 @@ async function load() {
     // 等待 DOM 更新，确保 payment-layout 及各支付挂载容器已存在于 DOM
     await nextTick()
 
-    const initial = channels.value.find(item => item.channel === existing?.channel)
-      || channels.value.find(item => item.channel === 'CREDIT_CARD') || channels.value[0]!
     const optionChannels = paymentOptions?.channels || []
-    const initialOpt = optionChannels.find(c => c.channel === initial.channel)
+    const ccOption = optionChannels.find(c => c.channel === 'CREDIT_CARD')
 
-    // 信用卡表单、Google Pay、Apple Pay 三路完全并行初始化
+    // 左侧固定挂载信用卡表单，右侧并行初始化快捷支付按钮
     void initWallets(optionChannels, available)
-    void selectChannel(initial.channel, initialOpt)
+    void selectChannel('CREDIT_CARD', ccOption)
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Unable to load payment details.'
   } finally {
@@ -679,7 +684,7 @@ onBeforeUnmount(() => {
   gap: 24px;
   width: min(1260px, calc(100% - 64px));
   margin: 0 auto;
-  align-items: stretch;
+  align-items: start;
 }
 
 .payment-main {
@@ -752,7 +757,6 @@ onBeforeUnmount(() => {
 .payment-element-card {
   padding: 24px;
   border: 1.5px solid #203d33;
-  flex: 1;
   display: flex;
   flex-direction: column;
 }
@@ -782,7 +786,6 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  flex: 1;
 }
 
 .credit-card-heading {
@@ -824,8 +827,7 @@ onBeforeUnmount(() => {
 
 .oceanpayment-element-wrapper {
   position: relative;
-  flex: 1;
-  min-height: 160px;
+  min-height: 140px;
 }
 
 .element-loading-state {
@@ -859,10 +861,10 @@ onBeforeUnmount(() => {
 }
 
 .oceanpayment-element {
-  min-height: 160px;
+  min-height: 140px;
   border: 1px solid #d1d9d4;
   border-radius: 8px;
-  padding: 16px;
+  padding: 12px;
   background: #fff;
 }
 
@@ -871,8 +873,6 @@ onBeforeUnmount(() => {
   padding: 28px 24px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  height: 100%;
   box-sizing: border-box;
 }
 
@@ -966,7 +966,7 @@ onBeforeUnmount(() => {
   border-radius: 8px;
   overflow: hidden;
   box-sizing: border-box;
-  background: #000;
+  background: transparent;
 }
 
 .wallet-skeleton {
@@ -991,6 +991,7 @@ onBeforeUnmount(() => {
   min-height: 48px;
   max-height: 48px;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 /* 统一 Apple Pay 与 Google Pay 挂载节点与内部渲染按钮高度 */
@@ -1002,6 +1003,8 @@ onBeforeUnmount(() => {
   max-height: 48px !important;
   display: block !important;
   box-sizing: border-box !important;
+  overflow: hidden !important;
+  background: transparent !important;
 }
 
 :deep(#oceanpayment-applepayelement > div),
@@ -1016,6 +1019,7 @@ onBeforeUnmount(() => {
   border-radius: 8px !important;
   box-sizing: border-box !important;
   display: block !important;
+  background: transparent !important;
 }
 
 /* Apple Pay 原生按钮与 webkit 自定义元素统一高度与圆角 */
