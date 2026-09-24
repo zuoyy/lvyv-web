@@ -235,6 +235,7 @@ const walletArmed = ref(false)
 const sdkReady = ref(false)
 const error = ref('')
 const sdkMessage = ref('')
+const cardFormLoadTimeoutMessage = 'The secure card form could not load. Please reload the page to try again.'
 const now = ref(Date.now())
 const paymentExpireAt = ref<number | null>(null)
 const signedFields = ref<Record<string, string>>()
@@ -396,22 +397,27 @@ function parsePayload(data: unknown): Record<string, string> {
   return Object.fromEntries(Object.entries(data).filter(([, value]) => typeof value === 'string' || typeof value === 'number').map(([key, value]) => [key, String(value)]))
 }
 
+function markCardFormReady() {
+  sdkReady.value = true
+  preparing.value = false
+  if (readyTimer) clearTimeout(readyTimer)
+  readyTimer = undefined
+  // 慢网络下就绪通知可能晚于超时；只清除加载提示，保留校验错误和支付核验信息。
+  if (sdkMessage.value === cardFormLoadTimeoutMessage) sdkMessage.value = ''
+}
+
 async function callback(channel: EmbeddedChannel, data: unknown) {
   if (disposed) return
   const fields = parsePayload(data)
   // code=1 只表示 iframe 已布局，不能作为全部卡片字段校验通过的依据。
   if (channel === 'CREDIT_CARD' && fields.code === '1' && !fields.msg) {
-    sdkReady.value = true
-    preparing.value = false
-    if (readyTimer) clearTimeout(readyTimer)
+    markCardFormReady()
     return
   }
   const event = embeddedEvent(fields)
   if (event.kind === 'ready') {
     if (channel === 'CREDIT_CARD') {
-      sdkReady.value = true
-      preparing.value = false
-      if (readyTimer) clearTimeout(readyTimer)
+      markCardFormReady()
     } else {
       if (channel === 'GOOGLE_PAY') hasGooglePay.value = true
       if (channel === 'APPLE_PAY') hasApplePay.value = true
@@ -586,7 +592,7 @@ async function selectChannel(channel: PaymentChannel, channelOpt?: PaymentOption
       readyTimer = setTimeout(() => {
         if (disposed || generation !== currentGeneration || sdkReady.value) return
         preparing.value = false
-        sdkMessage.value = 'The secure card form could not load. Please reload the page to try again.'
+        sdkMessage.value = cardFormLoadTimeoutMessage
       }, 15000)
     } else {
       readyTimer = setTimeout(() => {

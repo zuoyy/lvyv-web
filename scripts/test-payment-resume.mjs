@@ -10,11 +10,11 @@ import * as messages from '../app/utils/paymentMessages.ts'
 const source = readFileSync(new URL('../app/pages/orders/[orderNo]/pay.vue', import.meta.url), 'utf8')
   .match(/<script setup lang="ts">([\s\S]*?)<\/script>/)[1]
 const compiled = ts.transpileModule(source +
-  '\nObject.assign(exports, { load, submit, selectChannel, selected, session, locked, paymentExpired, orderUnavailable, now, error, callback, sdkMessage, sdkReady, resetting, submitting, resetEmbeddedSession, startWalletProcessing, cancelWalletProcessing, walletProcessingChannel, walletOverlayVisible, walletActivationConfirmed, hasApplePay, hasGooglePay, initWallets });', {
+  '\nObject.assign(exports, { load, submit, selectChannel, selected, session, locked, paymentExpired, orderUnavailable, now, error, callback, sdkMessage, sdkReady, preparing, resetting, submitting, resetEmbeddedSession, startWalletProcessing, cancelWalletProcessing, walletProcessingChannel, walletOverlayVisible, walletActivationConfirmed, hasApplePay, hasGooglePay, initWallets });', {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText
 
-function setup({ status = 'PENDING_PAYMENT', expired = false, existing = null, attemptExpired = false, abortStatus = 'FAILED', abortThrows = false, autoReady = true, renewalThrows = false, checkoutError = null } = {}) {
+function setup({ status = 'PENDING_PAYMENT', expired = false, existing = null, attemptExpired = false, abortStatus = 'FAILED', abortThrows = false, autoReady = true, renewalThrows = false, checkoutError = null, timers = { setTimeout: () => 1, clearTimeout: () => {} } } = {}) {
   const exports = {}, calls = [], redirects = []
   const href = 'https://www.lvyv.com/orders/ORD_TEST/pay'
   const deadline = new Date(Date.now() + (expired ? -60_000 : 60_000)).toISOString()
@@ -45,7 +45,7 @@ function setup({ status = 'PENDING_PAYMENT', expired = false, existing = null, a
     }),
     window, navigator: { userAgent: 'Test desktop' },
     navigateTo: async path => redirects.push(path),
-    setInterval: () => 1, clearInterval: () => {}, setTimeout: () => 1, clearTimeout: () => {},
+    setInterval: () => 1, clearInterval: () => {}, ...timers,
     onMounted: () => {}, onBeforeUnmount: () => {},
   })
   return { ...exports, calls, redirects, open: async () => {
@@ -139,6 +139,58 @@ test('iframe 真正就绪前不能签发支付参数，布局消息不表示完�
   assert.equal(page.sdkReady.value, true)
   assert.equal(page.locked.value, false)
   assert.equal(page.calls.some(([name]) => name === 'issue'), false)
+})
+
+test('信用卡加载超时仍禁止提交，迟到的就绪通知清除超时提示且不重建表单', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] })
+  for (const code of [1, 2]) {
+    const page = setup({ autoReady: false, timers: { setTimeout, clearTimeout } })
+    await page.open()
+    t.mock.timers.tick(15000)
+    assert.match(page.sdkMessage.value, /secure card form could not load/)
+    assert.equal(page.sdkReady.value, false)
+    assert.equal(page.preparing.value, false)
+    await page.submit()
+    assert.equal(page.calls.some(([name]) => name === 'issue'), false)
+    const callsBefore = page.calls.length
+    await page.callback('CREDIT_CARD', { code, msg: '' })
+    assert.equal(page.sdkMessage.value, '')
+    assert.equal(page.sdkReady.value, true)
+    assert.equal(page.preparing.value, false)
+    assert.equal(page.locked.value, false)
+    assert.equal(page.calls.length, callsBefore)
+  }
+})
+
+test('信用卡及时就绪后不再产生加载超时提示', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] })
+  const page = setup({ autoReady: false, timers: { setTimeout, clearTimeout } })
+  await page.open()
+  t.mock.timers.tick(14999)
+  await page.callback('CREDIT_CARD', { code: 1, msg: '' })
+  t.mock.timers.tick(15000)
+  assert.equal(page.sdkMessage.value, '')
+  assert.equal(page.sdkReady.value, true)
+  assert.equal(page.preparing.value, false)
+})
+
+test('重复就绪通知不清除卡片校验错误或支付核验提示，也不解除支付锁定', async () => {
+  const page = setup({ abortStatus: 'UNKNOWN' })
+  await page.open()
+  await page.callback('CREDIT_CARD', { code: -1, msg: 'Your card number is empty.' })
+  for (const code of [1, 2]) {
+    await page.callback('CREDIT_CARD', { code, msg: '' })
+    assert.equal(page.sdkMessage.value, 'Your card number is empty.')
+  }
+  await page.submit()
+  await page.callback('CREDIT_CARD', { code: -1, msg: 'Your card number is empty.' })
+  const message = page.sdkMessage.value
+  assert.match(message, /Confirming your payment status/)
+  for (const code of [1, 2]) {
+    await page.callback('CREDIT_CARD', { code, msg: '' })
+    assert.equal(page.sdkMessage.value, message)
+    assert.equal(page.locked.value, true)
+  }
 })
 
 test('提交后空字段校验失败保留 iframe，重试时只创建一次新占位', async () => {
