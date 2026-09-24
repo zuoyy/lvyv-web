@@ -398,6 +398,7 @@ export const useTourCommerce = () => {
     getPaymentOptions: (orderNo: string, clientType = 'DESKTOP_WEB') =>
       auth.request<PaymentOptionsView>(`/commerce/orders/${encodeURIComponent(orderNo)}/payments/options?clientType=${encodeURIComponent(clientType)}`, undefined, 'GET'),
     issueEmbeddedSession: (paymentNo: string) => auth.request<PaymentView>(`/commerce/payments/${encodeURIComponent(paymentNo)}/embedded-session`, {}),
+    abortEmbeddedSession: (paymentNo: string) => auth.request<PaymentView>(`/commerce/payments/${encodeURIComponent(paymentNo)}/embedded-session/abort`, {}),
     getPayment: (paymentNo: string) => auth.request<PaymentView>(`/commerce/payments/${encodeURIComponent(paymentNo)}`, undefined, 'GET'),
   }
 }

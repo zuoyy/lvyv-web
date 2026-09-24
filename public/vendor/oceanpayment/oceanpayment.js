@@ -43,8 +43,9 @@ window.addEventListener('message',function(e) {
 			}
 			let terminalIndex = e.data.toString().indexOf("terminal");
 			if (code != undefined || terminalIndex != -1) {
-				//只有code不为1 时才会给商户发送消息
-				if (code != 1 && method == 'Credit Card') {
+				// 校验错误也必须回传；部分环境会用 code=1 搭配 msg 表示卡号/有效期未填写。
+				var hasValidationMessage = e.data && (e.data.msg || e.data.toString().indexOf('<msg>') != -1);
+				if ((code != 1 || hasValidationMessage) && method == 'Credit Card') {
 					delete e.data.height;
 					if (typeof oceanpaymentCallBack === 'function') {
 						oceanpaymentCallBack(e.data);
@@ -52,8 +53,9 @@ window.addEventListener('message',function(e) {
 				}
 			}
 		} catch (ex) {
-			//只有code不为1 时才会给商户发送消息
-			if (code != 1 && method == 'Credit Card') {
+			// 解析异常时仍转发校验消息，交由页面统一处理提示。
+			var hasValidationMessage = e.data && (e.data.msg || e.data.toString().indexOf('<msg>') != -1);
+			if ((code != 1 || hasValidationMessage) && method == 'Credit Card') {
 				delete e.data.height;
 				if (typeof oceanpaymentCallBack === 'function') {
 					oceanpaymentCallBack(e.data);

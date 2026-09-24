@@ -151,6 +151,15 @@
             <p v-if="locked" class="locked-status-text" role="status">
               {{ walletArmed ? `Please complete your payment in the ${channelName} window.` : 'We are confirming your payment status. Please keep this page open.' }}
             </p>
+            <button
+              v-if="canResetEmbeddedSession"
+              type="button"
+              class="reload-button"
+              :disabled="resetting"
+              @click="resetEmbeddedSession"
+            >
+              {{ resetting ? 'Resetting payment...' : 'Re-enter card details' }}
+            </button>
 
             <p v-if="sdkMessage && selected !== 'CREDIT_CARD'" class="sdk-message wallet-message">{{ sdkMessage }}</p>
           </div>
@@ -217,6 +226,7 @@ const paymentNo = ref('')
 const loading = ref(true)
 const preparing = ref(false)
 const submitting = ref(false)
+const resetting = ref(false)
 const locked = ref(false)
 const walletArmed = ref(false)
 const sdkReady = ref(false)
@@ -225,6 +235,9 @@ const sdkMessage = ref('')
 const now = ref(Date.now())
 const paymentExpireAt = ref<number | null>(null)
 const signedFields = ref<Record<string, string>>()
+const providerPaymentId = ref('')
+const canResetEmbeddedSession = computed(() => selected.value === 'CREDIT_CARD'
+  && !walletArmed.value && Boolean(paymentNo.value) && !providerPaymentId.value && locked.value)
 
 // 快捷钱包按钮可见性与加载状态控制
 const supportsApplePay = computed(() => typeof window !== 'undefined' && window.isSecureContext && 'ApplePaySession' in window)
@@ -397,6 +410,8 @@ async function callback(channel: EmbeddedChannel, data: unknown) {
     return
   }
   if (event.kind === 'validation') {
+    // SDK 可能已先拿到签名参数并将流水置为 PENDING；校验失败代表尚未提交到支付商，应释放该占位。
+    if (channel === 'CREDIT_CARD') void recoverAfterCardValidationFailure()
     sdkMessage.value = channel === 'CREDIT_CARD' ? cardPaymentFailureMessage(event.code, event.message) || event.message : event.message
     submitting.value = false
     locked.value = false
@@ -432,6 +447,7 @@ function startPolling() {
     try {
       const payment = await commerce.getPayment(current)
       if (disposed || current !== paymentNo.value) return
+      providerPaymentId.value = payment.providerPaymentId || ''
       if (['SUCCEEDED', 'FAILED', 'EXPIRED', 'REVIEW_REQUIRED'].includes(payment.status)) {
         clearInterval(pollTimer)
         pollTimer = undefined
@@ -443,6 +459,28 @@ function startPolling() {
       polling = false
     }
   }, 2500)
+}
+
+async function recoverAfterCardValidationFailure() {
+  const failedPaymentNo = paymentNo.value
+  if (!failedPaymentNo) return
+  try {
+    await commerce.abortEmbeddedSession(failedPaymentNo)
+    if (disposed || paymentNo.value !== failedPaymentNo) return
+    if (pollTimer) {
+      clearInterval(pollTimer)
+      pollTimer = undefined
+    }
+    paymentNo.value = ''
+    providerPaymentId.value = ''
+    session.value = undefined
+    signedFields.value = undefined
+    submitting.value = false
+    locked.value = false
+    await load()
+  } catch {
+    // 释放失败不改变当前支付锁定状态，轮询继续等待支付商的最终结果。
+  }
 }
 
 async function ensureContainer(containerId: string): Promise<HTMLElement | null> {
@@ -481,6 +519,7 @@ async function selectChannel(channel: PaymentChannel, channelOpt?: PaymentOption
     const payment = await commerce.createPayment(order.value.order.orderNo, channel, clientType())
     if (disposed || generation !== currentGeneration) return
     paymentNo.value = payment.paymentNo
+    providerPaymentId.value = payment.providerPaymentId || ''
     const deadlines = [orderExpiresAt.value, payment.expireTime ? Date.parse(payment.expireTime) : NaN].filter(Number.isFinite)
     paymentExpireAt.value = deadlines.length ? Math.min(...deadlines) : null
     if (isEmbedded(payment.channel)) selected.value = payment.channel
@@ -489,6 +528,7 @@ async function selectChannel(channel: PaymentChannel, channelOpt?: PaymentOption
       return
     }
     if (!payment.session) {
+      providerPaymentId.value = payment.providerPaymentId || ''
       locked.value = true
       preparing.value = false
       sdkMessage.value = 'An existing payment is being confirmed. We will keep checking it.'
@@ -567,6 +607,31 @@ async function submit() {
     session.value = undefined
     sdkMessage.value = 'Confirming your payment status. Please do not start another payment.'
     startPolling()
+  }
+}
+
+async function resetEmbeddedSession() {
+  if (!canResetEmbeddedSession.value || resetting.value) return
+  resetting.value = true
+  try {
+    await commerce.abortEmbeddedSession(paymentNo.value)
+    if (pollTimer) {
+      clearInterval(pollTimer)
+      pollTimer = undefined
+    }
+    generation++
+    paymentNo.value = ''
+    providerPaymentId.value = ''
+    session.value = undefined
+    signedFields.value = undefined
+    submitting.value = false
+    locked.value = false
+    sdkMessage.value = ''
+    await load()
+  } catch (caught) {
+    sdkMessage.value = caught instanceof Error ? caught.message : 'This payment is still being verified. Please try again shortly.'
+  } finally {
+    resetting.value = false
   }
 }
 
@@ -676,6 +741,7 @@ async function load() {
 
     if (existing && existing.status !== 'FAILED' && !existing.session) {
       paymentNo.value = existing.paymentNo
+      providerPaymentId.value = existing.providerPaymentId || ''
       if (isEmbedded(existing.channel)) selected.value = existing.channel
       locked.value = true
       loading.value = false
