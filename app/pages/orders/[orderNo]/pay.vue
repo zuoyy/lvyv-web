@@ -516,6 +516,7 @@ async function selectChannel(channel: PaymentChannel, channelOpt?: PaymentOption
         sdkMessage.value = 'This wallet is unavailable on this device. Please choose credit card.'
       }, 15000)
       const config = { ...(payment.session.initConfig || {}) } as Record<string, unknown>
+      if (selected.value === 'APPLE_PAY') configureApplePayButton(config)
       if (selected.value === 'GOOGLE_PAY' && config.buttonStyle && typeof config.buttonStyle === 'object') {
         config.buttonStyle = {
           ...(config.buttonStyle as Record<string, unknown>),
@@ -577,6 +578,21 @@ function submitOrder() {
   }
 }
 
+function configureApplePayButton(config: Record<string, unknown>) {
+  // cssUrl 在服务商 iframe 内生效；同时传入盒模型参数，避免样式加载前被 44px 容器裁切。
+  config.cssUrl = new URL('/vendor/oceanpayment/applepay-button.css', window.location.origin).href
+  config.buttonStyle = {
+    ...(config.buttonStyle as Record<string, unknown> || {}),
+    buttonstyle: 'black',
+    type: 'buy',
+    buttonHeight: 44,
+    buttonRadius: 8,
+    buttonPaddingY: 4,
+    buttonPaddingX: 20,
+    buttonBoxSizing: 'border-box'
+  }
+}
+
 // 快速初始化快捷支付钱包按钮（Apple Pay、Google Pay），与信用卡表单完全并行执行
 function initWallets(optionChannels: PaymentOptionsView['channels'], availableChannels: PaymentChannelView[]) {
   const googleChannel = availableChannels.find(c => c.channel === 'GOOGLE_PAY' && c.enabled)
@@ -621,15 +637,7 @@ function initWallets(optionChannels: PaymentOptionsView['channels'], availableCh
         const container = await ensureContainer('oceanpayment-applepayelement')
         if (!container) return
         const config = { ...(appleOpt.initConfig || {}) } as Record<string, unknown>
-        config.buttonStyle = {
-          ...(config.buttonStyle as Record<string, unknown> || {}),
-          buttonstyle: 'black',
-          type: 'buy',
-          buttonHeight: 44,
-          buttonRadius: 8,
-          buttonPaddingY: 12,
-          buttonPaddingX: 20
-        }
+        configureApplePayButton(config)
         sdk.init(appleOpt.sandbox ? true : '', config)
       })
       .catch(() => {
@@ -1134,13 +1142,12 @@ onBeforeUnmount(() => {
   background: transparent !important;
 }
 
-/* Apple Pay 原生按钮与 webkit 自定义元素统一高度与内边距，使内部字体按比例紧凑缩小 */
-:deep(#oceanpayment-applepayelement apple-pay-button),
-:deep(apple-pay-button) {
+/* 非 iframe 渲染时也使用相同盒模型；iframe 内样式由 cssUrl 提供。 */
+:deep(#oceanpayment-applepayelement apple-pay-button) {
   --apple-pay-button-width: 100% !important;
   --apple-pay-button-height: 44px !important;
   --apple-pay-button-border-radius: 8px !important;
-  --apple-pay-button-padding: 12px 20px !important;
+  --apple-pay-button-padding: 4px 20px !important;
   --apple-pay-button-box-sizing: border-box !important;
   width: 100% !important;
   height: 44px !important;
