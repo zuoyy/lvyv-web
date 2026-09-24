@@ -5,42 +5,137 @@
     <div class="payment-body-backdrop" aria-hidden="true" />
     <div class="payment-page">
       <div v-if="loading" class="payment-state">Loading payment details...</div>
-      <div v-else-if="error" class="payment-state error"><p>{{ error }}</p><button type="button" @click="load">Try again</button></div>
-      <div v-else-if="orderUnavailable" class="payment-state"><p>{{ orderUnavailable }}</p><NuxtLink to="/orders">Back to orders</NuxtLink></div>
+      <div v-else-if="error" class="payment-state error">
+        <p>{{ error }}</p>
+        <button type="button" @click="load">Try again</button>
+      </div>
+      <div v-else-if="orderUnavailable" class="payment-state">
+        <p>{{ orderUnavailable }}</p>
+        <NuxtLink to="/orders">Back to orders</NuxtLink>
+      </div>
       <section v-else-if="order" class="payment-layout">
+        <!-- 左侧区域：Contact info, Traveler details, Payment (Credit Card) -->
         <main class="payment-main">
-          <section class="payment-card">
-            <div class="payment-card-heading"><h1>Select a Payment Method</h1><p v-if="paymentDeadline">Please secure your booking within <strong>{{ paymentDeadline }}</strong></p></div>
-            <div class="payment-tabs" role="tablist" aria-label="Payment methods">
-              <button v-for="item in channels" :key="item.channel" type="button" role="tab"
-                :aria-selected="selected===item.channel" :disabled="locked || preparing"
-                :class="{active:selected===item.channel}" @click="selectChannel(item.channel)">{{ item.name }}</button>
-            </div>
-            <div class="payment-method-panel">
-              <div class="payment-method-heading"><h2>{{ channelName }}</h2><div v-if="selected==='CREDIT_CARD'" class="card-brands" aria-label="Accepted cards"><img v-for="brand in cardBrands" :key="brand.name" :src="brand.src" :alt="brand.name"></div></div>
-              <div :class="{ 'wallet-preview': selected!=='CREDIT_CARD' && !walletArmed }">
-                <div :id="embeddedAdapters[selected].container" :key="selected" class="oceanpayment-element" :inert="selected!=='CREDIT_CARD' && !walletArmed" />
-              </div>
-              <p v-if="preparing" role="status">Checking payment availability...</p>
-              <p v-if="sdkMessage" class="sdk-message">{{ sdkMessage }}</p>
+          <!-- 面包屑 -->
+          <nav class="checkout-breadcrumbs" aria-label="Checkout navigation">
+            <span class="step-inactive">Cart</span>
+            <span class="step-sep">&rarr;</span>
+            <span class="step-active">Checkout</span>
+          </nav>
+
+          <!-- Contact info 卡片 -->
+          <section class="checkout-info-card">
+            <h2 class="section-title">Contact info</h2>
+            <div class="info-field-box">
+              <span class="field-label">Email address</span>
+              <span class="field-value">{{ contactEmail || 'Contact information from order' }}</span>
             </div>
           </section>
-          <section class="payment-action-card">
-            <button v-if="!walletArmed && session" class="pay-button" type="button" :disabled="submitting || preparing || !sdkReady || paymentExpired" @click="submit">{{ paymentExpired ? 'Payment expired' : submitting ? 'Processing...' : selected==='CREDIT_CARD' ? 'Pay now' : `Continue with ${channelName}` }}</button>
-            <button v-if="paymentExpired && !locked" type="button" :disabled="preparing" @click="selectChannel(selected)">Reload payment form</button>
-            <p v-if="locked" role="status">{{ walletArmed ? `Use the ${channelName} button above to complete your payment.` : 'We are confirming your payment status. Please keep this page open.' }}</p>
-            <NuxtLink v-if="paymentNo" :to="`/payment/result?paymentNo=${encodeURIComponent(paymentNo)}`">View payment status</NuxtLink>
+
+          <!-- Traveler / Delivery 卡片 -->
+          <section class="checkout-info-card">
+            <h2 class="section-title">Traveler information</h2>
+            <div class="info-grid">
+              <div class="info-field-box">
+                <span class="field-label">Traveler(s)</span>
+                <span class="field-value">{{ travelerCountText }}</span>
+              </div>
+              <div v-if="tripDateText" class="info-field-box">
+                <span class="field-label">Departure</span>
+                <span class="field-value">{{ tripDateText }}</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Payment (Payment Element) 卡片 -->
+          <section class="payment-element-card">
+            <div class="element-card-header">
+              <h2 class="section-title">Payment</h2>
+              <span class="payment-element-badge">Payment Element</span>
+            </div>
+
+            <div class="credit-card-panel">
+              <div class="credit-card-heading">
+                <div class="credit-card-selector">
+                  <span class="radio-dot" aria-hidden="true" />
+                  <strong>Credit card</strong>
+                </div>
+                <div class="card-brands" aria-label="Accepted card brands">
+                  <img v-for="brand in cardBrands" :key="brand.name" :src="brand.src" :alt="brand.name">
+                </div>
+              </div>
+
+              <!-- 官方嵌入式信用卡输入框容器（常驻） -->
+              <div id="oceanpayment-element" class="oceanpayment-element" />
+
+              <p v-if="sdkMessage && selected === 'CREDIT_CARD'" class="sdk-message error">{{ sdkMessage }}</p>
+            </div>
           </section>
         </main>
+
+        <!-- 右侧区域：Price details / Summary + 快捷支付按钮 + Place order -->
         <aside class="payment-summary">
-          <h2>{{ order.items[0]?.snapshot?.title || 'Lvyv journey' }}</h2><div class="summary-divider" /><h3>Price details</h3>
-          <dl><div><dt>Prepay online</dt><dd>{{ order.order.currency }} {{ formatMoney(order.originalPayableAmount ?? order.order.subtotal) }}</dd></div></dl>
-          <p v-if="order.order.firstOrderBenefitName" class="sdk-message">
+          <h2 class="summary-product-title">{{ order.items[0]?.snapshot?.title || 'Lvyv journey' }}</h2>
+          <div class="summary-divider" />
+          <h3 class="summary-subtitle">Price details</h3>
+          <dl class="summary-price-dl">
+            <div>
+              <dt>Prepay online</dt>
+              <dd>{{ order.order.currency }} {{ formatMoney(order.originalPayableAmount ?? order.order.subtotal) }}</dd>
+            </div>
+          </dl>
+          <p v-if="order.order.firstOrderBenefitName" class="benefit-tag">
             {{ Number(order.order.firstOrderDiscountAmount || 0) > 0 ? 'Automatic first-order offer' : 'First-order coupon' }}:
             {{ order.order.firstOrderBenefitName }} (included in total)
           </p>
-          <p v-if="order.order.expireTime" class="sdk-message">Pay before {{ new Date(order.order.expireTime).toLocaleString('en-US', { timeZone: 'UTC', timeZoneName: 'short' }) }}</p>
-          <div class="summary-divider" /><div class="total"><strong>Total</strong><strong>{{ order.order.currency }} {{ formatMoney(order.order.totalAmount) }}</strong></div>
+          <p v-if="paymentDeadline" class="deadline-text">
+            Please secure your booking within <strong>{{ paymentDeadline }}</strong>
+          </p>
+          <div class="summary-divider" />
+          <div class="total-row">
+            <strong>Total</strong>
+            <strong class="total-amount">{{ order.order.currency }} {{ formatMoney(order.order.totalAmount) }}</strong>
+          </div>
+
+          <!-- 总价下方的快捷支付按钮与常规提交（参考设计图） -->
+          <div class="checkout-actions-block">
+            <!-- Apple Pay 按钮容器（总价正下方） -->
+            <div v-show="hasApplePay" class="wallet-btn-container">
+              <div id="oceanpayment-applepayelement" class="wallet-element-slot" />
+            </div>
+
+            <!-- Google Pay 按钮容器（总价正下方） -->
+            <div v-show="hasGooglePay" class="wallet-btn-container">
+              <div id="oceanpayment-googlepayelement" class="wallet-element-slot" />
+            </div>
+
+            <!-- 绿色 Place order 信用卡支付按钮 -->
+            <button
+              type="button"
+              class="place-order-button"
+              :disabled="submitting || preparing || !sdkReady || paymentExpired"
+              @click="submitOrder"
+            >
+              {{ paymentExpired ? 'Payment expired' : submitting ? 'Processing...' : 'Place order' }}
+            </button>
+
+            <!-- 辅助重载/状态 -->
+            <button
+              v-if="paymentExpired && !locked"
+              type="button"
+              class="reload-button"
+              :disabled="preparing"
+              @click="selectChannel(selected)"
+            >
+              Reload payment form
+            </button>
+
+            <p v-if="locked" class="locked-status-text" role="status">
+              {{ walletArmed ? `Please complete your payment in the ${channelName} window.` : 'We are confirming your payment status. Please keep this page open.' }}
+            </p>
+
+            <p v-if="sdkMessage && selected !== 'CREDIT_CARD'" class="sdk-message wallet-message">{{ sdkMessage }}</p>
+          </div>
         </aside>
       </section>
     </div>
@@ -51,7 +146,7 @@
 import CheckoutHeader from '~/components/checkout/CheckoutHeader.vue'
 import { cardPaymentFailureMessage } from '~/utils/paymentMessages'
 import { embeddedAdapters, embeddedEvent, trustedSdkUrl, type EmbeddedChannel } from '~/utils/oceanpaymentEmbedded'
-import type { OrderView, PaymentView, PaymentChannelView, PaymentChannel } from '~/composables/useTourCommerce'
+import type { OrderView, PaymentView, PaymentChannelView, PaymentChannel, PaymentOptionsView } from '~/composables/useTourCommerce'
 
 definePageMeta({ middleware: 'member-auth', layout: false })
 useHead({ title: 'Secure payment | Lvyv', meta: [{ name: 'robots', content: 'noindex, nofollow' }] })
@@ -74,8 +169,20 @@ const sdkMessage = ref('')
 const now = ref(Date.now())
 const paymentExpireAt = ref<number | null>(null)
 const signedFields = ref<Record<string, string>>()
+
+// 快捷钱包按钮可见性控制
+const hasApplePay = ref(false)
+const hasGooglePay = ref(false)
+
 const channelName = computed(() => ({ CREDIT_CARD: 'Credit card', GOOGLE_PAY: 'Google Pay', APPLE_PAY: 'Apple Pay' }[selected.value]))
-const cardBrands = [{ name: 'Visa', src: '/images/payment/visa.png' }, { name: 'Mastercard', src: '/images/payment/mastercard.png' }, { name: 'Maestro', src: '/images/payment/maestro.png' }, { name: 'Discover', src: '/images/payment/discover.png' }, { name: 'Diners Club', src: '/images/payment/diners-club.png' }]
+const cardBrands = [
+  { name: 'Visa', src: '/images/payment/visa.png' },
+  { name: 'Mastercard', src: '/images/payment/mastercard.png' },
+  { name: 'Maestro', src: '/images/payment/maestro.png' },
+  { name: 'Discover', src: '/images/payment/discover.png' },
+  { name: 'Diners Club', src: '/images/payment/diners-club.png' }
+]
+
 const paymentExpired = computed(() => paymentExpireAt.value !== null && paymentExpireAt.value <= now.value)
 const orderExpiresAt = computed(() => {
   const current = order.value?.order
@@ -95,6 +202,25 @@ const paymentDeadline = computed(() => {
   const seconds = Math.max(0, Math.floor((paymentExpireAt.value - now.value) / 1000))
   return [Math.floor(seconds / 3600), Math.floor(seconds / 60) % 60, seconds % 60].map(n => String(n).padStart(2, '0')).join(':')
 })
+
+const contactEmail = computed(() => {
+  return auth.member.value?.email || ''
+})
+const travelerCountText = computed(() => {
+  const item = order.value?.items?.[0]?.item
+  if (!item) return '1 Traveler'
+  const adult = item.adultCount || 1
+  const child = item.childCount || 0
+  const parts: string[] = [`${adult} Adult${adult > 1 ? 's' : ''}`]
+  if (child > 0) parts.push(`${child} Child${child > 1 ? 'ren' : ''}`)
+  return parts.join(', ')
+})
+const tripDateText = computed(() => {
+  const item = order.value?.items?.[0]?.item
+  if (item?.startDate && item?.endDate) return `${item.startDate} ~ ${item.endDate}`
+  return item?.startDate || ''
+})
+
 const formatMoney = (value: unknown) => Number.isFinite(Number(value)) ? Number(value).toFixed(2) : '0.00'
 const clientType = () => /MicroMessenger/i.test(navigator.userAgent) ? 'WECHAT_BROWSER' as const : window.matchMedia('(max-width: 760px)').matches ? 'MOBILE_WEB' as const : 'DESKTOP_WEB' as const
 const isEmbedded = (channel: string): channel is EmbeddedChannel => channel in embeddedAdapters
@@ -114,7 +240,6 @@ function loadSdk(channel: EmbeddedChannel, url: string, sandbox: boolean): Promi
   const runtime = window as unknown as { __lvyvPaymentEnvironments?: Partial<Record<EmbeddedChannel, boolean>> }
   const environments = runtime.__lvyvPaymentEnvironments ||= {}
   if (environments[channel] !== undefined && environments[channel] !== sandbox) {
-    // Official SDK keeps a sticky sandbox host. Reload before initializing a different environment.
     window.location.reload()
     return Promise.reject(new Error('Reloading payment configuration...'))
   }
@@ -155,32 +280,46 @@ function parsePayload(data: unknown): Record<string, string> {
 }
 
 async function callback(channel: EmbeddedChannel, data: unknown) {
-  if (disposed || channel !== selected.value) return
+  if (disposed) return
   const event = embeddedEvent(parsePayload(data))
   if (event.kind === 'ready') {
-    sdkReady.value = true
-    preparing.value = false
-    if (readyTimer) clearTimeout(readyTimer)
+    if (channel === 'CREDIT_CARD') {
+      sdkReady.value = true
+      preparing.value = false
+      if (readyTimer) clearTimeout(readyTimer)
+    }
+    // 官方钱包 SDK 回调 code == 2 代表用户点击唤起钱包支付
+    if (channel === 'GOOGLE_PAY' || channel === 'APPLE_PAY') {
+      selected.value = channel
+      await selectChannel(channel)
+      await submit()
+    }
     return
   }
   if (event.kind === 'cancelled') {
     sdkMessage.value = 'Payment window closed. You can reopen the same payment using the wallet button.'
     submitting.value = false
+    locked.value = false
     return
   }
   if (event.kind === 'validation') {
-    sdkMessage.value = selected.value === 'CREDIT_CARD' ? cardPaymentFailureMessage(event.code, event.message) || event.message : event.message
+    sdkMessage.value = channel === 'CREDIT_CARD' ? cardPaymentFailureMessage(event.code, event.message) || event.message : event.message
     submitting.value = false
+    locked.value = false
     return
   }
   if (event.kind !== 'result' || event.fields.order_number !== paymentNo.value) return
   locked.value = true
   submitting.value = true
   try {
-    // Only the backend may validate a 3DS URL; browser-supplied results never prove success.
     const result = await auth.request<PaymentView>('/commerce/payments/oceanpayment/embedded-result', event.fields)
-    if (result.session?.threeDsUrl) window.location.assign(result.session.threeDsUrl)
-    else { walletArmed.value = false; session.value = undefined; sdkMessage.value = 'Confirming your payment status...' }
+    if (result.session?.threeDsUrl) {
+      window.location.assign(result.session.threeDsUrl)
+    } else {
+      walletArmed.value = false
+      session.value = undefined
+      sdkMessage.value = 'Confirming your payment status...'
+    }
   } catch {
     walletArmed.value = false
     session.value = undefined
@@ -203,8 +342,11 @@ function startPolling() {
         pollTimer = undefined
         await navigateTo(`/payment/result?paymentNo=${encodeURIComponent(current)}`)
       }
-    } catch { /* Retry status only; never create a second payment after network failure. */ }
-    finally { polling = false }
+    } catch {
+      // 仅重试状态查询，失败时不重复创建
+    } finally {
+      polling = false
+    }
   }, 2500)
 }
 
@@ -226,7 +368,10 @@ async function selectChannel(channel: PaymentChannel) {
     const deadlines = [orderExpiresAt.value, payment.expireTime ? Date.parse(payment.expireTime) : NaN].filter(Number.isFinite)
     paymentExpireAt.value = deadlines.length ? Math.min(...deadlines) : null
     if (isEmbedded(payment.channel)) selected.value = payment.channel
-    if (payment.status === 'SUCCEEDED') { await navigateTo(`/payment/result?paymentNo=${encodeURIComponent(payment.paymentNo)}`); return }
+    if (payment.status === 'SUCCEEDED') {
+      await navigateTo(`/payment/result?paymentNo=${encodeURIComponent(payment.paymentNo)}`)
+      return
+    }
     if (!payment.session) {
       locked.value = true
       preparing.value = false
@@ -288,19 +433,69 @@ async function submit() {
   }
 }
 
+function submitOrder() {
+  if (selected.value !== 'CREDIT_CARD') {
+    selectChannel('CREDIT_CARD').then(() => submit())
+  } else {
+    submit()
+  }
+}
+
+// 预渲染快捷支付按钮（若启用了对应渠道，且设备支持 ApplePaySession）
+async function preloadWallets(availableChannels: PaymentChannelView[]) {
+  const supportsApplePay = typeof window !== 'undefined' && window.isSecureContext && 'ApplePaySession' in window
+  const googleChannel = availableChannels.find(c => c.channel === 'GOOGLE_PAY' && c.enabled)
+  const appleChannel = availableChannels.find(c => c.channel === 'APPLE_PAY' && c.enabled)
+
+  if (googleChannel) {
+    hasGooglePay.value = true
+  }
+  if (appleChannel && supportsApplePay) {
+    hasApplePay.value = true
+  }
+
+  // 若后端 options 接口可用，可提前初始化钱包按钮
+  if (typeof commerce.getPaymentOptions === 'function' && order.value) {
+    try {
+      const opts: PaymentOptionsView = await commerce.getPaymentOptions(order.value.order.orderNo, clientType())
+      for (const item of opts.channels || []) {
+        if (item.channel === 'GOOGLE_PAY') {
+          hasGooglePay.value = true
+          loadSdk('GOOGLE_PAY', item.sdkUrl, item.sandbox).then(sdk => {
+            sdk.init(item.sandbox ? true : '', item.initConfig)
+          }).catch(() => { hasGooglePay.value = false })
+        } else if (item.channel === 'APPLE_PAY' && supportsApplePay) {
+          hasApplePay.value = true
+          loadSdk('APPLE_PAY', item.sdkUrl, item.sandbox).then(sdk => {
+            sdk.init(item.sandbox ? true : '', item.initConfig)
+          }).catch(() => { hasApplePay.value = false })
+        }
+      }
+    } catch {
+      // 预加载仅为体验优化，不阻塞主流程
+    }
+  }
+}
+
 async function load() {
   loading.value = true
   error.value = ''
   try {
     const [loadedOrder, available, existing] = await Promise.all([
-      commerce.getOrder(String(route.params.orderNo)), commerce.listPaymentChannels(clientType()),
+      commerce.getOrder(String(route.params.orderNo)),
+      commerce.listPaymentChannels(clientType()),
       commerce.currentOrderPayment(String(route.params.orderNo))
     ])
     order.value = loadedOrder
     now.value = Date.now()
-    if (loadedOrder.order.status === 'COMPLETED') { await navigateTo('/trips'); return }
+    if (loadedOrder.order.status === 'COMPLETED') {
+      await navigateTo('/trips')
+      return
+    }
     if (loadedOrder.order.status !== 'PENDING_PAYMENT') return
-    channels.value = available.filter(item => item.enabled && isEmbedded(item.channel) && (item.channel !== 'APPLE_PAY' || (window.isSecureContext && 'ApplePaySession' in window)))
+
+    channels.value = available.filter(item => item.enabled && isEmbedded(item.channel) && (item.channel !== 'APPLE_PAY' || (typeof window !== 'undefined' && window.isSecureContext && 'ApplePaySession' in window)))
+
     if (existing && existing.status !== 'FAILED' && !existing.session) {
       paymentNo.value = existing.paymentNo
       if (isEmbedded(existing.channel)) selected.value = existing.channel
@@ -310,23 +505,28 @@ async function load() {
         await navigateTo(`/payment/result?paymentNo=${encodeURIComponent(existing.paymentNo)}`)
         return
       }
-      // A 3DS return must not immediately redirect to the same challenge again.
       sdkMessage.value = 'Confirming your existing payment status...'
       startPolling()
       return
     }
+
     if (orderUnavailable.value) return
     if (!channels.value.length) throw new Error('Payment is temporarily unavailable.')
     loading.value = false
+
     const initial = channels.value.find(item => item.channel === existing?.channel)
       || channels.value.find(item => item.channel === 'CREDIT_CARD') || channels.value[0]!
+
     await selectChannel(initial.channel)
-  } catch (e) { error.value = e instanceof Error ? e.message : 'Unable to load payment details.' }
-  finally { loading.value = false }
+    void preloadWallets(available)
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'Unable to load payment details.'
+  } finally {
+    loading.value = false
+  }
 }
 
 onMounted(() => {
-  // Canonical path must be identical to the backUrl sent to Embedded, including after 3DS POST/303.
   window.history.replaceState(window.history.state, '', `/orders/${encodeURIComponent(String(route.params.orderNo))}/pay`)
   deadlineTimer = setInterval(() => { now.value = Date.now() }, 1000)
   for (const channel of Object.keys(embeddedAdapters) as EmbeddedChannel[]) {
@@ -334,27 +534,19 @@ onMounted(() => {
   }
   void load()
 })
+
 onBeforeUnmount(() => {
   disposed = true
   if (pollTimer) clearInterval(pollTimer)
   if (deadlineTimer) clearInterval(deadlineTimer)
   if (readyTimer) clearTimeout(readyTimer)
   for (const adapter of Object.values(embeddedAdapters)) {
-    // Official SDK message listeners survive navigation, so retain a harmless callback until remount.
     ;(window as unknown as Record<string, unknown>)[adapter.callback] = () => {}
   }
 })
 </script>
 
-
 <style scoped>
-.payment-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 20px 0; }
-.payment-tabs button { padding: 12px 18px; border: 1px solid #d4dcd7; border-radius: 8px; background: white; cursor: pointer; }
-.payment-tabs button.active { border-color: #203d33; background: #edf4ef; font-weight: 600; }
-.payment-tabs button:disabled { cursor: default; opacity: .6; }
-.wallet-preview { pointer-events: none; opacity: .55; }
-.payment-action-card a { display: inline-block; margin-top: 16px; color: #203d33; }
-
 .payment-page-shell,
 .payment-page-shell * {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -392,87 +584,155 @@ onBeforeUnmount(() => {
   position: relative;
   z-index: 5;
   min-height: calc(100vh - 80px);
-  padding: 20px 0 70px;
+  padding: 24px 0 70px;
 }
 
 .payment-layout {
   display: grid;
-  grid-template-columns: minmax(0, 803px) minmax(320px, 441px);
-  gap: 16px;
-  width: min(1256px, calc(100% - 64px));
+  grid-template-columns: minmax(0, 780px) minmax(340px, 440px);
+  gap: 24px;
+  width: min(1260px, calc(100% - 64px));
   margin: 0 auto;
   align-items: start;
 }
 
 .payment-main {
-  display: grid;
-  gap: 16px;
-}
-
-.payment-card,
-.payment-action-card,
-.payment-summary {
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 8px rgba(17, 34, 17, 0.05);
-}
-
-.payment-card {
-  padding: 28px;
-}
-
-.payment-card-heading {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   gap: 20px;
 }
 
-.payment-card-heading h1 {
-  margin: 0;
-  color: #112211;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 20px;
-  font-weight: 600;
-  line-height: 26px;
-}
-
-.payment-card-heading p {
-  margin: 0;
-  color: #242424;
-  opacity: 0.8;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+/* 面包屑导航 */
+.checkout-breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 14px;
-  white-space: nowrap;
+  color: #4b5563;
+  margin-bottom: 4px;
 }
 
-.payment-card-heading p strong {
-  font-size: 16px;
+.step-inactive {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.step-sep {
+  color: #9ca3af;
+}
+
+.step-active {
+  color: #111827;
+  font-weight: 700;
+}
+
+/* 左侧通用白色信息卡片 */
+.checkout-info-card,
+.payment-element-card,
+.payment-summary {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(17, 34, 17, 0.04);
+}
+
+.checkout-info-card {
+  padding: 24px;
+}
+
+.section-title {
+  margin: 0 0 16px;
+  font-size: 18px;
   font-weight: 700;
   color: #112211;
+  line-height: 24px;
 }
 
-.payment-method-panel {
-  margin-top: 28px;
-  padding: 20px 16px;
-  border: 1px solid #c6cfc6;
-  border-radius: 4px;
+.info-field-box {
+  background: #f8faf8;
+  border: 1px solid #e2e8e3;
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.payment-method-heading {
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.field-label {
+  font-size: 12px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.field-value {
+  font-size: 14px;
+  color: #111827;
+  font-weight: 500;
+}
+
+/* Payment (Payment Element) 卡片样式 */
+.payment-element-card {
+  padding: 24px;
+  border: 1.5px solid #203d33;
+}
+
+.element-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.element-card-header .section-title {
+  margin: 0;
+}
+
+.payment-element-badge {
+  font-size: 13px;
+  font-weight: 600;
+  color: #15803d;
+  background: #ecfdf5;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #bbf7d0;
+}
+
+.credit-card-panel {
+  display: flex;
+  flex-direction: column;
   gap: 16px;
 }
 
-.payment-method-heading h2 {
-  margin: 0;
-  color: #242424;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 18px;
-  font-weight: 600;
-  line-height: 28px;
+.credit-card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f1f5f2;
+}
+
+.credit-card-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  color: #112211;
+}
+
+.radio-dot {
+  width: 18px;
+  height: 18px;
+  border: 5px solid #203d33;
+  border-radius: 50%;
+  display: inline-block;
 }
 
 .card-brands {
@@ -482,123 +742,167 @@ onBeforeUnmount(() => {
 }
 
 .card-brands img {
-  width: 38px;
-  height: 24px;
+  height: 22px;
   object-fit: contain;
 }
 
 .oceanpayment-element {
-  margin-top: 16px;
-  padding: 24px 40px;
-  border: 1px solid #203d33;
-  border-radius: 4px;
-  background: #f8faf8;
+  min-height: 160px;
+  border: 1px solid #d1d9d4;
+  border-radius: 8px;
+  padding: 20px;
+  background: #fff;
 }
 
-.sdk-message {
-  margin: 12px 0 0;
-  color: #a83b32;
-  font-size: 12px;
+/* 右侧 Price details / Summary */
+.payment-summary {
+  padding: 28px 24px;
+  position: sticky;
+  top: 24px;
 }
 
-.payment-action-card {
-  height: 124px;
-  padding: 28px;
+.summary-product-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #112211;
+  line-height: 26px;
 }
 
-.pay-button {
-  width: 100%;
-  height: 54px;
-  border: 0;
-  border-radius: 4px;
-  background: #203d33;
-  color: #fff;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+.summary-subtitle {
+  margin: 16px 0 12px;
   font-size: 16px;
+  font-weight: 700;
+  color: #112211;
+}
+
+.summary-divider {
+  border-top: 1px dashed #d1dcd5;
+  margin: 18px 0;
+}
+
+.summary-price-dl {
+  margin: 0;
+}
+
+.summary-price-dl div {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  color: #374151;
+  font-size: 15px;
+}
+
+.summary-price-dl dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.benefit-tag {
+  margin: 8px 0;
+  color: #15803d;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.deadline-text {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.deadline-text strong {
+  color: #112211;
+}
+
+.total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+
+.total-row strong:first-child {
+  font-size: 18px;
+  font-weight: 700;
+  color: #112211;
+}
+
+.total-amount {
+  font-size: 24px;
+  font-weight: 700;
+  color: #203d33;
+}
+
+/* 总价下方的操作按钮群：垂直排列 */
+.checkout-actions-block {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wallet-btn-container {
+  width: 100%;
+  min-height: 48px;
+}
+
+.wallet-element-slot {
+  width: 100%;
+}
+
+.place-order-button {
+  width: 100%;
+  height: 48px;
+  border: 0;
+  border-radius: 8px;
+  background: #15803d;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.place-order-button:hover:not(:disabled) {
+  background: #166534;
+}
+
+.place-order-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.reload-button {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #d1d9d4;
+  border-radius: 8px;
+  background: #fff;
+  color: #203d33;
   font-weight: 600;
   cursor: pointer;
 }
 
-.pay-button:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-.payment-summary {
-  min-height: 369px;
-  padding: 28px 33px;
-}
-
-.payment-summary h2 {
-  margin: 0;
-  max-width: 378px;
-  color: #242424;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 28.15px;
-}
-
-.payment-summary h3 {
-  margin: 18px 0 10px;
-  color: #242424;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 28.15px;
-}
-
-.summary-divider {
-  border-top: 1px dashed #c6cfc6;
-  margin: 18px 0;
-}
-
-.payment-summary dl {
-  margin: 0;
-}
-
-.payment-summary dl div {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 8px 0;
-  color: #090909;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 16px;
-  font-weight: 400;
-  line-height: 24.63px;
-}
-
-.payment-summary dt,
-.payment-summary dd {
-  margin: 0;
-}
-
-.payment-summary dd {
-  text-align: right;
-}
-
-.total {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  color: #242424;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 16px;
-  line-height: 24.63px;
-}
-
-.total strong:first-child {
-  font-weight: 700;
-  font-size: 16px;
-}
-
-.total strong:last-child {
+.locked-status-text {
+  margin: 4px 0 0;
+  font-size: 13px;
   color: #203d33;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 22px;
-  font-weight: 700;
-  line-height: 25.8px;
+  text-align: center;
+}
+
+.sdk-message {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.sdk-message.error {
+  color: #dc2626;
+  font-weight: 500;
 }
 
 .payment-state {
@@ -617,22 +921,19 @@ onBeforeUnmount(() => {
   color: #a83b32;
 }
 
-.payment-state p {
-  margin: 0;
-}
-
 .payment-state button {
   padding: 10px 16px;
   border: 0;
   background: #203d33;
   color: #fff;
   cursor: pointer;
+  border-radius: 6px;
 }
 
 @media (max-width: 1000px) {
   .payment-layout {
     grid-template-columns: 1fr;
-    width: min(803px, calc(100% - 32px));
+    width: min(780px, calc(100% - 32px));
   }
 
   .payment-summary {
@@ -645,51 +946,19 @@ onBeforeUnmount(() => {
     padding-top: 10px;
   }
 
-  .payment-card,
-  .payment-action-card,
+  .checkout-info-card,
+  .payment-element-card,
   .payment-summary {
+    padding: 18px 16px;
     border-radius: 10px;
   }
 
-  .payment-card {
-    padding: 24px 20px;
-  }
-
-  .payment-card-heading {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .payment-card-heading p {
-    white-space: normal;
-  }
-
-  .payment-method-panel {
-    padding: 18px 12px;
-  }
-
-  .payment-method-heading {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .card-brands {
-    flex-wrap: wrap;
+  .info-grid {
+    grid-template-columns: 1fr;
   }
 
   .oceanpayment-element {
-    padding: 20px 16px;
-  }
-
-  .payment-action-card {
-    height: auto;
-    padding: 20px;
-  }
-
-  .payment-summary {
-    min-height: 0;
-    padding: 24px 20px;
+    padding: 14px;
   }
 }
 </style>
