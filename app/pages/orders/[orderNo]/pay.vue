@@ -96,12 +96,14 @@
           <!-- 总价下方的快捷支付按钮与常规提交（参考设计图） -->
           <div class="checkout-actions-block">
             <!-- Apple Pay 按钮容器（总价正下方） -->
-            <div v-show="hasApplePay" class="wallet-btn-container">
+            <div v-show="hasApplePay" class="wallet-btn-container" :class="{ 'is-loading': applePayLoading }">
+              <div v-if="applePayLoading" class="wallet-skeleton" aria-hidden="true" />
               <div id="oceanpayment-applepayelement" class="wallet-element-slot" />
             </div>
 
             <!-- Google Pay 按钮容器（总价正下方） -->
-            <div v-show="hasGooglePay" class="wallet-btn-container">
+            <div v-show="hasGooglePay" class="wallet-btn-container" :class="{ 'is-loading': googlePayLoading }">
+              <div v-if="googlePayLoading" class="wallet-skeleton" aria-hidden="true" />
               <div id="oceanpayment-googlepayelement" class="wallet-element-slot" />
             </div>
 
@@ -182,9 +184,12 @@ const now = ref(Date.now())
 const paymentExpireAt = ref<number | null>(null)
 const signedFields = ref<Record<string, string>>()
 
-// 快捷钱包按钮可见性控制
+// 快捷钱包按钮可见性与加载状态控制
+const supportsApplePay = computed(() => typeof window !== 'undefined' && window.isSecureContext && 'ApplePaySession' in window)
 const hasApplePay = ref(false)
 const hasGooglePay = ref(false)
+const applePayLoading = ref(false)
+const googlePayLoading = ref(false)
 
 const channelName = computed(() => ({ CREDIT_CARD: 'Credit card', GOOGLE_PAY: 'Google Pay', APPLE_PAY: 'Apple Pay' }[selected.value]))
 const cardBrands = [
@@ -359,7 +364,22 @@ function startPolling() {
   }, 2500)
 }
 
-async function selectChannel(channel: PaymentChannel) {
+async function ensureContainer(containerId: string): Promise<HTMLElement | null> {
+  if (typeof document === 'undefined') return null
+  let el = document.getElementById(containerId)
+  if (el) return el
+  await nextTick()
+  el = document.getElementById(containerId)
+  if (el) return el
+  for (let i = 0; i < 5; i++) {
+    await new Promise(resolve => setTimeout(resolve, 20))
+    el = document.getElementById(containerId)
+    if (el) return el
+  }
+  return null
+}
+
+async function selectChannel(channel: PaymentChannel, channelOpt?: PaymentOptionsView['channels'][number]) {
   if (!isEmbedded(channel) || locked.value || !order.value || orderUnavailable.value) return
   const currentGeneration = ++generation
   preparing.value = true
@@ -370,7 +390,13 @@ async function selectChannel(channel: PaymentChannel) {
   selected.value = channel
   sdkMessage.value = ''
   if (readyTimer) clearTimeout(readyTimer)
+
   try {
+    // 若已知该渠道的 SDK 配置，立即并发下载 SDK 脚本，绝不等待接口往返
+    const sdkPreload = channelOpt?.sdkUrl
+      ? loadSdk(selected.value, channelOpt.sdkUrl, channelOpt.sandbox)
+      : null
+
     const payment = await commerce.createPayment(order.value.order.orderNo, channel, clientType())
     if (disposed || generation !== currentGeneration) return
     paymentNo.value = payment.paymentNo
@@ -390,18 +416,12 @@ async function selectChannel(channel: PaymentChannel) {
     }
     session.value = payment.session
 
-    await nextTick()
-    if (typeof document !== 'undefined') {
-      const containerId = embeddedAdapters[channel].container
-      for (let i = 0; i < 40; i++) {
-        if (document.getElementById(containerId)) break
-        await new Promise(resolve => setTimeout(resolve, 50))
-      }
-      const container = document.getElementById(containerId)
-      if (!container) throw new Error('Payment element container not found.')
-    }
+    const containerId = embeddedAdapters[channel].container
+    const container = await ensureContainer(containerId)
+    if (!container) throw new Error('Payment element container not found.')
 
-    const sdk = await loadSdk(selected.value, payment.session.sdkUrl, payment.session.sandbox)
+    // 复用已发起的预载 Promise 或从 session 加载
+    const sdk = sdkPreload ? await sdkPreload : await loadSdk(selected.value, payment.session.sdkUrl, payment.session.sandbox)
     if (disposed || generation !== currentGeneration) return
     const sandbox = payment.session.sandbox ? true : ''
     if (selected.value === 'CREDIT_CARD') {
@@ -476,47 +496,61 @@ function submitOrder() {
   }
 }
 
-// 预渲染快捷支付按钮（若启用了对应渠道，且设备支持 ApplePaySession）
-async function preloadWallets(availableChannels: PaymentChannelView[]) {
-  const supportsApplePay = typeof window !== 'undefined' && window.isSecureContext && 'ApplePaySession' in window
+// 快速初始化快捷支付钱包按钮（Apple Pay、Google Pay），与信用卡表单完全并行执行
+function initWallets(optionChannels: PaymentOptionsView['channels'], availableChannels: PaymentChannelView[]) {
   const googleChannel = availableChannels.find(c => c.channel === 'GOOGLE_PAY' && c.enabled)
   const appleChannel = availableChannels.find(c => c.channel === 'APPLE_PAY' && c.enabled)
+  const googleOpt = optionChannels.find(c => c.channel === 'GOOGLE_PAY')
+  const appleOpt = optionChannels.find(c => c.channel === 'APPLE_PAY')
 
-  if (googleChannel) {
+  if (googleChannel && googleOpt) {
     hasGooglePay.value = true
-  }
-  if (appleChannel && supportsApplePay) {
-    hasApplePay.value = true
+    googlePayLoading.value = true
+    loadSdk('GOOGLE_PAY', googleOpt.sdkUrl, googleOpt.sandbox)
+      .then(async (sdk) => {
+        if (disposed) return
+        const container = await ensureContainer('oceanpayment-googlepayelement')
+        if (!container) return
+        const config = { ...(googleOpt.initConfig || {}) } as Record<string, unknown>
+        if (config.buttonStyle && typeof config.buttonStyle === 'object') {
+          config.buttonStyle = {
+            ...(config.buttonStyle as Record<string, unknown>),
+            buttonSizeMode: 'fill',
+            buttonRadius: 8
+          }
+        }
+        sdk.init(googleOpt.sandbox ? true : '', config)
+      })
+      .catch(() => {
+        hasGooglePay.value = false
+      })
+      .finally(() => {
+        googlePayLoading.value = false
+      })
+  } else {
+    hasGooglePay.value = false
+    googlePayLoading.value = false
   }
 
-  // 若后端 options 接口可用，可提前初始化钱包按钮
-  if (typeof commerce.getPaymentOptions === 'function' && order.value) {
-    try {
-      const opts: PaymentOptionsView = await commerce.getPaymentOptions(order.value.order.orderNo, clientType())
-      for (const item of opts.channels || []) {
-        if (item.channel === 'GOOGLE_PAY') {
-          hasGooglePay.value = true
-          loadSdk('GOOGLE_PAY', item.sdkUrl, item.sandbox).then(sdk => {
-            const config = { ...(item.initConfig || {}) } as Record<string, unknown>
-            if (config.buttonStyle && typeof config.buttonStyle === 'object') {
-              config.buttonStyle = {
-                ...(config.buttonStyle as Record<string, unknown>),
-                buttonSizeMode: 'fill',
-                buttonRadius: 8
-              }
-            }
-            sdk.init(item.sandbox ? true : '', config)
-          }).catch(() => { hasGooglePay.value = false })
-        } else if (item.channel === 'APPLE_PAY' && supportsApplePay) {
-          hasApplePay.value = true
-          loadSdk('APPLE_PAY', item.sdkUrl, item.sandbox).then(sdk => {
-            sdk.init(item.sandbox ? true : '', item.initConfig)
-          }).catch(() => { hasApplePay.value = false })
-        }
-      }
-    } catch {
-      // 预加载仅为体验优化，不阻塞主流程
-    }
+  if (appleChannel && appleOpt && supportsApplePay.value) {
+    hasApplePay.value = true
+    applePayLoading.value = true
+    loadSdk('APPLE_PAY', appleOpt.sdkUrl, appleOpt.sandbox)
+      .then(async (sdk) => {
+        if (disposed) return
+        const container = await ensureContainer('oceanpayment-applepayelement')
+        if (!container) return
+        sdk.init(appleOpt.sandbox ? true : '', appleOpt.initConfig)
+      })
+      .catch(() => {
+        hasApplePay.value = false
+      })
+      .finally(() => {
+        applePayLoading.value = false
+      })
+  } else {
+    hasApplePay.value = false
+    applePayLoading.value = false
   }
 }
 
@@ -524,10 +558,13 @@ async function load() {
   loading.value = true
   error.value = ''
   try {
-    const [loadedOrder, available, existing] = await Promise.all([
-      commerce.getOrder(String(route.params.orderNo)),
+    const orderNo = String(route.params.orderNo)
+    // 独立查询全部通过 Promise.all 并发发出，消除请求瀑布流
+    const [loadedOrder, paymentOptions, available, existing] = await Promise.all([
+      commerce.getOrder(orderNo),
+      commerce.getPaymentOptions(orderNo, clientType()).catch(() => null),
       commerce.listPaymentChannels(clientType()),
-      commerce.currentOrderPayment(String(route.params.orderNo))
+      commerce.currentOrderPayment(orderNo)
     ])
     order.value = loadedOrder
     now.value = Date.now()
@@ -537,7 +574,7 @@ async function load() {
     }
     if (loadedOrder.order.status !== 'PENDING_PAYMENT') return
 
-    channels.value = available.filter(item => item.enabled && isEmbedded(item.channel) && (item.channel !== 'APPLE_PAY' || (typeof window !== 'undefined' && window.isSecureContext && 'ApplePaySession' in window)))
+    channels.value = available.filter(item => item.enabled && isEmbedded(item.channel) && (item.channel !== 'APPLE_PAY' || supportsApplePay.value))
 
     if (existing && existing.status !== 'FAILED' && !existing.session) {
       paymentNo.value = existing.paymentNo
@@ -557,11 +594,17 @@ async function load() {
     if (!channels.value.length) throw new Error('Payment is temporarily unavailable.')
     loading.value = false
 
+    // 等待 DOM 更新，确保 payment-layout 及各支付挂载容器已存在于 DOM
+    await nextTick()
+
     const initial = channels.value.find(item => item.channel === existing?.channel)
       || channels.value.find(item => item.channel === 'CREDIT_CARD') || channels.value[0]!
+    const optionChannels = paymentOptions?.channels || []
+    const initialOpt = optionChannels.find(c => c.channel === initial.channel)
 
-    await selectChannel(initial.channel)
-    void preloadWallets(available)
+    // 信用卡表单、Google Pay、Apple Pay 三路完全并行初始化
+    void initWallets(optionChannels, available)
+    void selectChannel(initial.channel, initialOpt)
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Unable to load payment details.'
   } finally {
@@ -786,16 +829,20 @@ onBeforeUnmount(() => {
 }
 
 .element-loading-state {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  min-height: 140px;
   color: #4b5563;
   font-size: 14px;
-  background: #fbfdfb;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(2px);
   border: 1px dashed #c6cfc6;
   border-radius: 8px;
+  pointer-events: none;
 }
 
 .loading-spinner {
@@ -911,6 +958,7 @@ onBeforeUnmount(() => {
 }
 
 .wallet-btn-container {
+  position: relative;
   width: 100%;
   height: 48px;
   min-height: 48px;
@@ -918,6 +966,23 @@ onBeforeUnmount(() => {
   border-radius: 8px;
   overflow: hidden;
   box-sizing: border-box;
+  background: #000;
+}
+
+.wallet-skeleton {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #181818 0%, #2e2e2e 50%, #181818 100%);
+  background-size: 200% 100%;
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+  border-radius: 8px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+@keyframes skeletonPulse {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 .wallet-element-slot {
