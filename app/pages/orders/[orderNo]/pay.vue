@@ -96,15 +96,31 @@
           <!-- 总价下方的快捷支付按钮与常规提交（参考设计图） -->
           <div class="checkout-actions-block">
             <!-- Apple Pay 按钮容器（总价正下方） -->
-            <div v-show="hasApplePay" class="wallet-btn-container" :class="{ 'is-loading': applePayLoading }">
+            <div
+              v-show="hasApplePay"
+              class="wallet-btn-container"
+              :class="{ 'is-loading': applePayLoading, 'is-processing': walletProcessingChannel === 'APPLE_PAY' }"
+              @pointerdown="handleWalletPointerDown('APPLE_PAY')"
+            >
               <div v-if="applePayLoading" class="wallet-skeleton" aria-hidden="true" />
               <div id="oceanpayment-applepayelement" class="wallet-element-slot" />
+              <div v-if="walletProcessingChannel === 'APPLE_PAY'" class="wallet-btn-loading-overlay">
+                <span class="loading-spinner-white" />
+              </div>
             </div>
 
             <!-- Google Pay 按钮容器（总价正下方） -->
-            <div v-show="hasGooglePay" class="wallet-btn-container" :class="{ 'is-loading': googlePayLoading }">
+            <div
+              v-show="hasGooglePay"
+              class="wallet-btn-container"
+              :class="{ 'is-loading': googlePayLoading, 'is-processing': walletProcessingChannel === 'GOOGLE_PAY' }"
+              @pointerdown="handleWalletPointerDown('GOOGLE_PAY')"
+            >
               <div v-if="googlePayLoading" class="wallet-skeleton" aria-hidden="true" />
               <div id="oceanpayment-googlepayelement" class="wallet-element-slot" />
+              <div v-if="walletProcessingChannel === 'GOOGLE_PAY'" class="wallet-btn-loading-overlay">
+                <span class="loading-spinner-white" />
+              </div>
             </div>
 
             <div v-if="hasApplePay || hasGooglePay" class="wallet-divider">
@@ -142,6 +158,32 @@
       </section>
     </div>
   </div>
+
+    <!-- 快捷支付处理中全屏加载遮罩 -->
+    <Teleport to="body">
+      <Transition name="fade-overlay">
+        <div v-if="walletOverlayVisible" class="wallet-processing-overlay" role="dialog" aria-modal="true">
+          <div class="wallet-processing-modal">
+            <div class="processing-spinner-box">
+              <span class="processing-spinner" />
+            </div>
+            <div class="processing-title">
+              {{ walletProcessingChannel === 'APPLE_PAY' ? 'Connecting to Apple Pay...' : walletProcessingChannel === 'GOOGLE_PAY' ? 'Connecting to Google Pay...' : 'Processing payment...' }}
+            </div>
+            <p class="processing-desc">
+              Please complete authorization in the payment window.
+            </p>
+            <button
+              type="button"
+              class="processing-cancel-btn"
+              @click="cancelWalletProcessing"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -190,6 +232,43 @@ const hasApplePay = ref(false)
 const hasGooglePay = ref(false)
 const applePayLoading = ref(false)
 const googlePayLoading = ref(false)
+
+// 快捷钱包按钮点击交互与页面级加载浮层状态
+const walletProcessingChannel = ref<'APPLE_PAY' | 'GOOGLE_PAY' | null>(null)
+const walletOverlayVisible = ref(false)
+let walletOverlayTimer: ReturnType<typeof setTimeout> | undefined
+let walletTimeoutTimer: ReturnType<typeof setTimeout> | undefined
+
+function handleWalletPointerDown(channel: 'APPLE_PAY' | 'GOOGLE_PAY') {
+  if (walletProcessingChannel.value || submitting.value || preparing.value || paymentExpired.value) return
+  walletProcessingChannel.value = channel
+  if (walletOverlayTimer) clearTimeout(walletOverlayTimer)
+  // 150ms 延迟淡入页面级加载遮罩，确保用户手势在无遮挡状态下完整进入 iframe 激活 Apple/Google Pay 官方授权窗
+  walletOverlayTimer = setTimeout(() => {
+    if (walletProcessingChannel.value) {
+      walletOverlayVisible.value = true
+    }
+  }, 150)
+
+  // 45 秒兜底超时自动重置
+  if (walletTimeoutTimer) clearTimeout(walletTimeoutTimer)
+  walletTimeoutTimer = setTimeout(() => {
+    cancelWalletProcessing()
+  }, 45000)
+}
+
+function cancelWalletProcessing() {
+  walletProcessingChannel.value = null
+  walletOverlayVisible.value = false
+  if (walletOverlayTimer) {
+    clearTimeout(walletOverlayTimer)
+    walletOverlayTimer = undefined
+  }
+  if (walletTimeoutTimer) {
+    clearTimeout(walletTimeoutTimer)
+    walletTimeoutTimer = undefined
+  }
+}
 
 const channelName = computed(() => ({ CREDIT_CARD: 'Credit card', GOOGLE_PAY: 'Google Pay', APPLE_PAY: 'Apple Pay' }[selected.value]))
 const cardBrands = [
@@ -314,12 +393,14 @@ async function callback(channel: EmbeddedChannel, data: unknown) {
     sdkMessage.value = ''
     submitting.value = false
     locked.value = false
+    cancelWalletProcessing()
     return
   }
   if (event.kind === 'validation') {
     sdkMessage.value = channel === 'CREDIT_CARD' ? cardPaymentFailureMessage(event.code, event.message) || event.message : event.message
     submitting.value = false
     locked.value = false
+    cancelWalletProcessing()
     return
   }
   if (event.kind !== 'result' || event.fields.order_number !== paymentNo.value) return
@@ -633,6 +714,8 @@ onBeforeUnmount(() => {
   if (pollTimer) clearInterval(pollTimer)
   if (deadlineTimer) clearInterval(deadlineTimer)
   if (readyTimer) clearTimeout(readyTimer)
+  if (walletOverlayTimer) clearTimeout(walletOverlayTimer)
+  if (walletTimeoutTimer) clearTimeout(walletTimeoutTimer)
   for (const adapter of Object.values(embeddedAdapters)) {
     ;(window as unknown as Record<string, unknown>)[adapter.callback] = () => {}
   }
@@ -969,6 +1052,33 @@ onBeforeUnmount(() => {
   overflow: hidden;
   box-sizing: border-box;
   background: transparent;
+  cursor: pointer;
+}
+
+.wallet-btn-container.is-processing {
+  opacity: 0.9;
+}
+
+.wallet-btn-loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(1px);
+  border-radius: 8px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.loading-spinner-white {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
 }
 
 .wallet-skeleton {
@@ -1194,5 +1304,106 @@ onBeforeUnmount(() => {
   .oceanpayment-element {
     padding: 14px;
   }
+}
+
+/* 快捷支付/订单提交页面级加载遮罩与弹窗 */
+.wallet-processing-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 20, 0.58);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+}
+
+.wallet-processing-modal {
+  width: 100%;
+  max-width: 360px;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 32px 24px 24px;
+  text-align: center;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.22), 0 4px 12px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: modalPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalPopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.processing-spinner-box {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #f0f5f2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
+.processing-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #cfe0d8;
+  border-top-color: #174d40;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.processing-title {
+  color: #1a2e26;
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.processing-desc {
+  color: #64746d;
+  font-size: 13.5px;
+  line-height: 1.5;
+  margin: 0 0 20px;
+}
+
+.processing-cancel-btn {
+  padding: 8px 24px;
+  border-radius: 999px;
+  border: 1px solid #d5ded9;
+  background: #f7faf8;
+  color: #43544c;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.processing-cancel-btn:hover {
+  background: #edf3f0;
+  color: #1a2e26;
+  border-color: #bccbc4;
+}
+
+.fade-overlay-enter-active,
+.fade-overlay-leave-active {
+  transition: opacity 0.22s ease;
+}
+
+.fade-overlay-enter-from,
+.fade-overlay-leave-to {
+  opacity: 0;
 }
 </style>
