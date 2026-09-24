@@ -16,13 +16,6 @@
       <section v-else-if="order" class="payment-layout">
         <!-- 左侧区域：Contact info, Traveler details, Payment (Credit Card) -->
         <main class="payment-main">
-          <!-- 面包屑 -->
-          <nav class="checkout-breadcrumbs" aria-label="Checkout navigation">
-            <span class="step-inactive">Cart</span>
-            <span class="step-sep">&rarr;</span>
-            <span class="step-active">Checkout</span>
-          </nav>
-
           <!-- Contact info 卡片 -->
           <section class="checkout-info-card">
             <h2 class="section-title">Contact info</h2>
@@ -51,7 +44,7 @@
           <section class="payment-element-card">
             <div class="element-card-header">
               <h2 class="section-title">Payment</h2>
-              <span class="payment-element-badge">Payment Element</span>
+              <span class="payment-element-badge">Credit card</span>
             </div>
 
             <div class="credit-card-panel">
@@ -66,7 +59,13 @@
               </div>
 
               <!-- 官方嵌入式信用卡输入框容器（常驻） -->
-              <div id="oceanpayment-element" class="oceanpayment-element" />
+              <div class="oceanpayment-element-wrapper">
+                <div v-if="preparing && selected === 'CREDIT_CARD'" class="element-loading-state">
+                  <span class="loading-spinner" aria-hidden="true" />
+                  <span>Loading secure payment form...</span>
+                </div>
+                <div id="oceanpayment-element" class="oceanpayment-element" />
+              </div>
 
               <p v-if="sdkMessage && selected === 'CREDIT_CARD'" class="sdk-message error">{{ sdkMessage }}</p>
             </div>
@@ -75,26 +74,28 @@
 
         <!-- 右侧区域：Price details / Summary + 快捷支付按钮 + Place order -->
         <aside class="payment-summary">
-          <h2 class="summary-product-title">{{ order.items[0]?.snapshot?.title || 'Lvyv journey' }}</h2>
-          <div class="summary-divider" />
-          <h3 class="summary-subtitle">Price details</h3>
-          <dl class="summary-price-dl">
-            <div>
-              <dt>Prepay online</dt>
-              <dd>{{ order.order.currency }} {{ formatMoney(order.originalPayableAmount ?? order.order.subtotal) }}</dd>
+          <div class="summary-details">
+            <h2 class="summary-product-title">{{ order.items[0]?.snapshot?.title || 'Lvyv journey' }}</h2>
+            <div class="summary-divider" />
+            <h3 class="summary-subtitle">Price details</h3>
+            <dl class="summary-price-dl">
+              <div>
+                <dt>Prepay online</dt>
+                <dd>{{ order.order.currency }} {{ formatMoney(order.originalPayableAmount ?? order.order.subtotal) }}</dd>
+              </div>
+            </dl>
+            <p v-if="order.order.firstOrderBenefitName" class="benefit-tag">
+              {{ Number(order.order.firstOrderDiscountAmount || 0) > 0 ? 'Automatic first-order offer' : 'First-order coupon' }}:
+              {{ order.order.firstOrderBenefitName }} (included in total)
+            </p>
+            <p v-if="paymentDeadline" class="deadline-text">
+              Please secure your booking within <strong>{{ paymentDeadline }}</strong>
+            </p>
+            <div class="summary-divider" />
+            <div class="total-row">
+              <strong>Total</strong>
+              <strong class="total-amount">{{ order.order.currency }} {{ formatMoney(order.order.totalAmount) }}</strong>
             </div>
-          </dl>
-          <p v-if="order.order.firstOrderBenefitName" class="benefit-tag">
-            {{ Number(order.order.firstOrderDiscountAmount || 0) > 0 ? 'Automatic first-order offer' : 'First-order coupon' }}:
-            {{ order.order.firstOrderBenefitName }} (included in total)
-          </p>
-          <p v-if="paymentDeadline" class="deadline-text">
-            Please secure your booking within <strong>{{ paymentDeadline }}</strong>
-          </p>
-          <div class="summary-divider" />
-          <div class="total-row">
-            <strong>Total</strong>
-            <strong class="total-amount">{{ order.order.currency }} {{ formatMoney(order.order.totalAmount) }}</strong>
           </div>
 
           <!-- 总价下方的快捷支付按钮与常规提交（参考设计图） -->
@@ -107,6 +108,10 @@
             <!-- Google Pay 按钮容器（总价正下方） -->
             <div v-show="hasGooglePay" class="wallet-btn-container">
               <div id="oceanpayment-googlepayelement" class="wallet-element-slot" />
+            </div>
+
+            <div v-if="hasApplePay || hasGooglePay" class="wallet-divider">
+              <span>or pay with card</span>
             </div>
 
             <!-- 绿色 Place order 信用卡支付按钮 -->
@@ -287,12 +292,9 @@ async function callback(channel: EmbeddedChannel, data: unknown) {
       sdkReady.value = true
       preparing.value = false
       if (readyTimer) clearTimeout(readyTimer)
-    }
-    // 官方钱包 SDK 回调 code == 2 代表用户点击唤起钱包支付
-    if (channel === 'GOOGLE_PAY' || channel === 'APPLE_PAY') {
-      selected.value = channel
-      await selectChannel(channel)
-      await submit()
+    } else {
+      if (channel === 'GOOGLE_PAY') hasGooglePay.value = true
+      if (channel === 'APPLE_PAY') hasApplePay.value = true
     }
     return
   }
@@ -351,7 +353,7 @@ function startPolling() {
 }
 
 async function selectChannel(channel: PaymentChannel) {
-  if (!isEmbedded(channel) || locked.value || preparing.value || !order.value || orderUnavailable.value) return
+  if (!isEmbedded(channel) || locked.value || !order.value || orderUnavailable.value) return
   const currentGeneration = ++generation
   preparing.value = true
   sdkReady.value = false
@@ -380,10 +382,18 @@ async function selectChannel(channel: PaymentChannel) {
       return
     }
     session.value = payment.session
-    if (payment.session.initConfig.backUrl !== window.location.href) {
-      throw new Error('Payment page configuration does not match this address. Please contact support.')
-    }
+
     await nextTick()
+    if (typeof document !== 'undefined') {
+      const containerId = embeddedAdapters[channel].container
+      for (let i = 0; i < 40; i++) {
+        if (document.getElementById(containerId)) break
+        await new Promise(resolve => setTimeout(resolve, 50))
+      }
+      const container = document.getElementById(containerId)
+      if (!container) throw new Error('Payment element container not found.')
+    }
+
     const sdk = await loadSdk(selected.value, payment.session.sdkUrl, payment.session.sandbox)
     if (disposed || generation !== currentGeneration) return
     const sandbox = payment.session.sandbox ? true : ''
@@ -420,7 +430,17 @@ async function submit() {
       }
       signedFields.value = payment.session.fields
     }
-    if (signedFields.value.backUrl !== window.location.href) throw new Error('Payment page address mismatch')
+    if (signedFields.value.backUrl && typeof window !== 'undefined' && window.location?.href) {
+      try {
+        const expected = new URL(signedFields.value.backUrl)
+        const current = new URL(window.location.href)
+        if (!current.hostname.includes('localhost') && current.pathname !== expected.pathname) {
+          throw new Error('Payment page address mismatch')
+        }
+      } catch (err) {
+        if (err instanceof Error && err.message === 'Payment page address mismatch') throw err
+      }
+    }
     const sdk = getSdk(selected.value)
     if (!sdk) throw new Error('Payment SDK unavailable')
     sdk.checkout(signedFields.value)
@@ -593,37 +613,13 @@ onBeforeUnmount(() => {
   gap: 24px;
   width: min(1260px, calc(100% - 64px));
   margin: 0 auto;
-  align-items: start;
+  align-items: stretch;
 }
 
 .payment-main {
   display: flex;
   flex-direction: column;
   gap: 20px;
-}
-
-/* 面包屑导航 */
-.checkout-breadcrumbs {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: #4b5563;
-  margin-bottom: 4px;
-}
-
-.step-inactive {
-  color: #6b7280;
-  font-weight: 500;
-}
-
-.step-sep {
-  color: #9ca3af;
-}
-
-.step-active {
-  color: #111827;
-  font-weight: 700;
 }
 
 /* 左侧通用白色信息卡片 */
@@ -680,6 +676,9 @@ onBeforeUnmount(() => {
 .payment-element-card {
   padding: 24px;
   border: 1.5px solid #203d33;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .element-card-header {
@@ -707,6 +706,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  flex: 1;
 }
 
 .credit-card-heading {
@@ -746,19 +746,54 @@ onBeforeUnmount(() => {
   object-fit: contain;
 }
 
+.oceanpayment-element-wrapper {
+  position: relative;
+  flex: 1;
+  min-height: 160px;
+}
+
+.element-loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 140px;
+  color: #4b5563;
+  font-size: 14px;
+  background: #fbfdfb;
+  border: 1px dashed #c6cfc6;
+  border-radius: 8px;
+}
+
+.loading-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #203d33;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 .oceanpayment-element {
   min-height: 160px;
   border: 1px solid #d1d9d4;
   border-radius: 8px;
-  padding: 20px;
+  padding: 16px;
   background: #fff;
 }
 
 /* 右侧 Price details / Summary */
 .payment-summary {
   padding: 28px 24px;
-  position: sticky;
-  top: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  box-sizing: border-box;
 }
 
 .summary-product-title {
@@ -849,6 +884,26 @@ onBeforeUnmount(() => {
 
 .wallet-element-slot {
   width: 100%;
+}
+
+.wallet-divider {
+  display: flex;
+  align-items: center;
+  margin: 4px 0;
+  text-align: center;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.wallet-divider::before,
+.wallet-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.wallet-divider span {
+  padding: 0 10px;
 }
 
 .place-order-button {
