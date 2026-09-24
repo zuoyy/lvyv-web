@@ -415,7 +415,7 @@ async function callback(channel: EmbeddedChannel, data: unknown) {
     } else {
       if (channel === 'GOOGLE_PAY') hasGooglePay.value = true
       if (channel === 'APPLE_PAY') hasApplePay.value = true
-      // 钱包 code=2 是请求开始付款的回调，也覆盖焦点未变化时的重复点击。
+      // code=2 在钱包授权数据准备好后才发送；点击时的加载提示必须独立于此回调。
       startWalletProcessing(channel, true)
     }
     return

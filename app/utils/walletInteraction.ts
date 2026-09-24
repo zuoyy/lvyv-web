@@ -7,31 +7,62 @@ export function observeWalletInteraction(
   onLeave: () => void,
 ): () => void {
   let timer: ReturnType<typeof setTimeout> | undefined
+  let focusCheck: ReturnType<typeof setTimeout> | undefined
   let disposed = false
+  let entered: WalletChannel | undefined
+  const frames = [
+    ['oceanpayment-iframe-applepay', 'APPLE_PAY'],
+    ['oceanpayment-iframe-googlepay', 'GOOGLE_PAY'],
+  ] as const
+  const channelFor = (element: EventTarget | null) => frames.find(([id]) =>
+    element !== null && element === host.document.getElementById(id))?.[1]
   const inspectFocus = () => {
     if (disposed) return
-    const active = host.document.activeElement
-    const frames = [
-      ['oceanpayment-iframe-applepay', 'APPLE_PAY'],
-      ['oceanpayment-iframe-googlepay', 'GOOGLE_PAY'],
-    ] as const
-    const match = frames.find(([id]) => active !== null && active === host.document.getElementById(id))
-    if (match) onEnter(match[1])
-    else onLeave()
+    const channel = channelFor(host.document.activeElement)
+    if (channel && channel !== entered) {
+      entered = channel
+      onEnter(channel)
+    }
+    if (!channel) entered = undefined
+    // 原生钱包弹窗可能令 activeElement 暂时变成 body；窗口焦点变化不等于用户取消。
   }
   const scheduleInspection = () => {
     if (timer) clearTimeout(timer)
     // 各浏览器更新 activeElement 的时机不同，下一任务再确认焦点实际进入哪个 iframe。
     timer = setTimeout(inspectFocus, 0)
   }
-  host.addEventListener('blur', scheduleInspection)
+  const onWindowBlur = () => {
+    // 原生授权窗可能在同一点击任务中再次转移焦点，先保留当前能观察到的 iframe 归属。
+    inspectFocus()
+    scheduleInspection()
+    if (focusCheck) clearTimeout(focusCheck)
+    // Safari 等宿主可能在下一任务后才把焦点转入 iframe，再进行一次有界检查。
+    focusCheck = setTimeout(inspectFocus, 100)
+  }
+  const onPageInteraction = (event: Event) => {
+    if (disposed) return
+    const target = event.target
+    if (channelFor(target)) {
+      scheduleInspection()
+      return
+    }
+    // 仅页面内的实际点击/键盘焦点移动能收起尚未确认的提示，body 的焦点回落不算。
+    if (!target || target === host.document || (event.type === 'focusin'
+      && (target === host.document.body || target === host.document.documentElement))) return
+    entered = undefined
+    onLeave()
+  }
+  host.addEventListener('blur', onWindowBlur)
   host.addEventListener('focus', scheduleInspection)
-  host.document.addEventListener('focusin', scheduleInspection)
+  host.document.addEventListener('focusin', onPageInteraction)
+  host.document.addEventListener('pointerdown', onPageInteraction, true)
   return () => {
     disposed = true
     if (timer) clearTimeout(timer)
-    host.removeEventListener('blur', scheduleInspection)
+    if (focusCheck) clearTimeout(focusCheck)
+    host.removeEventListener('blur', onWindowBlur)
     host.removeEventListener('focus', scheduleInspection)
-    host.document.removeEventListener('focusin', scheduleInspection)
+    host.document.removeEventListener('focusin', onPageInteraction)
+    host.document.removeEventListener('pointerdown', onPageInteraction, true)
   }
 }
