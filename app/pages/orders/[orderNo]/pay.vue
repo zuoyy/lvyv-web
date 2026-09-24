@@ -131,11 +131,12 @@
             <button
               type="button"
               class="place-order-button"
-              :disabled="submitting || preparing || !sdkReady || paymentExpired"
+              :disabled="submitting || preparing || resetting || locked || !sdkReady || paymentExpired"
               @click="submitOrder"
             >
               {{ paymentExpired ? 'Payment expired' : submitting ? 'Processing...' : 'Place order' }}
             </button>
+            <p class="card-validation-hint">Card details are checked when you place your order.</p>
 
             <!-- 辅助重载/状态 -->
             <button
@@ -343,6 +344,8 @@ let pollTimer: ReturnType<typeof setInterval> | undefined
 let deadlineTimer: ReturnType<typeof setInterval> | undefined
 let readyTimer: ReturnType<typeof setTimeout> | undefined
 let polling = false
+let cardCheckoutPending = false
+let cardAttemptNeedsRenewal = false
 
 function loadSdk(channel: EmbeddedChannel, url: string, sandbox: boolean): Promise<EmbeddedSdk> {
   if (!trustedSdkUrl(channel, url, sandbox)) return Promise.reject(new Error('Payment SDK configuration is invalid.'))
@@ -360,7 +363,8 @@ function loadSdk(channel: EmbeddedChannel, url: string, sandbox: boolean): Promi
   const promise = new Promise<EmbeddedSdk>((resolve, reject) => {
     const script = document.createElement('script')
     const timeout = setTimeout(() => reject(new Error('Payment form is temporarily unavailable. You can choose another method.')), 15000)
-    script.src = url
+    // 使用本地桥接脚本接收卡表单的就绪与校验事件；输入框仍由支付商跨域托管。
+    script.src = channel === 'CREDIT_CARD' ? '/vendor/oceanpayment/oceanpayment.js?v=20260924-blur' : url
     script.async = true
     script.onload = () => {
       clearTimeout(timeout)
@@ -390,7 +394,15 @@ function parsePayload(data: unknown): Record<string, string> {
 
 async function callback(channel: EmbeddedChannel, data: unknown) {
   if (disposed) return
-  const event = embeddedEvent(parsePayload(data))
+  const fields = parsePayload(data)
+  // code=1 只表示 iframe 已布局，不能作为全部卡片字段校验通过的依据。
+  if (channel === 'CREDIT_CARD' && fields.code === '1' && !fields.msg) {
+    sdkReady.value = true
+    preparing.value = false
+    if (readyTimer) clearTimeout(readyTimer)
+    return
+  }
+  const event = embeddedEvent(fields)
   if (event.kind === 'ready') {
     if (channel === 'CREDIT_CARD') {
       sdkReady.value = true
@@ -410,15 +422,22 @@ async function callback(channel: EmbeddedChannel, data: unknown) {
     return
   }
   if (event.kind === 'validation') {
-    // SDK 可能已先拿到签名参数并将流水置为 PENDING；校验失败代表尚未提交到支付商，应释放该占位。
-    if (channel === 'CREDIT_CARD') void recoverAfterCardValidationFailure()
     sdkMessage.value = channel === 'CREDIT_CARD' ? cardPaymentFailureMessage(event.code, event.message) || event.message : event.message
+    if (channel === 'CREDIT_CARD') {
+      // 普通失焦校验只展示提示，不重建 iframe，也不改动任何支付流水。
+      if (cardCheckoutPending) {
+        cardCheckoutPending = false
+        await recoverAfterCardValidationFailure()
+      }
+      return
+    }
     submitting.value = false
     locked.value = false
     cancelWalletProcessing()
     return
   }
   if (event.kind !== 'result' || event.fields.order_number !== paymentNo.value) return
+  cardCheckoutPending = false
   locked.value = true
   submitting.value = true
   try {
@@ -446,7 +465,7 @@ function startPolling() {
     const current = paymentNo.value
     try {
       const payment = await commerce.getPayment(current)
-      if (disposed || current !== paymentNo.value) return
+      if (disposed || current !== paymentNo.value || resetting.value || cardAttemptNeedsRenewal) return
       providerPaymentId.value = payment.providerPaymentId || ''
       if (['SUCCEEDED', 'FAILED', 'EXPIRED', 'REVIEW_REQUIRED'].includes(payment.status)) {
         clearInterval(pollTimer)
@@ -463,23 +482,31 @@ function startPolling() {
 
 async function recoverAfterCardValidationFailure() {
   const failedPaymentNo = paymentNo.value
-  if (!failedPaymentNo) return
+  if (!failedPaymentNo || resetting.value) return
+  resetting.value = true
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = undefined
+  }
   try {
-    await commerce.abortEmbeddedSession(failedPaymentNo)
+    const payment = await commerce.abortEmbeddedSession(failedPaymentNo)
     if (disposed || paymentNo.value !== failedPaymentNo) return
-    if (pollTimer) {
-      clearInterval(pollTimer)
-      pollTimer = undefined
+    providerPaymentId.value = payment.providerPaymentId || ''
+    if (payment.status !== 'FAILED' || payment.failureCode !== 'CHECKOUT_NOT_SUBMITTED') {
+      sdkMessage.value = 'Confirming your payment status. Please do not start another payment.'
+      startPolling()
+      return
     }
-    paymentNo.value = ''
-    providerPaymentId.value = ''
-    session.value = undefined
+    // 下次明确点击付款才申请新占位，保留 iframe 中的输入与当前校验提示。
+    cardAttemptNeedsRenewal = true
     signedFields.value = undefined
     submitting.value = false
     locked.value = false
-    await load()
   } catch {
-    // 释放失败不改变当前支付锁定状态，轮询继续等待支付商的最终结果。
+    sdkMessage.value = 'Confirming your payment status. Please do not start another payment.'
+    startPolling()
+  } finally {
+    resetting.value = false
   }
 }
 
@@ -503,6 +530,8 @@ async function selectChannel(channel: PaymentChannel, channelOpt?: PaymentOption
   const currentGeneration = ++generation
   preparing.value = true
   sdkReady.value = false
+  cardCheckoutPending = false
+  cardAttemptNeedsRenewal = false
   walletArmed.value = false
   signedFields.value = undefined
   session.value = undefined
@@ -546,9 +575,12 @@ async function selectChannel(channel: PaymentChannel, channelOpt?: PaymentOption
     if (disposed || generation !== currentGeneration) return
     const sandbox = payment.session.sandbox ? true : ''
     if (selected.value === 'CREDIT_CARD') {
-      sdk.init(sandbox, '', 'en_US', { showCardName: true })
-      sdkReady.value = true
-      preparing.value = false
+      sdk.init(sandbox, '', 'en_US', { showCardName: false })
+      readyTimer = setTimeout(() => {
+        if (disposed || generation !== currentGeneration || sdkReady.value) return
+        preparing.value = false
+        sdkMessage.value = 'The secure card form could not load. Please reload the page to try again.'
+      }, 15000)
     } else {
       readyTimer = setTimeout(() => {
         if (disposed || sdkReady.value) return
@@ -573,13 +605,36 @@ async function selectChannel(channel: PaymentChannel, channelOpt?: PaymentOption
 }
 
 async function submit() {
-  if (!session.value || submitting.value || preparing.value || !sdkReady.value || paymentExpired.value || orderUnavailable.value) return
+  if (!session.value || submitting.value || preparing.value || resetting.value || locked.value || !sdkReady.value || paymentExpired.value || orderUnavailable.value) return
   submitting.value = true
   locked.value = true
   sdkMessage.value = ''
   try {
+    if (cardAttemptNeedsRenewal) {
+      let payment: PaymentView
+      try {
+        payment = await commerce.createPayment(order.value!.order.orderNo, 'CREDIT_CARD', clientType())
+      } catch {
+        // 创建的只是未签发参数的占位，重试复用后端唯一活动支付，保留当前卡片输入。
+        submitting.value = false
+        locked.value = false
+        sdkMessage.value = 'Unable to prepare payment. Please try again.'
+        return
+      }
+      if (disposed) return
+      paymentNo.value = payment.paymentNo
+      providerPaymentId.value = payment.providerPaymentId || ''
+      cardAttemptNeedsRenewal = false
+      if (!payment.session || payment.status !== 'CREATED') {
+        session.value = undefined
+        startPolling()
+        return
+      }
+      session.value = payment.session
+    }
     if (!signedFields.value) {
       const payment = await commerce.issueEmbeddedSession(paymentNo.value)
+      if (disposed) return
       if (!payment.session || !Object.keys(payment.session.fields).length) {
         session.value = undefined
         startPolling()
@@ -600,10 +655,12 @@ async function submit() {
     }
     const sdk = getSdk(selected.value)
     if (!sdk) throw new Error('Payment SDK unavailable')
+    cardCheckoutPending = selected.value === 'CREDIT_CARD'
     sdk.checkout(signedFields.value)
     walletArmed.value = selected.value !== 'CREDIT_CARD'
     startPolling()
   } catch {
+    cardCheckoutPending = false
     session.value = undefined
     sdkMessage.value = 'Confirming your payment status. Please do not start another payment.'
     startPolling()
@@ -614,7 +671,12 @@ async function resetEmbeddedSession() {
   if (!canResetEmbeddedSession.value || resetting.value) return
   resetting.value = true
   try {
-    await commerce.abortEmbeddedSession(paymentNo.value)
+    const payment = await commerce.abortEmbeddedSession(paymentNo.value)
+    if (payment.status !== 'FAILED' || payment.failureCode !== 'CHECKOUT_NOT_SUBMITTED') {
+      providerPaymentId.value = payment.providerPaymentId || ''
+      sdkMessage.value = 'This payment is still being verified. Please try again shortly.'
+      return
+    }
     if (pollTimer) {
       clearInterval(pollTimer)
       pollTimer = undefined
@@ -636,6 +698,7 @@ async function resetEmbeddedSession() {
 }
 
 function submitOrder() {
+  if (submitting.value || preparing.value || resetting.value || locked.value) return
   if (selected.value !== 'CREDIT_CARD') {
     selectChannel('CREDIT_CARD').then(() => submit())
   } else {
@@ -1282,6 +1345,13 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.card-validation-hint {
+  margin: 0;
+  color: #6b7280;
+  font-size: 12px;
+  text-align: center;
 }
 
 .place-order-button:hover:not(:disabled) {

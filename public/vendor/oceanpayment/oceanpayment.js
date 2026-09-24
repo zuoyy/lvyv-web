@@ -1,9 +1,7 @@
 var ipAddressOnePage = "https://secure.oceanpayment.com";
 var Oceanpayment = {
 	init : function($isSandBox,$cssUrl,$language,$configuration) {
-		if($isSandBox){
-			ipAddressOnePage = "https://test-secure.oceanpayment.com";
-		}
+		ipAddressOnePage = $isSandBox ? "https://test-secure.oceanpayment.com" : "https://secure.oceanpayment.com";
 		document.getElementById("oceanpayment-element").innerHTML = '<iframe id="oceanpayment-iframe-card" name="oceanpayment-iframe-card" width="100%" style="overflow-x : hidden;overflow-y : hidden;" src="' + ipAddressOnePage + '/gateway/direct/checkpage?language=' +$language+ '" frameborder="0" height="131" seamless></iframe>';
         //获取iframe元素
         var iframe = document.getElementById("oceanpayment-iframe-card");
@@ -27,42 +25,24 @@ var Oceanpayment = {
         iframe.contentWindow.postMessage($data, childDomain);
 	}
 }
-window.addEventListener('message',function(e) {
-	if (e.origin == "https://secure.oceanpayment.com" || e.origin == "https://test-secure.oceanpayment.com") {
-		let code = e.data.code;
-		let method = e.data.method;
+window.addEventListener('message', function(e) {
+	var iframe = document.getElementById('oceanpayment-iframe-card');
+	if (!iframe || e.source !== iframe.contentWindow || e.origin !== ipAddressOnePage) return;
+	var data = e.data;
+	var method;
+	if (data && typeof data === 'object') {
+		method = data.method;
+	} else if (typeof data === 'string') {
 		try {
-			var parser=new DOMParser();
-			var xmldoc = parser.parseFromString(e.data,'text/xml');
-			if(xmldoc.getElementsByTagName("methods").length > 0){
-				method = xmldoc.getElementsByTagName("methods")[0].textContent;
-			}
-			if (method == 'Credit Card') {
-				//自适应高度
-				reinitIframeCard(e.data.height);
-			}
-			let terminalIndex = e.data.toString().indexOf("terminal");
-			if (code != undefined || terminalIndex != -1) {
-				// 校验错误也必须回传；部分环境会用 code=1 搭配 msg 表示卡号/有效期未填写。
-				var hasValidationMessage = e.data && (e.data.msg || e.data.toString().indexOf('<msg>') != -1);
-				if ((code != 1 || hasValidationMessage) && method == 'Credit Card') {
-					delete e.data.height;
-					if (typeof oceanpaymentCallBack === 'function') {
-						oceanpaymentCallBack(e.data);
-					}
-				}
-			}
-		} catch (ex) {
-			// 解析异常时仍转发校验消息，交由页面统一处理提示。
-			var hasValidationMessage = e.data && (e.data.msg || e.data.toString().indexOf('<msg>') != -1);
-			if ((code != 1 || hasValidationMessage) && method == 'Credit Card') {
-				delete e.data.height;
-				if (typeof oceanpaymentCallBack === 'function') {
-					oceanpaymentCallBack(e.data);
-				}
-			}
-		}
+			var doc = new DOMParser().parseFromString(data, 'text/xml');
+			var methods = doc.getElementsByTagName('methods');
+			method = methods.length ? methods[0].textContent : undefined;
+		} catch (_) { return; }
 	}
+	if (method !== 'Credit Card') return;
+	if (data && typeof data === 'object') reinitIframeCard(data.height);
+	// code=1 是布局通知，不是完整性校验。失焦错误和提交错误均交给页面按提交状态区分。
+	if (typeof oceanpaymentCallBack === 'function') oceanpaymentCallBack(data);
 });
 
 function reinitIframeCard(heightData) {
