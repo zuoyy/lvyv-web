@@ -15,23 +15,27 @@ const compiled = ts.transpileModule(source +
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText
 
-function setup({ status = 'PENDING_PAYMENT', expired = false, existing = null, attemptExpired = false, abortStatus = 'FAILED', abortThrows = false, autoReady = true, renewalThrows = false, checkoutError = null, timers = { setTimeout: () => 1, clearTimeout: () => {} } } = {}) {
+function setup({ status = 'PENDING_PAYMENT', expired = false, existing = null, attemptExpired = false, abortStatus = 'FAILED', abortThrows = false, autoReady = true, renewalThrows = false, checkoutError = null, api = {}, coldSdk = false, applePaySupported = true, timers = { setTimeout: () => 1, clearTimeout: () => {} } } = {}) {
   const exports = {}, calls = [], redirects = []
+  const queries = [], scripts = [], initializedChannels = []
   const mounted = [], unmounted = []
   const href = 'https://www.lvyv.com/orders/ORD_TEST/pay'
   const deadline = new Date(Date.now() + (expired ? -60_000 : 60_000)).toISOString()
   const preview = channel => ({ paymentNo: 'PAY_TEST', status: 'CREATED', channel,
     expireTime: attemptExpired ? new Date(Date.now() - 1000).toISOString() : deadline,
-    session: { sdkUrl: `https://test-secure.oceanpayment.com/pages/js/${channel === 'CREDIT_CARD' ? 'oceanpayment.js' : 'oceanpayment-googlepay.js'}`,
-      sandbox: true, fields: {}, initConfig: { backUrl: href } } })
-  const sdk = {
-    init: (...args) => { structuredClone(args); calls.push(['init', ...args]); if (autoReady) queueMicrotask(() => exports.callback('CREDIT_CARD', { code: 1, msg: '' })) },
+    session: { sdkUrl: `https://test-secure.oceanpayment.com/pages/js/${embedded.embeddedAdapters[channel].script}`,
+      sdkType: channel, sandbox: true, fields: {}, initConfig: { backUrl: href } } })
+  const sdkFor = channel => ({
+    init: (...args) => { structuredClone(args); calls.push(['init', ...args]); initializedChannels.push(channel); if (autoReady && channel === 'CREDIT_CARD') queueMicrotask(() => exports.callback('CREDIT_CARD', { code: 1, msg: '' })) },
     checkout: fields => { structuredClone(fields); if (checkoutError) throw checkoutError; calls.push(['checkout']) },
-  }
+  })
   const frame = { contentWindow: {} }
-  const document = Object.assign(new EventTarget(), { getElementById: id => id === 'oceanpayment-iframe-card' ? frame : {}, activeElement: null })
+  const document = Object.assign(new EventTarget(), { getElementById: id => id === 'oceanpayment-iframe-card' ? frame : {}, activeElement: null,
+    createElement: () => ({}), head: { appendChild: script => scripts.push(script) } })
   const window = Object.assign(new EventTarget(), { document, history: { replaceState: () => {} }, location: { href, origin: 'https://www.lvyv.com' }, isSecureContext: true, ApplePaySession: {}, matchMedia: () => ({ matches: false }) })
-  for (const adapter of Object.values(embedded.embeddedAdapters)) window[adapter.global] = sdk
+  if (!applePaySupported) delete window.ApplePaySession
+  if (!coldSdk) for (const [channel, adapter] of Object.entries(embedded.embeddedAdapters)) window[adapter.global] = sdkFor(channel)
+  const current = existing?.session ? { ...preview(existing.channel), ...existing, session: { ...preview(existing.channel).session, ...existing.session } } : existing
   runInNewContext(compiled, {
     exports, ref, computed, nextTick, Error, URL,
     document,
@@ -39,12 +43,12 @@ function setup({ status = 'PENDING_PAYMENT', expired = false, existing = null, a
     definePageMeta: () => {}, useHead: () => {}, useRoute: () => ({ params: { orderNo: 'ORD_TEST' } }),
     useMemberAuth: () => ({}),
     useTourCommerce: () => ({
-      getPaymentOptions: async () => ({ channels: [] }),
-      getOrder: async () => ({ order: { status, orderNo: 'ORD_TEST', expireTime: deadline }, items: [] }),
-      listPaymentChannels: async () => ['CREDIT_CARD', 'GOOGLE_PAY'].map(channel => ({ channel, enabled: true })),
-      currentOrderPayment: async () => existing?.session ? { ...preview(existing.channel), ...existing } : existing,
+      getPaymentOptions: async () => { queries.push('options'); return api.getPaymentOptions ? api.getPaymentOptions() : { activePayment: current, channels: [{ channel: 'CREDIT_CARD', enabled: true, ...preview('CREDIT_CARD').session }] } },
+      getOrder: async () => { queries.push('order'); return api.getOrder ? api.getOrder() : { order: { status, orderNo: 'ORD_TEST', expireTime: deadline }, items: [] } },
+      listPaymentChannels: async () => { queries.push('channels'); return api.listPaymentChannels ? api.listPaymentChannels() : ['CREDIT_CARD', 'GOOGLE_PAY'].map(channel => ({ channel, enabled: true })) },
+      currentOrderPayment: async () => { queries.push('current'); return api.currentOrderPayment ? api.currentOrderPayment() : current },
       abortEmbeddedSession: async () => { calls.push(['abort']); if (abortThrows) throw new Error('Offline'); return { status: abortStatus, failureCode: abortStatus === 'FAILED' ? 'CHECKOUT_NOT_SUBMITTED' : 'NETWORK_OR_RESPONSE_ERROR' } },
-      createPayment: async (_order, channel) => { calls.push(['create', channel]); if (renewalThrows && calls.filter(([name]) => name === 'create').length > 1) throw new Error('Offline'); return preview(channel) },
+      createPayment: async (_order, channel) => { calls.push(['create', channel]); if (renewalThrows && calls.filter(([name]) => name === 'create').length > 1) throw new Error('Offline'); return api.createPayment ? api.createPayment(channel) : preview(channel) },
       issueEmbeddedSession: async () => { calls.push(['issue']); return { ...preview('CREDIT_CARD'), session: { fields: { backUrl: href, signValue: 'test' } } } },
     }),
     window, navigator: { userAgent: 'Test desktop' },
@@ -52,7 +56,14 @@ function setup({ status = 'PENDING_PAYMENT', expired = false, existing = null, a
     setInterval: () => 1, clearInterval: () => {}, ...timers,
     onMounted: fn => mounted.push(fn), onBeforeUnmount: fn => unmounted.push(fn),
   })
-  return { ...exports, calls, redirects,
+  return { ...exports, calls, redirects, queries, scripts, initializedChannels,
+    completeSdk: channel => {
+      const adapter = embedded.embeddedAdapters[channel]
+      const script = scripts.findLast(script => script.src.split('?')[0].endsWith('/' + adapter.script))
+      assert.ok(script, channel + ' script requested')
+      window[adapter.global] = sdkFor(channel)
+      script.onload()
+    },
     mount: async () => { mounted.forEach(fn => fn()); for (let i = 0; i < 30; i++) await Promise.resolve() },
     unmount: () => unmounted.forEach(fn => fn()),
     frameMessage: (data, origin = 'https://test-secure.oceanpayment.com', sender = frame.contentWindow) => {
@@ -73,11 +84,150 @@ test('关闭页面后返回可恢复付款表单，点击付款前不发放签�
   assert.equal(page.error.value, '')
   assert.ok(page.session.value)
   assert.equal(page.locked.value, false)
-  assert.deepEqual(page.calls.map(([name]) => name), ['create', 'init'])
+  assert.deepEqual(page.calls.map(([name]) => name), ['init'])
   assert.equal(page.calls.find(([name]) => name === 'init')[4].showCardName, false)
   await page.submit()
   assert.equal(page.calls.filter(([name]) => name === 'issue').length, 1)
   assert.equal(page.calls.filter(([name]) => name === 'checkout').length, 1)
+})
+
+const settle = async () => { for (let i = 0; i < 30; i++) await Promise.resolve() }
+const deferred = () => {
+  let resolve, reject
+  const promise = new Promise((yes, no) => { resolve = yes; reject = no })
+  return { promise, resolve, reject }
+}
+const allOptions = () => ({ channels: Object.entries(embedded.embeddedAdapters).map(([channel, adapter]) => ({
+  channel, enabled: true, sandbox: true,
+  sdkUrl: 'https://test-secure.oceanpayment.com/pages/js/' + adapter.script, initConfig: {},
+})) })
+
+test('三个 SDK 与订单和支付查询重叠下载，查询结束前不初始化或发起支付', async () => {
+  const order = deferred(), current = deferred(), options = deferred()
+  const page = setup({ coldSdk: true, api: {
+    getOrder: () => order.promise, currentOrderPayment: () => current.promise, getPaymentOptions: () => options.promise,
+  } })
+  const loading = page.load()
+  await settle()
+  assert.deepEqual([...page.queries].sort(), ['current', 'options', 'order'])
+  assert.equal(page.scripts.length, 0)
+  options.resolve(allOptions())
+  await settle()
+  assert.equal(page.scripts.length, 3)
+  for (const channel of Object.keys(embedded.embeddedAdapters)) page.completeSdk(channel)
+  await settle()
+  assert.deepEqual(page.calls, [])
+  order.resolve({ order: { status: 'PENDING_PAYMENT', orderNo: 'ORD_TEST', expireTime: new Date(Date.now() + 60000).toISOString() }, items: [] })
+  current.resolve(null)
+  await loading
+  await settle()
+  assert.deepEqual([...page.initializedChannels].sort(), ['APPLE_PAY', 'CREDIT_CARD', 'GOOGLE_PAY'])
+  assert.equal(page.scripts.length, 3)
+  assert.equal(page.calls.filter(([name]) => name === 'create').length, 1)
+  assert.equal(page.calls.some(([name]) => name === 'issue'), false)
+  assert.equal(page.queries.includes('channels'), false)
+})
+
+test('一个钱包 SDK 下载缓慢不会阻塞信用卡和另一个钱包', async () => {
+  const page = setup({ coldSdk: true, api: { getPaymentOptions: async () => allOptions() } })
+  await page.open()
+  page.completeSdk('CREDIT_CARD')
+  page.completeSdk('GOOGLE_PAY')
+  await settle()
+  assert.deepEqual([...page.initializedChannels].sort(), ['CREDIT_CARD', 'GOOGLE_PAY'])
+  assert.equal(page.sdkReady.value, true)
+  page.completeSdk('APPLE_PAY')
+  await settle()
+  assert.equal(page.initializedChannels.filter(channel => channel === 'APPLE_PAY').length, 1)
+  assert.equal(page.scripts.length, 3)
+})
+
+test('不支持 Apple Pay 的设备不下载或初始化 Apple Pay SDK', async () => {
+  const page = setup({ coldSdk: true, applePaySupported: false, api: { getPaymentOptions: async () => allOptions() } })
+  await page.open()
+  assert.equal(page.scripts.length, 2)
+  page.completeSdk('CREDIT_CARD')
+  page.completeSdk('GOOGLE_PAY')
+  await settle()
+  assert.deepEqual([...page.initializedChannels].sort(), ['CREDIT_CARD', 'GOOGLE_PAY'])
+  assert.equal(page.hasApplePay.value, false)
+})
+
+test('提前下载失败不打断订单查询，正式初始化可重新下载并恢复', async () => {
+  const current = deferred()
+  const page = setup({ coldSdk: true, api: { currentOrderPayment: () => current.promise } })
+  const loading = page.load()
+  await settle()
+  assert.equal(page.scripts.length, 1)
+  page.scripts[0].onerror()
+  await settle()
+  assert.deepEqual(page.calls, [])
+  current.resolve(null)
+  await loading
+  await settle()
+  assert.equal(page.scripts.length, 2)
+  page.completeSdk('CREDIT_CARD')
+  await settle()
+  assert.equal(page.sdkReady.value, true)
+  assert.equal(page.calls.filter(([name]) => name === 'create').length, 1)
+})
+
+test('信用卡 SDK 先于创建响应失败时，不产生未处理拒绝或签发付款参数', async () => {
+  const creating = deferred()
+  const page = setup({ coldSdk: true, api: { createPayment: () => creating.promise } })
+  await page.open()
+  page.scripts[0].onerror()
+  // 跨过事件循环，以便测试运行器捕获潜在 unhandledRejection。
+  await new Promise(resolve => setImmediate(resolve))
+  creating.resolve({ paymentNo: 'PAY_TEST', channel: 'CREDIT_CARD', status: 'CREATED',
+    expireTime: new Date(Date.now() + 60000).toISOString(), session: { sandbox: true, fields: {} } })
+  await settle()
+  assert.equal(page.sdkMessage.value, 'Unable to load this payment method.')
+  assert.equal(page.preparing.value, false)
+  assert.equal(page.sdkReady.value, false)
+  assert.equal(page.calls.some(([name]) => name === 'issue'), false)
+})
+
+test('选项失败时保留旧渠道查询兜底，选项为空时不绕过订单渠道限制', async () => {
+  const fallback = setup({ api: { getPaymentOptions: async () => { throw new Error('Offline') } } })
+  await fallback.open()
+  assert.equal(fallback.queries.filter(name => name === 'channels').length, 1)
+  assert.equal(fallback.sdkReady.value, true)
+  const unavailable = setup({ api: { getPaymentOptions: async () => ({ channels: [] }) } })
+  await unavailable.open()
+  assert.equal(unavailable.queries.includes('channels'), false)
+  assert.equal(unavailable.error.value, 'Payment is temporarily unavailable.')
+  assert.deepEqual(unavailable.calls, [])
+})
+
+test('支付核验结果晚于 SDK 下载时仍锁定，页面关闭后不初始化组件', async () => {
+  for (const unmount of [false, true]) {
+    const current = deferred()
+    const page = setup({ coldSdk: true, api: { getPaymentOptions: async () => allOptions(), currentOrderPayment: () => current.promise } })
+    const loading = page.load()
+    await settle()
+    for (const channel of Object.keys(embedded.embeddedAdapters)) page.completeSdk(channel)
+    if (unmount) page.unmount()
+    current.resolve({ paymentNo: 'PAY_TEST', status: 'UNKNOWN', channel: 'CREDIT_CARD' })
+    await loading
+    await settle()
+    assert.deepEqual(page.calls, [])
+    assert.deepEqual(page.initializedChannels, [])
+    if (!unmount) assert.equal(page.locked.value, true)
+  }
+})
+
+test('过期、带签名或支付商流水的会话不走快捷复用', async () => {
+  for (const scenario of [
+    { attemptExpired: true },
+    { existing: { paymentNo: 'PAY_TEST', status: 'CREATED', channel: 'CREDIT_CARD', session: { fields: { signValue: 'test' } } } },
+    { existing: { paymentNo: 'PAY_TEST', status: 'CREATED', channel: 'CREDIT_CARD', providerPaymentId: 'test', session: {} } },
+  ]) {
+    const page = setup({ existing: { paymentNo: 'PAY_TEST', status: 'CREATED', channel: 'CREDIT_CARD', session: {} }, ...scenario })
+    await page.open()
+    assert.equal(page.calls.filter(([name]) => name === 'create').length, 1)
+    assert.equal(page.calls.some(([name]) => name === 'issue'), false)
+  }
 })
 
 test('订单到期或已关闭时不创建支付，也不提交签名请求', async () => {

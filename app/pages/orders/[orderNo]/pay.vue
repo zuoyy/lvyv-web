@@ -205,10 +205,12 @@ import { observeWalletInteraction } from '~/utils/walletInteraction'
 import type { OrderView, PaymentView, PaymentChannelView, PaymentChannel, PaymentOptionsView } from '~/composables/useTourCommerce'
 
 definePageMeta({ middleware: 'member-auth', layout: false })
+const cardSdkPath = '/vendor/oceanpayment/oceanpayment.js?v=20260924-blur'
 useHead({
   title: 'Secure payment | Lvyv',
   meta: [{ name: 'robots', content: 'noindex, nofollow' }],
   link: [
+    { rel: 'preload', as: 'script', href: cardSdkPath },
     { rel: 'preconnect', href: 'https://secure.oceanpayment.com' },
     { rel: 'preconnect', href: 'https://test-secure.oceanpayment.com' },
     { rel: 'preconnect', href: 'https://pay.google.com' },
@@ -370,7 +372,7 @@ function loadSdk(channel: EmbeddedChannel, url: string, sandbox: boolean): Promi
     const script = document.createElement('script')
     const timeout = setTimeout(() => reject(new Error('Payment form is temporarily unavailable. You can choose another method.')), 15000)
     // 使用本地桥接脚本接收卡表单的就绪与校验事件；输入框仍由支付商跨域托管。
-    script.src = channel === 'CREDIT_CARD' ? '/vendor/oceanpayment/oceanpayment.js?v=20260924-blur' : url
+    script.src = channel === 'CREDIT_CARD' ? cardSdkPath : url
     script.async = true
     script.onload = () => {
       clearTimeout(timeout)
@@ -539,7 +541,7 @@ async function ensureContainer(containerId: string): Promise<HTMLElement | null>
   return null
 }
 
-async function selectChannel(channel: PaymentChannel, channelOpt?: PaymentOptionsView['channels'][number]) {
+async function selectChannel(channel: PaymentChannel, channelOpt?: PaymentOptionsView['channels'][number], reusablePayment?: PaymentView | null) {
   if (!isEmbedded(channel) || locked.value || !order.value || orderUnavailable.value) return
   const currentGeneration = ++generation
   preparing.value = true
@@ -558,8 +560,15 @@ async function selectChannel(channel: PaymentChannel, channelOpt?: PaymentOption
     const sdkPreload = channelOpt?.sdkUrl
       ? loadSdk(selected.value, channelOpt.sdkUrl, channelOpt.sandbox)
       : null
+    // 创建占位仍在等待时，预载可能先失败；先接住拒绝，后续 await 再统一显示错误。
+    void sdkPreload?.catch(() => {})
 
-    const payment = await commerce.createPayment(order.value.order.orderNo, channel, clientType())
+    // current 接口返回的未提交卡会话可直接恢复，签名仍只在用户点击付款时由后端校验并签发。
+    const reusableCard = channel === 'CREDIT_CARD' && reusablePayment?.channel === channel
+      && reusablePayment.status === 'CREATED' && reusablePayment.session?.sdkType === 'CREDIT_CARD'
+      && !reusablePayment.providerPaymentId && !Object.keys(reusablePayment.session.fields).length
+      && Boolean(reusablePayment.expireTime && Date.parse(reusablePayment.expireTime) > Date.now())
+    const payment = reusableCard ? reusablePayment : await commerce.createPayment(order.value.order.orderNo, channel, clientType())
     if (disposed || generation !== currentGeneration) return
     paymentNo.value = payment.paymentNo
     providerPaymentId.value = payment.providerPaymentId || ''
@@ -809,13 +818,27 @@ async function load() {
   error.value = ''
   try {
     const orderNo = String(route.params.orderNo)
-    // 独立查询全部通过 Promise.all 并发发出，消除请求瀑布流
+    const optionsRequest = commerce.getPaymentOptions(orderNo, clientType()).catch(() => null)
+    // 选项到达即下载 SDK，与订单和原支付核验重叠；核验结束前不挂载 iframe、不创建支付。
+    const preparedOptions = optionsRequest.then(options => {
+      if (!disposed && options && (!options.activePayment || options.activePayment.session)) {
+        for (const option of options.channels) {
+          if (option.enabled && isEmbedded(option.channel)
+            && (option.channel !== 'APPLE_PAY' || supportsApplePay.value)) {
+            void loadSdk(option.channel, option.sdkUrl, option.sandbox).catch(() => {})
+          }
+        }
+      }
+      return options
+    })
+    // 选项已包含按本订单路由筛选的渠道；只有选项接口不可用时才查询旧渠道接口兜底。
     const [loadedOrder, paymentOptions, available, existing] = await Promise.all([
       commerce.getOrder(orderNo),
-      commerce.getPaymentOptions(orderNo, clientType()).catch(() => null),
-      commerce.listPaymentChannels(clientType()),
+      preparedOptions,
+      optionsRequest.then(options => options?.channels ?? commerce.listPaymentChannels(clientType())),
       commerce.currentOrderPayment(orderNo)
     ])
+    if (disposed) return
     order.value = loadedOrder
     now.value = Date.now()
     if (loadedOrder.order.status === 'COMPLETED') {
@@ -853,7 +876,7 @@ async function load() {
 
     // 左侧固定挂载信用卡表单，右侧并行初始化快捷支付按钮
     void initWallets(optionChannels, available)
-    void selectChannel('CREDIT_CARD', ccOption)
+    void selectChannel('CREDIT_CARD', ccOption, existing)
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Unable to load payment details.'
   } finally {
