@@ -2,7 +2,7 @@ var ipAddressOnePage = "https://secure.oceanpayment.com";
 var Oceanpayment = {
 	init : function($isSandBox,$cssUrl,$language,$configuration) {
 		ipAddressOnePage = $isSandBox ? "https://test-secure.oceanpayment.com" : "https://secure.oceanpayment.com";
-		document.getElementById("oceanpayment-element").innerHTML = '<iframe id="oceanpayment-iframe-card" name="oceanpayment-iframe-card" width="100%" style="overflow-x : hidden;overflow-y : hidden;" src="' + ipAddressOnePage + '/gateway/direct/checkpage?language=' +$language+ '" frameborder="0" height="131" seamless></iframe>';
+		document.getElementById("oceanpayment-element").innerHTML = '<iframe id="oceanpayment-iframe-card" name="oceanpayment-iframe-card" width="100%" loading="eager" fetchpriority="high" style="overflow-x : hidden;overflow-y : hidden;" src="' + ipAddressOnePage + '/gateway/direct/checkpage?language=' +$language+ '" frameborder="0" height="131" seamless></iframe>';
         //获取iframe元素
         var iframe = document.getElementById("oceanpayment-iframe-card");
         //iframe网页IP:PORT

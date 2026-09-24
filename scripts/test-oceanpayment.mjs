@@ -21,7 +21,7 @@ test('SDK loading is tied to channel and configured environment', () => {
   assert.equal(trustedSdkUrl('CREDIT_CARD', 'https://evil.invalid/pages/js/oceanpayment.js', true), false)
 })
 
-test('卡片就绪监听绑定当前会话环境和 iframe，兼容数字和字符串状态码', () => {
+test('卡片就绪监听绑定当前会话环境，兼容数字、字符串和 XML 状态码', () => {
   let sandbox, frame = { contentWindow: {} }, ready = 0
   const host = Object.assign(new EventTarget(), { document: { getElementById: () => frame } })
   const stop = observeCardFormReady(host, () => sandbox, () => ready++)
@@ -35,19 +35,20 @@ test('卡片就绪监听绑定当前会话环境和 iframe，兼容数字和字�
   sandbox = false
   send(layout)
   send({ ...layout, code: '1' })
-  assert.equal(ready, 2)
+  send('<response><code>1</code><msg></msg><methods>Credit Card</methods></response>')
+  assert.equal(ready, 3)
   send(layout, 'https://test-secure.oceanpayment.com')
   send({ ...layout, code: 2 })
   const previousWindow = frame.contentWindow
   frame = { contentWindow: {} }
   send(layout, 'https://secure.oceanpayment.com', previousWindow)
-  assert.equal(ready, 2)
+  assert.equal(ready, 3)
   sandbox = true
   send(layout)
-  assert.equal(ready, 2)
-  send(layout, 'https://test-secure.oceanpayment.com')
   assert.equal(ready, 3)
+  send(layout, 'https://test-secure.oceanpayment.com')
+  assert.equal(ready, 4)
   stop()
   send(layout, 'https://test-secure.oceanpayment.com')
-  assert.equal(ready, 3)
+  assert.equal(ready, 4)
 })

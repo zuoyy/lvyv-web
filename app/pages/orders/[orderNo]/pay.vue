@@ -206,6 +206,7 @@ import type { OrderView, PaymentView, PaymentChannelView, PaymentChannel, Paymen
 
 definePageMeta({ middleware: 'member-auth', layout: false })
 const cardSdkPath = '/vendor/oceanpayment/oceanpayment.js?v=20260924-blur'
+const cardFormReadyTimeoutMs = 45_000
 useHead({
   title: 'Secure payment | Lvyv',
   meta: [{ name: 'robots', content: 'noindex, nofollow' }],
@@ -217,7 +218,9 @@ useHead({
     { rel: 'dns-prefetch', href: 'https://secure.oceanpayment.com' },
     { rel: 'dns-prefetch', href: 'https://test-secure.oceanpayment.com' },
     { rel: 'dns-prefetch', href: 'https://pay.google.com' },
-    { rel: 'dns-prefetch', href: 'https://apis.google.com' }
+    { rel: 'dns-prefetch', href: 'https://apis.google.com' },
+    { rel: 'preconnect', href: 'https://applepay.cdn-apple.com' },
+    { rel: 'dns-prefetch', href: 'https://applepay.cdn-apple.com' }
   ]
 })
 const commerce = useTourCommerce()
@@ -603,7 +606,7 @@ async function selectChannel(channel: PaymentChannel, channelOpt?: PaymentOption
         if (disposed || generation !== currentGeneration || sdkReady.value) return
         preparing.value = false
         sdkMessage.value = cardFormLoadTimeoutMessage
-      }, 15000)
+      }, cardFormReadyTimeoutMs)
     } else {
       readyTimer = setTimeout(() => {
         if (disposed || sdkReady.value) return

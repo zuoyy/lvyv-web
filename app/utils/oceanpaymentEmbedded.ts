@@ -39,7 +39,17 @@ export function observeCardFormReady(host: Window, sandbox: () => boolean | unde
     const frame = host.document.getElementById('oceanpayment-iframe-card') as HTMLIFrameElement | null
     // 来源域名与当前 iframe 窗口均匹配才接受，钱包或上一次表单的消息不能改变卡片就绪状态。
     if (!frame?.contentWindow || event.source !== frame.contentWindow || event.origin !== origin) return
-    const data: unknown = event.data
+    let data: unknown = event.data
+    if (typeof data === 'string') {
+      const text = data.trim()
+      if (text.startsWith('{')) {
+        try { data = JSON.parse(text) } catch { return }
+      } else if (text.startsWith('<')) {
+        // 少数支付商节点会把布局通知序列化为 XML；只读取非敏感的状态字段。
+        const value = (name: string) => text.match(new RegExp(`<${name}>([^<]*)</${name}>`, 'i'))?.[1]?.trim()
+        data = { code: value('code'), msg: value('msg') || '', method: value('method') || value('methods') }
+      } else return
+    }
     if (!data || typeof data !== 'object') return
     const fields = data as Record<string, unknown>
     if (fields.method !== 'Credit Card' || (fields.code !== 1 && fields.code !== '1')) return

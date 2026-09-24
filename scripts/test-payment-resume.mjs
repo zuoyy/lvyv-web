@@ -308,7 +308,7 @@ test('信用卡加载超时仍禁止提交，迟到的就绪通知清除超时�
   for (const code of [1, 2]) {
     const page = setup({ autoReady: false, timers: { setTimeout, clearTimeout } })
     await page.open()
-    t.mock.timers.tick(15000)
+    t.mock.timers.tick(45000)
     assert.match(page.sdkMessage.value, /secure card form could not load/)
     assert.equal(page.sdkReady.value, false)
     assert.equal(page.preparing.value, false)
@@ -330,7 +330,7 @@ test('信用卡及时就绪后不再产生加载超时提示', async t => {
   await page.open()
   t.mock.timers.tick(14999)
   await page.callback('CREDIT_CARD', { code: 1, msg: '' })
-  t.mock.timers.tick(15000)
+  t.mock.timers.tick(45000)
   assert.equal(page.sdkMessage.value, '')
   assert.equal(page.sdkReady.value, true)
   assert.equal(page.preparing.value, false)
@@ -341,7 +341,7 @@ test('旧 SDK 不回传 code=1 时，页面仍接收当前卡 iframe 的真实�
   for (const code of [1, '1']) {
     const page = setup({ autoReady: false, timers: { setTimeout, clearTimeout } })
     await page.mount()
-    t.mock.timers.tick(15000)
+    t.mock.timers.tick(45000)
     assert.match(page.sdkMessage.value, /secure card form could not load/)
     const callsBefore = page.calls.length
     // 来自支付商 checkpage 的布局通知；SDK 不调用商户 callback，直接走浏览器消息链路。
@@ -366,7 +366,7 @@ test('直接就绪监听拒绝错误来源、其他 iframe、校验错误及卸�
   page.frameMessage(ready, 'https://evil.invalid')
   page.frameMessage(ready, 'https://secure.oceanpayment.com')
   page.frameMessage(ready, 'https://test-secure.oceanpayment.com', {})
-  for (const payload of [null, '{', JSON.stringify(ready), { ...ready, method: 'ApplePay' }, { ...ready, code: -1 }, { ...ready, msg: 'Your card number is empty.' }]) {
+  for (const payload of [null, '{', { ...ready, method: 'ApplePay' }, { ...ready, code: -1 }, { ...ready, msg: 'Your card number is empty.' }]) {
     page.frameMessage(payload)
   }
   assert.equal(page.sdkReady.value, false)

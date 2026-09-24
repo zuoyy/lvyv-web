@@ -28,6 +28,8 @@ test('初始化默认隐藏姓名，iframe 只收到配置，不包含卡数据'
   assert.equal(bridge.sent[0][0].showCardName, false)
   assert.equal(bridge.sent[0][0].methodType, 'init')
   assert.equal(bridge.sent[0][1], 'https://secure.oceanpayment.com')
+  assert.match(bridge.container.innerHTML, /loading="eager"/)
+  assert.match(bridge.container.innerHTML, /fetchpriority="high"/)
 })
 
 test('布局就绪和空卡失焦错误透传，保留原消息且不重建 iframe', () => {
