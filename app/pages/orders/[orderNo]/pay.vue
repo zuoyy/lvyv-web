@@ -200,7 +200,7 @@
 <script setup lang="ts">
 import CheckoutHeader from '~/components/checkout/CheckoutHeader.vue'
 import { cardPaymentFailureMessage } from '~/utils/paymentMessages'
-import { embeddedAdapters, embeddedEvent, trustedSdkUrl, paymentSdkData, type EmbeddedChannel } from '~/utils/oceanpaymentEmbedded'
+import { embeddedAdapters, embeddedEvent, trustedSdkUrl, paymentSdkData, observeCardFormReady, type EmbeddedChannel } from '~/utils/oceanpaymentEmbedded'
 import { observeWalletInteraction } from '~/utils/walletInteraction'
 import type { OrderView, PaymentView, PaymentChannelView, PaymentChannel, PaymentOptionsView } from '~/composables/useTourCommerce'
 
@@ -255,6 +255,7 @@ const walletProcessingChannel = ref<'APPLE_PAY' | 'GOOGLE_PAY' | null>(null)
 const walletOverlayVisible = ref(false)
 const walletActivationConfirmed = ref(false)
 let stopWalletInteraction: (() => void) | undefined
+let stopCardFormReady: (() => void) | undefined
 let walletTimeoutTimer: ReturnType<typeof setTimeout> | undefined
 
 function startWalletProcessing(channel: 'APPLE_PAY' | 'GOOGLE_PAY', confirmed = false) {
@@ -862,6 +863,9 @@ async function load() {
 
 onMounted(() => {
   window.history.replaceState(window.history.state, '', `/orders/${encodeURIComponent(String(route.params.orderNo))}/pay`)
+  stopCardFormReady = observeCardFormReady(window,
+    () => selected.value === 'CREDIT_CARD' ? session.value?.sandbox : undefined,
+    markCardFormReady)
   stopWalletInteraction = observeWalletInteraction(window, channel => startWalletProcessing(channel), () => {
     if (!walletActivationConfirmed.value) cancelWalletProcessing()
   })
@@ -878,6 +882,7 @@ onBeforeUnmount(() => {
   if (deadlineTimer) clearInterval(deadlineTimer)
   if (readyTimer) clearTimeout(readyTimer)
   stopWalletInteraction?.()
+  stopCardFormReady?.()
   if (walletTimeoutTimer) clearTimeout(walletTimeoutTimer)
   for (const adapter of Object.values(embeddedAdapters)) {
     ;(window as unknown as Record<string, unknown>)[adapter.callback] = () => {}

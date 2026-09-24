@@ -6,6 +6,7 @@ import { ref, computed, nextTick } from 'vue'
 import ts from 'typescript'
 import * as embedded from '../app/utils/oceanpaymentEmbedded.ts'
 import * as messages from '../app/utils/paymentMessages.ts'
+import * as walletInteraction from '../app/utils/walletInteraction.ts'
 
 const source = readFileSync(new URL('../app/pages/orders/[orderNo]/pay.vue', import.meta.url), 'utf8')
   .match(/<script setup lang="ts">([\s\S]*?)<\/script>/)[1]
@@ -16,6 +17,7 @@ const compiled = ts.transpileModule(source +
 
 function setup({ status = 'PENDING_PAYMENT', expired = false, existing = null, attemptExpired = false, abortStatus = 'FAILED', abortThrows = false, autoReady = true, renewalThrows = false, checkoutError = null, timers = { setTimeout: () => 1, clearTimeout: () => {} } } = {}) {
   const exports = {}, calls = [], redirects = []
+  const mounted = [], unmounted = []
   const href = 'https://www.lvyv.com/orders/ORD_TEST/pay'
   const deadline = new Date(Date.now() + (expired ? -60_000 : 60_000)).toISOString()
   const preview = channel => ({ paymentNo: 'PAY_TEST', status: 'CREATED', channel,
@@ -26,12 +28,14 @@ function setup({ status = 'PENDING_PAYMENT', expired = false, existing = null, a
     init: (...args) => { structuredClone(args); calls.push(['init', ...args]); if (autoReady) queueMicrotask(() => exports.callback('CREDIT_CARD', { code: 1, msg: '' })) },
     checkout: fields => { structuredClone(fields); if (checkoutError) throw checkoutError; calls.push(['checkout']) },
   }
-  const window = { location: { href, origin: 'https://www.lvyv.com' }, isSecureContext: true, ApplePaySession: {}, matchMedia: () => ({ matches: false }) }
+  const frame = { contentWindow: {} }
+  const document = Object.assign(new EventTarget(), { getElementById: id => id === 'oceanpayment-iframe-card' ? frame : {}, activeElement: null })
+  const window = Object.assign(new EventTarget(), { document, history: { replaceState: () => {} }, location: { href, origin: 'https://www.lvyv.com' }, isSecureContext: true, ApplePaySession: {}, matchMedia: () => ({ matches: false }) })
   for (const adapter of Object.values(embedded.embeddedAdapters)) window[adapter.global] = sdk
   runInNewContext(compiled, {
     exports, ref, computed, nextTick, Error, URL,
-    document: { getElementById: () => ({}) },
-    require: name => name.endsWith('oceanpaymentEmbedded') ? embedded : name.endsWith('paymentMessages') ? messages : {},
+    document,
+    require: name => name.endsWith('oceanpaymentEmbedded') ? embedded : name.endsWith('paymentMessages') ? messages : name.endsWith('walletInteraction') ? walletInteraction : {},
     definePageMeta: () => {}, useHead: () => {}, useRoute: () => ({ params: { orderNo: 'ORD_TEST' } }),
     useMemberAuth: () => ({}),
     useTourCommerce: () => ({
@@ -46,9 +50,17 @@ function setup({ status = 'PENDING_PAYMENT', expired = false, existing = null, a
     window, navigator: { userAgent: 'Test desktop' },
     navigateTo: async path => redirects.push(path),
     setInterval: () => 1, clearInterval: () => {}, ...timers,
-    onMounted: () => {}, onBeforeUnmount: () => {},
+    onMounted: fn => mounted.push(fn), onBeforeUnmount: fn => unmounted.push(fn),
   })
-  return { ...exports, calls, redirects, open: async () => {
+  return { ...exports, calls, redirects,
+    mount: async () => { mounted.forEach(fn => fn()); for (let i = 0; i < 30; i++) await Promise.resolve() },
+    unmount: () => unmounted.forEach(fn => fn()),
+    frameMessage: (data, origin = 'https://test-secure.oceanpayment.com', sender = frame.contentWindow) => {
+      const event = new Event('message')
+      Object.assign(event, { data, origin, source: sender })
+      window.dispatchEvent(event)
+    },
+    open: async () => {
     await exports.load()
     // load 并行挂载支付表单；等待初始化 Promise 完成。
     for (let i = 0; i < 20; i++) await Promise.resolve()
@@ -172,6 +184,46 @@ test('信用卡及时就绪后不再产生加载超时提示', async t => {
   assert.equal(page.sdkMessage.value, '')
   assert.equal(page.sdkReady.value, true)
   assert.equal(page.preparing.value, false)
+})
+
+test('旧 SDK 不回传 code=1 时，页面仍接收当前卡 iframe 的真实格式并解除加载超时', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] })
+  for (const code of [1, '1']) {
+    const page = setup({ autoReady: false, timers: { setTimeout, clearTimeout } })
+    await page.mount()
+    t.mock.timers.tick(15000)
+    assert.match(page.sdkMessage.value, /secure card form could not load/)
+    const callsBefore = page.calls.length
+    // 来自支付商 checkpage 的布局通知；SDK 不调用商户 callback，直接走浏览器消息链路。
+    const ready = { code, msg: '', height: 131, method: 'Credit Card' }
+    page.frameMessage(ready)
+    assert.equal(page.sdkReady.value, true)
+    assert.equal(page.preparing.value, false)
+    assert.equal(page.sdkMessage.value, '')
+    assert.equal(page.locked.value, false)
+    assert.equal(page.calls.length, callsBefore)
+    await page.submit()
+    assert.equal(page.calls.filter(([name]) => name === 'issue').length, 1)
+    assert.equal(page.calls.filter(([name]) => name === 'checkout').length, 1)
+    page.unmount()
+  }
+})
+
+test('直接就绪监听拒绝错误来源、其他 iframe、校验错误及卸载后的通知', async () => {
+  const page = setup({ autoReady: false })
+  await page.mount()
+  const ready = { code: 1, msg: '', height: 131, method: 'Credit Card' }
+  page.frameMessage(ready, 'https://evil.invalid')
+  page.frameMessage(ready, 'https://secure.oceanpayment.com')
+  page.frameMessage(ready, 'https://test-secure.oceanpayment.com', {})
+  for (const payload of [null, '{', JSON.stringify(ready), { ...ready, method: 'ApplePay' }, { ...ready, code: -1 }, { ...ready, msg: 'Your card number is empty.' }]) {
+    page.frameMessage(payload)
+  }
+  assert.equal(page.sdkReady.value, false)
+  assert.equal(page.calls.some(([name]) => name === 'issue'), false)
+  page.unmount()
+  page.frameMessage(ready)
+  assert.equal(page.sdkReady.value, false)
 })
 
 test('重复就绪通知不清除卡片校验错误或支付核验提示，也不解除支付锁定', async () => {
