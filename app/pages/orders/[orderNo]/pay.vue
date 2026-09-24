@@ -402,7 +402,15 @@ async function selectChannel(channel: PaymentChannel) {
         preparing.value = false
         sdkMessage.value = 'This wallet is unavailable on this device. Please choose credit card.'
       }, 15000)
-      sdk.init(sandbox, payment.session.initConfig)
+      const config = { ...(payment.session.initConfig || {}) } as Record<string, unknown>
+      if (selected.value === 'GOOGLE_PAY' && config.buttonStyle && typeof config.buttonStyle === 'object') {
+        config.buttonStyle = {
+          ...(config.buttonStyle as Record<string, unknown>),
+          buttonSizeMode: 'fill',
+          buttonRadius: 8
+        }
+      }
+      sdk.init(sandbox, config)
     }
   } catch (e) {
     preparing.value = false
@@ -477,7 +485,15 @@ async function preloadWallets(availableChannels: PaymentChannelView[]) {
         if (item.channel === 'GOOGLE_PAY') {
           hasGooglePay.value = true
           loadSdk('GOOGLE_PAY', item.sdkUrl, item.sandbox).then(sdk => {
-            sdk.init(item.sandbox ? true : '', item.initConfig)
+            const config = { ...(item.initConfig || {}) } as Record<string, unknown>
+            if (config.buttonStyle && typeof config.buttonStyle === 'object') {
+              config.buttonStyle = {
+                ...(config.buttonStyle as Record<string, unknown>),
+                buttonSizeMode: 'fill',
+                buttonRadius: 8
+              }
+            }
+            sdk.init(item.sandbox ? true : '', config)
           }).catch(() => { hasGooglePay.value = false })
         } else if (item.channel === 'APPLE_PAY' && supportsApplePay) {
           hasApplePay.value = true
@@ -884,11 +900,86 @@ onBeforeUnmount(() => {
 
 .wallet-btn-container {
   width: 100%;
+  height: 48px;
   min-height: 48px;
+  max-height: 48px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .wallet-element-slot {
   width: 100%;
+  height: 48px;
+  min-height: 48px;
+  max-height: 48px;
+  box-sizing: border-box;
+}
+
+/* 统一 Apple Pay 与 Google Pay 挂载节点与内部渲染按钮高度 */
+:deep(#oceanpayment-applepayelement),
+:deep(#oceanpayment-googlepayelement) {
+  width: 100% !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
+  display: block !important;
+  box-sizing: border-box !important;
+}
+
+:deep(#oceanpayment-applepayelement > div),
+:deep(#oceanpayment-googlepayelement > div),
+:deep(#oceanpayment-applepayelement iframe),
+:deep(#oceanpayment-googlepayelement iframe) {
+  width: 100% !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  box-sizing: border-box !important;
+  display: block !important;
+}
+
+/* Apple Pay 原生按钮与 webkit 自定义元素统一高度与圆角 */
+:deep(#oceanpayment-applepayelement apple-pay-button),
+:deep(apple-pay-button) {
+  --apple-pay-button-width: 100% !important;
+  --apple-pay-button-height: 48px !important;
+  --apple-pay-button-border-radius: 8px !important;
+  --apple-pay-button-padding: 0 !important;
+  --apple-pay-button-box-sizing: border-box !important;
+  width: 100% !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
+  border-radius: 8px !important;
+  display: block !important;
+  box-sizing: border-box !important;
+}
+
+:deep(#oceanpayment-applepayelement button),
+:deep(#oceanpayment-applepayelement .apple-pay-button) {
+  width: 100% !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
+  border-radius: 8px !important;
+  box-sizing: border-box !important;
+  display: block !important;
+}
+
+/* Google Pay 内部 button 及卡片容器统一高度与圆角 */
+:deep(#oceanpayment-googlepayelement button),
+:deep(#oceanpayment-googlepayelement .gpay-button),
+:deep(#oceanpayment-googlepayelement .gpay-card-info-container) {
+  width: 100% !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
+  border-radius: 8px !important;
+  box-sizing: border-box !important;
+  display: block !important;
 }
 
 .wallet-divider {
