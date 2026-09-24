@@ -205,7 +205,7 @@ export interface OrderSummary {
 }
 export interface OfferSummary { itineraryId: number; offerCount: number; latestOffer?: CustomOfferView; pendingOffer?: CustomOfferView }
 
-export type PaymentChannel = 'CREDIT_CARD' | 'WECHAT_PAY' | 'ALIPAY'
+export type PaymentChannel = 'GOOGLE_PAY' | 'APPLE_PAY' | 'CREDIT_CARD' | 'WECHAT_PAY' | 'ALIPAY'
 export type PaymentStatus = 'CREATED' | 'PENDING' | 'UNKNOWN' | 'SUCCEEDED' | 'FAILED' | 'EXPIRED' | 'REVIEW_REQUIRED'
 export interface PaymentChannelView { channel: PaymentChannel; name: string; enabled: boolean }
 export interface BillingDetails {
@@ -236,7 +236,7 @@ export interface PaymentView {
   expireTime?: string
   createTime?: string
   updateTime?: string
-  session?: { sdkUrl: string; sandbox: boolean; fields: Record<string, string>; threeDsUrl?: string | null }
+  session?: { sdkUrl: string; sdkType: 'CREDIT_CARD' | 'GOOGLE_PAY' | 'APPLE_PAY'; sandbox: boolean; fields: Record<string, string>; initConfig: Record<string, unknown>; threeDsUrl?: string | null }
 }
 
 export interface MemberCouponView {
@@ -379,9 +379,11 @@ export const useTourCommerce = () => {
     confirmOffer: (offerNo: string, adultCount: number, childCount: number, requestedPoints = 0) => auth.request<OrderView>(`/commerce/custom-offers/${encodeURIComponent(offerNo)}/confirm`, { adultCount, childCount, requestedPoints }),
     requestRevision: (offerNo: string, requestContent: string) => auth.request<CustomOfferConfirmationView>(`/commerce/custom-offers/${encodeURIComponent(offerNo)}/request-revision`, { requestContent }),
     cancelOrder: (orderNo: string) => auth.request<OrderView>(`/commerce/orders/${encodeURIComponent(orderNo)}/cancel`),
-    listPaymentChannels: () => auth.request<PaymentChannelView[]>('/commerce/payments/channels', undefined, 'GET'),
+    listPaymentChannels: (clientType = 'DESKTOP_WEB') => auth.request<PaymentChannelView[]>(`/commerce/payments/channels?clientType=${encodeURIComponent(clientType)}`, undefined, 'GET'),
     createPayment: (orderNo: string, channel: PaymentChannel, clientType: 'DESKTOP_WEB' | 'MOBILE_WEB' | 'WECHAT_BROWSER', billing?: BillingDetails) =>
       auth.request<PaymentView>(`/commerce/orders/${encodeURIComponent(orderNo)}/payments`, { channel, clientType, billing }),
+    currentOrderPayment: (orderNo: string) => auth.request<PaymentView | null>(`/commerce/orders/${encodeURIComponent(orderNo)}/payments/current`, undefined, 'GET'),
+    issueEmbeddedSession: (paymentNo: string) => auth.request<PaymentView>(`/commerce/payments/${encodeURIComponent(paymentNo)}/embedded-session`, {}),
     getPayment: (paymentNo: string) => auth.request<PaymentView>(`/commerce/payments/${encodeURIComponent(paymentNo)}`, undefined, 'GET'),
   }
 }

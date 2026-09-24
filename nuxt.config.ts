@@ -15,6 +15,7 @@ export default defineNuxtConfig({
   // 本地开发时直连 lvyv-server；生产静态站点仍由 Nginx 代理 /web-api。
   nitro: {
     routeRules: {
+      '/.well-known/apple-developer-merchantid-domain-association': { headers: { 'content-type': 'text/plain', 'x-content-type-options': 'nosniff' } },
       '/login': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'referrer-policy': 'no-referrer', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
       '/login/**': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'referrer-policy': 'no-referrer', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
       '/referrals': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
@@ -31,6 +32,7 @@ export default defineNuxtConfig({
       '/encounters': { headers: { 'cache-control': 'no-store, max-age=0' } },
       '/encounters/**': { headers: { 'cache-control': 'no-store, max-age=0' } },
       '/checkout': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
+      '/payment/**': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
       '/orders/**/pay': { headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
       '/faq/**': { swr: 60 },
       '/en/faq/**': { swr: 60 },

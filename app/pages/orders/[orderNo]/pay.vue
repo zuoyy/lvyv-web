@@ -10,13 +10,25 @@
         <main class="payment-main">
           <section class="payment-card">
             <div class="payment-card-heading"><h1>Select a Payment Method</h1><p v-if="paymentDeadline">Please secure your booking within <strong>{{ paymentDeadline }}</strong></p></div>
+            <div class="payment-tabs" role="tablist" aria-label="Payment methods">
+              <button v-for="item in channels" :key="item.channel" type="button" role="tab"
+                :aria-selected="selected===item.channel" :disabled="locked || preparing"
+                :class="{active:selected===item.channel}" @click="selectChannel(item.channel)">{{ item.name }}</button>
+            </div>
             <div class="payment-method-panel">
-              <div class="payment-method-heading"><h2>Credit card</h2><div class="card-brands" aria-label="Accepted cards"><img v-for="brand in cardBrands" :key="brand.name" :src="brand.src" :alt="brand.name"></div></div>
-              <div id="oceanpayment-element" class="oceanpayment-element" />
+              <div class="payment-method-heading"><h2>{{ channelName }}</h2><div v-if="selected==='CREDIT_CARD'" class="card-brands" aria-label="Accepted cards"><img v-for="brand in cardBrands" :key="brand.name" :src="brand.src" :alt="brand.name"></div></div>
+              <div :class="{ 'wallet-preview': selected!=='CREDIT_CARD' && !walletArmed }">
+                <div :id="embeddedAdapters[selected].container" :key="selected" class="oceanpayment-element" :inert="selected!=='CREDIT_CARD' && !walletArmed" />
+              </div>
+              <p v-if="preparing" role="status">Checking payment availability...</p>
               <p v-if="sdkMessage" class="sdk-message">{{ sdkMessage }}</p>
             </div>
           </section>
-          <section class="payment-action-card"><button class="pay-button" type="button" :disabled="submitting || !session || paymentExpired" @click="submit">{{ paymentExpired ? 'Payment expired' : submitting ? 'Processing...' : 'Pay now' }}</button></section>
+          <section class="payment-action-card">
+            <button v-if="!walletArmed && session" class="pay-button" type="button" :disabled="submitting || preparing || !sdkReady || paymentExpired" @click="submit">{{ paymentExpired ? 'Payment expired' : submitting ? 'Processing...' : selected==='CREDIT_CARD' ? 'Pay now' : `Continue with ${channelName}` }}</button>
+            <p v-if="locked" role="status">{{ walletArmed ? `Use the ${channelName} button above to complete your payment.` : 'We are confirming your payment status. Please keep this page open.' }}</p>
+            <NuxtLink v-if="paymentNo" :to="`/payment/result?paymentNo=${encodeURIComponent(paymentNo)}`">View payment status</NuxtLink>
+          </section>
         </main>
         <aside class="payment-summary">
           <h2>{{ order.items[0]?.snapshot?.title || 'Lvyv journey' }}</h2><div class="summary-divider" /><h3>Price details</h3>
@@ -36,225 +48,294 @@
 <script setup lang="ts">
 import CheckoutHeader from '~/components/checkout/CheckoutHeader.vue'
 import { cardPaymentFailureMessage } from '~/utils/paymentMessages'
-import type { OrderView, PaymentChannel, PaymentView } from '~/composables/useTourCommerce'
-definePageMeta({ layout: false, middleware: 'member-auth' }); useNoIndex(); useHead({ htmlAttrs: { style: 'background-color: #203d33;' }, bodyAttrs: { style: 'background-color: #203d33; margin: 0; padding: 0;' } })
-const route = useRoute(); const commerce = useTourCommerce(); const auth = useMemberAuth()
-const order = ref<OrderView>(); const session = ref<PaymentView['session']>(); const paymentNo = ref(''); const paymentExpireAt = ref<number | null>(null); const now = ref(Date.now()); const loading = ref(true); const submitting = ref(false); const error = ref(''); const sdkMessage = ref(''); let timer: ReturnType<typeof setInterval> | undefined; let deadlineTimer: ReturnType<typeof setInterval> | undefined
+import { embeddedAdapters, embeddedEvent, trustedSdkUrl, type EmbeddedChannel } from '~/utils/oceanpaymentEmbedded'
+import type { OrderView, PaymentView, PaymentChannelView, PaymentChannel } from '~/composables/useTourCommerce'
+
+definePageMeta({ middleware: 'member-auth', layout: false })
+useHead({ title: 'Secure payment | Lvyv', meta: [{ name: 'robots', content: 'noindex, nofollow' }] })
+const commerce = useTourCommerce()
+const auth = useMemberAuth()
+const route = useRoute()
+const order = ref<OrderView>()
+const channels = ref<PaymentChannelView[]>([])
+const selected = ref<EmbeddedChannel>('CREDIT_CARD')
+const session = ref<PaymentView['session']>()
+const paymentNo = ref('')
+const loading = ref(true)
+const preparing = ref(false)
+const submitting = ref(false)
+const locked = ref(false)
+const walletArmed = ref(false)
+const sdkReady = ref(false)
+const error = ref('')
+const sdkMessage = ref('')
+const now = ref(Date.now())
+const paymentExpireAt = ref<number | null>(null)
+const signedFields = ref<Record<string, string>>()
+const channelName = computed(() => ({ CREDIT_CARD: 'Credit card', GOOGLE_PAY: 'Google Pay', APPLE_PAY: 'Apple Pay' }[selected.value]))
 const cardBrands = [{ name: 'Visa', src: '/images/payment/visa.png' }, { name: 'Mastercard', src: '/images/payment/mastercard.png' }, { name: 'Maestro', src: '/images/payment/maestro.png' }, { name: 'Discover', src: '/images/payment/discover.png' }, { name: 'Diners Club', src: '/images/payment/diners-club.png' }]
+const paymentExpired = computed(() => paymentExpireAt.value !== null && paymentExpireAt.value <= now.value)
 const paymentDeadline = computed(() => {
   if (!paymentExpireAt.value) return ''
-  const remaining = Math.max(0, paymentExpireAt.value - now.value)
-  const hours = Math.floor(remaining / 3600000)
-  const minutes = Math.floor((remaining % 3600000) / 60000)
-  const seconds = Math.floor((remaining % 60000) / 1000)
-  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+  const seconds = Math.max(0, Math.floor((paymentExpireAt.value - now.value) / 1000))
+  return [Math.floor(seconds / 3600), Math.floor(seconds / 60) % 60, seconds % 60].map(n => String(n).padStart(2, '0')).join(':')
 })
-const paymentExpired = computed(() => paymentExpireAt.value !== null && paymentExpireAt.value <= now.value)
 const formatMoney = (value: unknown) => Number.isFinite(Number(value)) ? Number(value).toFixed(2) : '0.00'
-const clientType = () => /MicroMessenger/i.test(navigator.userAgent) ? 'WECHAT_BROWSER' as const : (window.matchMedia('(max-width: 760px)').matches ? 'MOBILE_WEB' as const : 'DESKTOP_WEB' as const)
-type OceanpaymentSdk = { init?: (...args: unknown[]) => unknown; checkout?: (fields: Record<string, string>) => unknown }
-let sdkPromise: Promise<OceanpaymentSdk> | undefined
-const getSdk = (): OceanpaymentSdk | undefined => {
-  const value = (window as Window & { Oceanpayment?: OceanpaymentSdk }).Oceanpayment
-  return value && typeof value === 'object' ? value : undefined
-}
-const loadScript = (url: string): Promise<OceanpaymentSdk> => {
-  return new Promise<OceanpaymentSdk>((resolve, reject) => {
+const clientType = () => /MicroMessenger/i.test(navigator.userAgent) ? 'WECHAT_BROWSER' as const : window.matchMedia('(max-width: 760px)').matches ? 'MOBILE_WEB' as const : 'DESKTOP_WEB' as const
+const isEmbedded = (channel: string): channel is EmbeddedChannel => channel in embeddedAdapters
+
+type EmbeddedSdk = { init: (...args: unknown[]) => unknown; checkout: (fields: Record<string, string>) => unknown }
+const sdkPromises = new Map<EmbeddedChannel, Promise<EmbeddedSdk>>()
+const getSdk = (channel: EmbeddedChannel) => (window as unknown as Record<string, EmbeddedSdk>)[embeddedAdapters[channel].global]
+let disposed = false
+let generation = 0
+let pollTimer: ReturnType<typeof setInterval> | undefined
+let deadlineTimer: ReturnType<typeof setInterval> | undefined
+let readyTimer: ReturnType<typeof setTimeout> | undefined
+let polling = false
+
+function loadSdk(channel: EmbeddedChannel, url: string, sandbox: boolean): Promise<EmbeddedSdk> {
+  if (!trustedSdkUrl(channel, url, sandbox)) return Promise.reject(new Error('Payment SDK configuration is invalid.'))
+  const runtime = window as unknown as { __lvyvPaymentEnvironments?: Partial<Record<EmbeddedChannel, boolean>> }
+  const environments = runtime.__lvyvPaymentEnvironments ||= {}
+  if (environments[channel] !== undefined && environments[channel] !== sandbox) {
+    // Official SDK keeps a sticky sandbox host. Reload before initializing a different environment.
+    window.location.reload()
+    return Promise.reject(new Error('Reloading payment configuration...'))
+  }
+  environments[channel] = sandbox
+  const existing = getSdk(channel)
+  if (typeof existing?.init === 'function' && typeof existing.checkout === 'function') return Promise.resolve(existing)
+  const pending = sdkPromises.get(channel)
+  if (pending) return pending
+  const promise = new Promise<EmbeddedSdk>((resolve, reject) => {
     const script = document.createElement('script')
-    let settled = false
-    let poller: number | undefined
-    let deadline: number
-    const finish = () => {
-      if (settled) return
-      const sdk = getSdk()
-      if (typeof sdk?.init !== 'function' || typeof sdk.checkout !== 'function') return
-      settled = true
-      if (poller) window.clearInterval(poller)
-      window.clearTimeout(deadline)
-      resolve(sdk)
-    }
-    deadline = window.setTimeout(() => {
-      if (settled) return
-      settled = true
-      if (poller) window.clearInterval(poller)
-      reject(new Error('Payment form is temporarily unavailable.'))
-    }, 6000)
+    const timeout = setTimeout(() => reject(new Error('Payment form is temporarily unavailable. You can choose another method.')), 15000)
     script.src = url
     script.async = true
-    script.onload = () => { finish(); if (!settled) poller = window.setInterval(finish, 50) }
-    script.onerror = () => {
-      if (settled) return
-      settled = true
-      window.clearTimeout(deadline)
-      reject(new Error('Unable to load payment form.'))
+    script.onload = () => {
+      clearTimeout(timeout)
+      const sdk = getSdk(channel)
+      if (typeof sdk?.init === 'function' && typeof sdk.checkout === 'function') resolve(sdk)
+      else reject(new Error('Payment form is unavailable.'))
     }
+    script.onerror = () => { clearTimeout(timeout); reject(new Error('Unable to load this payment method.')) }
     document.head.appendChild(script)
-  })
+  }).catch(e => { sdkPromises.delete(channel); throw e })
+  sdkPromises.set(channel, promise)
+  return promise
 }
 
-const loadSdk = async (src?: string): Promise<OceanpaymentSdk> => {
-  const existing = getSdk()
-  if (typeof existing?.init === 'function' && typeof existing.checkout === 'function') return existing
-  if (sdkPromise) return sdkPromise
-
-  const localSdkUrl = '/vendor/oceanpayment/oceanpayment.js'
-  const remoteSdkUrl = (src && /^https?:\/\//i.test(src)) ? src : null
-
-  sdkPromise = (async () => {
-    try {
-      return await loadScript(localSdkUrl)
-    } catch {
-      if (remoteSdkUrl) {
-        return await loadScript(remoteSdkUrl)
-      }
-      throw new Error('Unable to load payment form.')
+function parsePayload(data: unknown): Record<string, string> {
+  if (typeof data === 'string') {
+    if (data.trim().startsWith('<')) {
+      const doc = new DOMParser().parseFromString(data, 'text/xml')
+      if (doc.querySelector('parsererror')) return {}
+      return Object.fromEntries(Array.from(doc.documentElement.children).map(node => [node.tagName, node.textContent || '']))
     }
-  })().catch((caught) => {
-    sdkPromise = undefined
-    throw caught
-  })
-  return sdkPromise
+    try { return parsePayload(JSON.parse(data)) } catch { return {} }
+  }
+  if (!data || typeof data !== 'object') return {}
+  return Object.fromEntries(Object.entries(data).filter(([, value]) => typeof value === 'string' || typeof value === 'number').map(([key, value]) => [key, String(value)]))
 }
 
-const mount = async () => {
-  if (!session.value) return
-  await nextTick()
-  for (let i = 0; i < 20; i++) {
-    if (document.getElementById('oceanpayment-element')) break
-    await new Promise(resolve => setTimeout(resolve, 50))
+async function callback(channel: EmbeddedChannel, data: unknown) {
+  if (disposed || channel !== selected.value) return
+  const event = embeddedEvent(parsePayload(data))
+  if (event.kind === 'ready') {
+    sdkReady.value = true
+    preparing.value = false
+    if (readyTimer) clearTimeout(readyTimer)
+    return
   }
-  const container = document.getElementById('oceanpayment-element')
-  if (!container) throw new Error('Payment element container not found.')
-  const sdk = await loadSdk(session.value.sdkUrl)
-  const init = sdk?.init
-  if (typeof init !== 'function') throw new Error('Payment form is temporarily unavailable.')
-  init.call(sdk, session.value.sandbox, '', '')
+  if (event.kind === 'cancelled') {
+    sdkMessage.value = 'Payment window closed. You can reopen the same payment using the wallet button.'
+    submitting.value = false
+    return
+  }
+  if (event.kind === 'validation') {
+    sdkMessage.value = selected.value === 'CREDIT_CARD' ? cardPaymentFailureMessage(event.code, event.message) || event.message : event.message
+    submitting.value = false
+    return
+  }
+  if (event.kind !== 'result' || event.fields.order_number !== paymentNo.value) return
+  locked.value = true
+  submitting.value = true
+  try {
+    // Only the backend may validate a 3DS URL; browser-supplied results never prove success.
+    const result = await auth.request<PaymentView>('/commerce/payments/oceanpayment/embedded-result', event.fields)
+    if (result.session?.threeDsUrl) window.location.assign(result.session.threeDsUrl)
+    else { walletArmed.value = false; session.value = undefined; sdkMessage.value = 'Confirming your payment status...' }
+  } catch {
+    walletArmed.value = false
+    session.value = undefined
+    sdkMessage.value = 'Confirming your payment status. Please do not start another payment.'
+  }
+  startPolling()
 }
-let polling = false
-let disposed = false
-const poll = () => {
-  if (!paymentNo.value || timer) return
-  timer = setInterval(async () => {
+
+function startPolling() {
+  if (pollTimer || !paymentNo.value) return
+  pollTimer = setInterval(async () => {
     if (polling || disposed) return
     polling = true
+    const current = paymentNo.value
     try {
-      const payment = await commerce.getPayment(paymentNo.value)
-      if (!disposed && ['SUCCEEDED', 'FAILED', 'EXPIRED', 'REVIEW_REQUIRED'].includes(payment.status)) {
-        if (timer) clearInterval(timer)
-        timer = undefined
-        await navigateTo(`/payment/result?paymentNo=${encodeURIComponent(payment.paymentNo)}`)
+      const payment = await commerce.getPayment(current)
+      if (disposed || current !== paymentNo.value) return
+      if (['SUCCEEDED', 'FAILED', 'EXPIRED', 'REVIEW_REQUIRED'].includes(payment.status)) {
+        clearInterval(pollTimer)
+        pollTimer = undefined
+        await navigateTo(`/payment/result?paymentNo=${encodeURIComponent(current)}`)
       }
-    } catch { /* The next interval retries status only; it never creates another payment. */ }
+    } catch { /* Retry status only; never create a second payment after network failure. */ }
     finally { polling = false }
   }, 2500)
 }
-const submit = () => {
-  if (!session.value || submitting.value || paymentExpired.value) return
-  const sdk = getSdk()
-  if (typeof sdk?.checkout !== 'function') { sdkMessage.value = 'Payment form is temporarily unavailable. Please try again.'; return }
-  submitting.value = true
+
+async function selectChannel(channel: PaymentChannel) {
+  if (!isEmbedded(channel) || locked.value || preparing.value || !order.value) return
+  const currentGeneration = ++generation
+  preparing.value = true
+  sdkReady.value = false
+  walletArmed.value = false
+  signedFields.value = undefined
+  session.value = undefined
+  selected.value = channel
   sdkMessage.value = ''
+  if (readyTimer) clearTimeout(readyTimer)
   try {
-    const fields = { ...session.value.fields }
-    if (!fields.key) {
-      fields.key = '84bc7a609809d871c3a4d90965326239fdb5a849d012685ed6b90d01ac46fcf17392e290146787f1d555a529d7cab76b3d856d91a93c3954d5cd346d182daeb8589b74711af7353815dead9fcdd3db9274a28b0292239aeaa0995f9f221b743f4b15fe4cf43ac939d5bdab9d6739434d6764b07ed26f30127b97f8f1a111fe2b'
-    }
-    if (!fields.backUrl && paymentNo.value) {
-      fields.backUrl = `${window.location.origin}/web-api/commerce/payments/oceanpayment/return?paymentNo=${encodeURIComponent(paymentNo.value)}`
-    }
-    sdk.checkout(fields)
-  } catch {
-    sdkMessage.value = 'Unable to submit payment. Please try again.'
-    submitting.value = false
-  }
-}
-const load = async () => {
-  loading.value = true
-  error.value = ''
-  try {
-    const [loadedOrder, channels] = await Promise.all([
-      commerce.getOrder(String(route.params.orderNo)),
-      commerce.listPaymentChannels()
-    ])
-    if (loadedOrder.order.status === 'COMPLETED') {
-      await navigateTo('/trips')
-      return
-    }
-    if (!channels.some(item => item.enabled && item.channel === 'CREDIT_CARD')) {
-      throw new Error('Credit card payment is temporarily unavailable.')
-    }
-    order.value = loadedOrder
-    const payment = await commerce.createPayment(loadedOrder.order.orderNo, 'CREDIT_CARD' as PaymentChannel, clientType())
+    const payment = await commerce.createPayment(order.value.order.orderNo, channel, clientType())
+    if (disposed || generation !== currentGeneration) return
     paymentNo.value = payment.paymentNo
-    const deadlines = [loadedOrder.order.expireTime, payment.expireTime]
-      .map(value => value ? Date.parse(value) : NaN)
-      .filter(Number.isFinite)
-    paymentExpireAt.value = deadlines.length > 0 ? Math.min(...deadlines) : null
-    if (payment.status === 'SUCCEEDED') {
-      await navigateTo(`/payment/result?paymentNo=${encodeURIComponent(payment.paymentNo)}`)
+    const deadlines = [order.value.order.expireTime, payment.expireTime].map(v => v ? Date.parse(v) : NaN).filter(Number.isFinite)
+    paymentExpireAt.value = deadlines.length ? Math.min(...deadlines) : null
+    if (isEmbedded(payment.channel)) selected.value = payment.channel
+    if (payment.status === 'SUCCEEDED') { await navigateTo(`/payment/result?paymentNo=${encodeURIComponent(payment.paymentNo)}`); return }
+    if (!payment.session) {
+      locked.value = true
+      preparing.value = false
+      sdkMessage.value = 'An existing payment is being confirmed. We will keep checking it.'
+      startPolling()
       return
     }
     session.value = payment.session
-    loading.value = false
-    await mount()
-    poll()
-  } catch (caught) {
-    loading.value = false
-    error.value = caught instanceof Error ? caught.message : 'Unable to load payment details.'
+    if (payment.session.initConfig.backUrl !== window.location.href) {
+      throw new Error('Payment page configuration does not match this address. Please contact support.')
+    }
+    await nextTick()
+    const sdk = await loadSdk(selected.value, payment.session.sdkUrl, payment.session.sandbox)
+    if (disposed || generation !== currentGeneration) return
+    const sandbox = payment.session.sandbox ? true : ''
+    if (selected.value === 'CREDIT_CARD') {
+      sdk.init(sandbox, '', 'en_US', { showCardName: true })
+      sdkReady.value = true
+      preparing.value = false
+    } else {
+      readyTimer = setTimeout(() => {
+        if (disposed || sdkReady.value) return
+        preparing.value = false
+        sdkMessage.value = 'This wallet is unavailable on this device. Please choose credit card.'
+      }, 15000)
+      sdk.init(sandbox, payment.session.initConfig)
+    }
+  } catch (e) {
+    preparing.value = false
+    sdkMessage.value = e instanceof Error ? e.message : 'Unable to initialize this payment method.'
   }
 }
+
+async function submit() {
+  if (!session.value || submitting.value || preparing.value || !sdkReady.value || paymentExpired.value) return
+  submitting.value = true
+  locked.value = true
+  sdkMessage.value = ''
+  try {
+    if (!signedFields.value) {
+      const payment = await commerce.issueEmbeddedSession(paymentNo.value)
+      if (!payment.session || !Object.keys(payment.session.fields).length) {
+        session.value = undefined
+        startPolling()
+        return
+      }
+      signedFields.value = payment.session.fields
+    }
+    if (signedFields.value.backUrl !== window.location.href) throw new Error('Payment page address mismatch')
+    const sdk = getSdk(selected.value)
+    if (!sdk) throw new Error('Payment SDK unavailable')
+    sdk.checkout(signedFields.value)
+    walletArmed.value = selected.value !== 'CREDIT_CARD'
+    startPolling()
+  } catch {
+    session.value = undefined
+    sdkMessage.value = 'Confirming your payment status. Please do not start another payment.'
+    startPolling()
+  }
+}
+
+async function load() {
+  loading.value = true
+  error.value = ''
+  try {
+    const [loadedOrder, available, existing] = await Promise.all([
+      commerce.getOrder(String(route.params.orderNo)), commerce.listPaymentChannels(clientType()),
+      commerce.currentOrderPayment(String(route.params.orderNo))
+    ])
+    order.value = loadedOrder
+    if (loadedOrder.order.status === 'COMPLETED') { await navigateTo('/trips'); return }
+    channels.value = available.filter(item => item.enabled && isEmbedded(item.channel) && (item.channel !== 'APPLE_PAY' || (window.isSecureContext && 'ApplePaySession' in window)))
+    if (existing && existing.status !== 'FAILED' && !existing.session) {
+      paymentNo.value = existing.paymentNo
+      if (isEmbedded(existing.channel)) selected.value = existing.channel
+      locked.value = true
+      loading.value = false
+      if (['SUCCEEDED', 'EXPIRED', 'REVIEW_REQUIRED'].includes(existing.status)) {
+        await navigateTo(`/payment/result?paymentNo=${encodeURIComponent(existing.paymentNo)}`)
+        return
+      }
+      // A 3DS return must not immediately redirect to the same challenge again.
+      sdkMessage.value = 'Confirming your existing payment status...'
+      startPolling()
+      return
+    }
+    if (!channels.value.length) throw new Error('Payment is temporarily unavailable.')
+    loading.value = false
+    const initial = channels.value.find(item => item.channel === 'CREDIT_CARD') || channels.value[0]!
+    await selectChannel(initial.channel)
+  } catch (e) { error.value = e instanceof Error ? e.message : 'Unable to load payment details.' }
+  finally { loading.value = false }
+}
+
 onMounted(() => {
+  // Canonical path must be identical to the backUrl sent to Embedded, including after 3DS POST/303.
+  window.history.replaceState(window.history.state, '', `/orders/${encodeURIComponent(String(route.params.orderNo))}/pay`)
   deadlineTimer = setInterval(() => { now.value = Date.now() }, 1000)
-  ;(window as any).oceanpaymentCallBack = async (data: any) => {
-    if (typeof data === 'object' && data?.msg) {
-      sdkMessage.value = cardPaymentFailureMessage(data.code, data.msg) || ''
-      submitting.value = false
-      return
-    }
-    let payload: Record<string, string> = {}
-    if (typeof data === 'string') {
-      const trimmed = data.trim()
-      if (trimmed.startsWith('<')) {
-        try {
-          const parser = new DOMParser()
-          const doc = parser.parseFromString(trimmed, 'text/xml')
-          const root = doc.documentElement
-          for (let i = 0; i < root.children.length; i++) {
-            const el = root.children[i]
-            if (el) payload[el.tagName] = el.textContent || ''
-          }
-        } catch {}
-      } else {
-        try { payload = JSON.parse(trimmed) } catch {}
-      }
-    } else if (typeof data === 'object' && data) {
-      payload = { ...data }
-    }
-
-    if (payload.pay_url) {
-      window.location.assign(payload.pay_url)
-      return
-    }
-
-    try {
-      const result = await auth.request<PaymentView>('/commerce/payments/oceanpayment/embedded-result', payload)
-      if (result.session?.threeDsUrl) {
-        window.location.assign(result.session.threeDsUrl)
-      } else {
-        submitting.value = false
-        poll()
-      }
-    } catch {
-      submitting.value = false
-      poll()
-    }
+  for (const channel of Object.keys(embeddedAdapters) as EmbeddedChannel[]) {
+    ;(window as unknown as Record<string, unknown>)[embeddedAdapters[channel].callback] = (data: unknown) => void callback(channel, data)
   }
   void load()
 })
-onBeforeUnmount(() => { disposed = true; if (timer) clearInterval(timer); if (deadlineTimer) clearInterval(deadlineTimer); delete (window as any).oceanpaymentCallBack })
+onBeforeUnmount(() => {
+  disposed = true
+  if (pollTimer) clearInterval(pollTimer)
+  if (deadlineTimer) clearInterval(deadlineTimer)
+  if (readyTimer) clearTimeout(readyTimer)
+  for (const adapter of Object.values(embeddedAdapters)) {
+    // Official SDK message listeners survive navigation, so retain a harmless callback until remount.
+    ;(window as unknown as Record<string, unknown>)[adapter.callback] = () => {}
+  }
+})
 </script>
 
+
 <style scoped>
+.payment-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 20px 0; }
+.payment-tabs button { padding: 12px 18px; border: 1px solid #d4dcd7; border-radius: 8px; background: white; cursor: pointer; }
+.payment-tabs button.active { border-color: #203d33; background: #edf4ef; font-weight: 600; }
+.payment-tabs button:disabled { cursor: default; opacity: .6; }
+.wallet-preview { pointer-events: none; opacity: .55; }
+.payment-action-card a { display: inline-block; margin-top: 16px; color: #203d33; }
+
 .payment-page-shell,
 .payment-page-shell * {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
