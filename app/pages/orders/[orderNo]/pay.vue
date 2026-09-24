@@ -515,7 +515,7 @@ function initWallets(optionChannels: PaymentOptionsView['channels'], availableCh
         config.buttonStyle = {
           ...(config.buttonStyle as Record<string, unknown> || {}),
           buttonSizeMode: 'fill',
-          buttonHeight: 48,
+          buttonHeight: 44,
           buttonRadius: 8
         }
         sdk.init(googleOpt.sandbox ? true : '', config)
@@ -544,8 +544,10 @@ function initWallets(optionChannels: PaymentOptionsView['channels'], availableCh
           ...(config.buttonStyle as Record<string, unknown> || {}),
           buttonstyle: 'black',
           type: 'buy',
-          buttonHeight: 48,
-          buttonRadius: 8
+          buttonHeight: 44,
+          buttonRadius: 8,
+          buttonPaddingY: 9,
+          buttonPaddingX: 20
         }
         sdk.init(appleOpt.sandbox ? true : '', config)
       })
@@ -960,9 +962,9 @@ onBeforeUnmount(() => {
 .wallet-btn-container {
   position: relative;
   width: 100%;
-  height: 48px;
-  min-height: 48px;
-  max-height: 48px;
+  height: 44px;
+  min-height: 44px;
+  max-height: 44px;
   border-radius: 8px;
   overflow: hidden;
   box-sizing: border-box;
@@ -987,20 +989,20 @@ onBeforeUnmount(() => {
 
 .wallet-element-slot {
   width: 100%;
-  height: 48px;
-  min-height: 48px;
-  max-height: 48px;
+  height: 44px;
+  min-height: 44px;
+  max-height: 44px;
   box-sizing: border-box;
   overflow: hidden;
 }
 
-/* 统一 Apple Pay 与 Google Pay 挂载节点与内部渲染按钮高度 */
+/* 统一 Apple Pay 与 Google Pay 挂载节点与内部渲染按钮高度为标准的 44px */
 :deep(#oceanpayment-applepayelement),
 :deep(#oceanpayment-googlepayelement) {
   width: 100% !important;
-  height: 48px !important;
-  min-height: 48px !important;
-  max-height: 48px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
   display: block !important;
   box-sizing: border-box !important;
   overflow: hidden !important;
@@ -1012,9 +1014,9 @@ onBeforeUnmount(() => {
 :deep(#oceanpayment-applepayelement iframe),
 :deep(#oceanpayment-googlepayelement iframe) {
   width: 100% !important;
-  height: 48px !important;
-  min-height: 48px !important;
-  max-height: 48px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
   border: 0 !important;
   border-radius: 8px !important;
   box-sizing: border-box !important;
@@ -1022,18 +1024,18 @@ onBeforeUnmount(() => {
   background: transparent !important;
 }
 
-/* Apple Pay 原生按钮与 webkit 自定义元素统一高度与圆角 */
+/* Apple Pay 原生按钮与 webkit 自定义元素统一高度与内边距，使内部字体按比例紧凑缩小 */
 :deep(#oceanpayment-applepayelement apple-pay-button),
 :deep(apple-pay-button) {
   --apple-pay-button-width: 100% !important;
-  --apple-pay-button-height: 48px !important;
+  --apple-pay-button-height: 44px !important;
   --apple-pay-button-border-radius: 8px !important;
-  --apple-pay-button-padding: 0 !important;
+  --apple-pay-button-padding: 9px 20px !important;
   --apple-pay-button-box-sizing: border-box !important;
   width: 100% !important;
-  height: 48px !important;
-  min-height: 48px !important;
-  max-height: 48px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
   border-radius: 8px !important;
   display: block !important;
   box-sizing: border-box !important;
@@ -1042,9 +1044,9 @@ onBeforeUnmount(() => {
 :deep(#oceanpayment-applepayelement button),
 :deep(#oceanpayment-applepayelement .apple-pay-button) {
   width: 100% !important;
-  height: 48px !important;
-  min-height: 48px !important;
-  max-height: 48px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
   border-radius: 8px !important;
   box-sizing: border-box !important;
   display: block !important;
@@ -1055,9 +1057,9 @@ onBeforeUnmount(() => {
 :deep(#oceanpayment-googlepayelement .gpay-button),
 :deep(#oceanpayment-googlepayelement .gpay-card-info-container) {
   width: 100% !important;
-  height: 48px !important;
-  min-height: 48px !important;
-  max-height: 48px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
   border-radius: 8px !important;
   box-sizing: border-box !important;
   display: block !important;
