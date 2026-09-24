@@ -149,7 +149,19 @@ import { embeddedAdapters, embeddedEvent, trustedSdkUrl, type EmbeddedChannel } 
 import type { OrderView, PaymentView, PaymentChannelView, PaymentChannel, PaymentOptionsView } from '~/composables/useTourCommerce'
 
 definePageMeta({ middleware: 'member-auth', layout: false })
-useHead({ title: 'Secure payment | Lvyv', meta: [{ name: 'robots', content: 'noindex, nofollow' }] })
+useHead({
+  title: 'Secure payment | Lvyv',
+  meta: [{ name: 'robots', content: 'noindex, nofollow' }],
+  link: [
+    { rel: 'preconnect', href: 'https://secure.oceanpayment.com' },
+    { rel: 'preconnect', href: 'https://test-secure.oceanpayment.com' },
+    { rel: 'preconnect', href: 'https://pay.google.com' },
+    { rel: 'dns-prefetch', href: 'https://secure.oceanpayment.com' },
+    { rel: 'dns-prefetch', href: 'https://test-secure.oceanpayment.com' },
+    { rel: 'dns-prefetch', href: 'https://pay.google.com' },
+    { rel: 'dns-prefetch', href: 'https://apis.google.com' }
+  ]
+})
 const commerce = useTourCommerce()
 const auth = useMemberAuth()
 const route = useRoute()
@@ -294,7 +306,7 @@ async function callback(channel: EmbeddedChannel, data: unknown) {
     return
   }
   if (event.kind === 'cancelled') {
-    sdkMessage.value = 'Payment window closed. You can reopen the same payment using the wallet button.'
+    sdkMessage.value = ''
     submitting.value = false
     locked.value = false
     return
