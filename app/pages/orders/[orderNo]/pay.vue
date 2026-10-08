@@ -427,8 +427,9 @@ async function callback(channel: EmbeddedChannel, data: unknown) {
     } else {
       if (channel === 'GOOGLE_PAY') hasGooglePay.value = true
       if (channel === 'APPLE_PAY') hasApplePay.value = true
-      // code=2 在钱包授权数据准备好后才发送；点击时的加载提示必须独立于此回调。
+      // code=2 是用户在 Google/Apple 弹窗内选卡并点击“继续”后的授权就绪通知；收到后必须调用 checkout 提交订单参数给网关发起扣款
       startWalletProcessing(channel, true)
+      void submitWallet(channel)
     }
     return
   }
@@ -700,6 +701,53 @@ async function submit() {
     session.value = undefined
     sdkMessage.value = 'Confirming your payment status. Please do not start another payment.'
     startPolling()
+  }
+}
+
+async function submitWallet(channel: 'GOOGLE_PAY' | 'APPLE_PAY') {
+  if (submitting.value || locked.value || paymentExpired.value || orderUnavailable.value) return
+  const sdk = getSdk(channel)
+  if (!sdk) {
+    sdkMessage.value = 'The secure payment form is unavailable. Please reload the page to try again.'
+    cancelWalletProcessing()
+    return
+  }
+  submitting.value = true
+  locked.value = true
+  sdkMessage.value = ''
+  try {
+    const orderNo = order.value?.order?.orderNo
+    if (!orderNo) throw new Error('Order unavailable')
+
+    let activePaymentNo = paymentNo.value
+    // 如果当前活动的流水不是该钱包渠道，切换并创建该钱包渠道的专用流水
+    if (selected.value !== channel || !activePaymentNo) {
+      const payment = await commerce.createPayment(orderNo, channel, clientType())
+      if (disposed) return
+      activePaymentNo = payment.paymentNo
+      paymentNo.value = activePaymentNo
+      selected.value = channel
+      session.value = payment.session
+      providerPaymentId.value = payment.providerPaymentId || ''
+    }
+
+    // 签发当前钱包的签名支付参数
+    const issued = await commerce.issueEmbeddedSession(activePaymentNo)
+    if (disposed) return
+    if (!issued.session || !Object.keys(issued.session.fields).length) {
+      throw new Error('Unable to issue wallet payment session.')
+    }
+    signedFields.value = issued.session.fields
+
+    // 将签名参数供给给钱包 SDK 触发真正的扣款请求
+    sdk.checkout(paymentSdkData(signedFields.value))
+    walletArmed.value = true
+    startPolling()
+  } catch (err) {
+    submitting.value = false
+    locked.value = false
+    cancelWalletProcessing()
+    sdkMessage.value = err instanceof Error ? err.message : 'Unable to complete wallet payment. Please try again.'
   }
 }
 
