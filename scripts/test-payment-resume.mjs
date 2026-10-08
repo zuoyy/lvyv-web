@@ -32,7 +32,7 @@ function setup({ status = 'PENDING_PAYMENT', expired = false, existing = null, a
   const frame = { contentWindow: {} }
   const document = Object.assign(new EventTarget(), { getElementById: id => id === 'oceanpayment-iframe-card' ? frame : {}, activeElement: null,
     createElement: () => ({}), head: { appendChild: script => scripts.push(script) } })
-  const window = Object.assign(new EventTarget(), { document, history: { replaceState: () => {} }, location: { href, origin: 'https://www.lvyv.com' }, isSecureContext: true, ApplePaySession: {}, matchMedia: () => ({ matches: false }) })
+  const window = Object.assign(new EventTarget(), { document, history: { replaceState: () => {} }, location: { href, origin: 'https://www.lvyv.com', assign: url => redirects.push(url) }, isSecureContext: true, ApplePaySession: {}, matchMedia: () => ({ matches: false }) })
   if (!applePaySupported) delete window.ApplePaySession
   if (!coldSdk) for (const [channel, adapter] of Object.entries(embedded.embeddedAdapters)) window[adapter.global] = sdkFor(channel)
   const current = existing?.session ? { ...preview(existing.channel), ...existing, session: { ...preview(existing.channel).session, ...existing.session } } : existing
@@ -41,7 +41,7 @@ function setup({ status = 'PENDING_PAYMENT', expired = false, existing = null, a
     document,
     require: name => name.endsWith('oceanpaymentEmbedded') ? embedded : name.endsWith('paymentMessages') ? messages : name.endsWith('walletInteraction') ? walletInteraction : {},
     definePageMeta: () => {}, useHead: () => {}, useRoute: () => ({ params: { orderNo: 'ORD_TEST' } }),
-    useMemberAuth: () => ({}),
+    useMemberAuth: () => ({ request: async (...args) => { calls.push(['embedded-result']); return api.embeddedResult?.(...args) } }),
     useTourCommerce: () => ({
       getPaymentOptions: async () => { queries.push('options'); return api.getPaymentOptions ? api.getPaymentOptions() : { activePayment: current, channels: [{ channel: 'CREDIT_CARD', enabled: true, ...preview('CREDIT_CARD').session }] } },
       getOrder: async () => { queries.push('order'); return api.getOrder ? api.getOrder() : { order: { status, orderNo: 'ORD_TEST', expireTime: deadline }, items: [] } },
@@ -521,4 +521,34 @@ test('其他 SDK 异常不能被假定为未提交，不自动释放未知支付
   assert.equal(page.calls.filter(([name]) => name === 'abort').length, 0)
   assert.equal(page.locked.value, true)
   assert.match(page.sdkMessage.value, /Confirming/)
+})
+
+for (const channel of ['CREDIT_CARD', 'GOOGLE_PAY', 'APPLE_PAY']) {
+  test(`${channel} 验证通过的非 3DS 返回进入结果页等待异步通知`, async () => {
+    const page = setup({ api: { embeddedResult: async () => ({ status: 'PENDING' }) } })
+    await page.open()
+    await page.callback(channel, { order_number: 'PAY_TEST', payment_status: '1', pay_url: '', signValue: 'test' })
+    assert.deepEqual(page.redirects, ['/payment/result?paymentNo=PAY_TEST'])
+    assert.equal(page.locked.value, true)
+    assert.equal(page.calls.filter(([name]) => name === 'checkout').length, 0)
+  })
+}
+
+test('3DS 只跳转后端验证通过的地址', async () => {
+  const verifiedUrl = 'https://secure.oceanpayment.com/3ds/verified'
+  const page = setup({ api: { embeddedResult: async () => ({ status: 'PENDING', session: { threeDsUrl: verifiedUrl } }) } })
+  await page.open()
+  await page.callback('GOOGLE_PAY', { order_number: 'PAY_TEST', payment_status: '-1', pay_url: 'https://untrusted.invalid/3ds', signValue: 'test' })
+  assert.deepEqual(page.redirects, [verifiedUrl])
+})
+
+test('返回验签失败保持原流水锁定，不跳转未验证的 3DS 地址或重新支付', async () => {
+  const page = setup({ api: { embeddedResult: async () => { throw new Error('Invalid result') } } })
+  await page.open()
+  const creates = page.calls.filter(([name]) => name === 'create').length
+  await page.callback('GOOGLE_PAY', { order_number: 'PAY_TEST', payment_status: '-1', pay_url: 'https://untrusted.invalid/3ds', signValue: 'test' })
+  assert.deepEqual(page.redirects, [])
+  assert.equal(page.locked.value, true)
+  assert.match(page.sdkMessage.value, /Confirming your payment status/)
+  assert.equal(page.calls.filter(([name]) => name === 'create').length, creates)
 })

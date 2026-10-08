@@ -467,7 +467,9 @@ async function callback(channel: EmbeddedChannel, data: unknown) {
     } else {
       walletArmed.value = false
       session.value = undefined
-      sdkMessage.value = 'Confirming your payment status...'
+      // 同步返回已完成校验，结果页继续等待异步通知；不把钱包授权当作支付成功。
+      await navigateTo(`/payment/result?paymentNo=${encodeURIComponent(paymentNo.value)}`)
+      return
     }
   } catch {
     walletArmed.value = false
