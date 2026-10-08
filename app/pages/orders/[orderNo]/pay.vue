@@ -228,6 +228,7 @@ const auth = useMemberAuth()
 const route = useRoute()
 const order = ref<OrderView>()
 const channels = ref<PaymentChannelView[]>([])
+const channelOptions = ref<PaymentOptionsView['channels']>([])
 const selected = ref<EmbeddedChannel>('CREDIT_CARD')
 const session = ref<PaymentView['session']>()
 const paymentNo = ref('')
@@ -562,47 +563,30 @@ async function selectChannel(channel: PaymentChannel, channelOpt?: PaymentOption
   if (readyTimer) clearTimeout(readyTimer)
 
   try {
-    // 若已知该渠道的 SDK 配置，立即并发下载 SDK 脚本，绝不等待接口往返
-    const sdkPreload = channelOpt?.sdkUrl
-      ? loadSdk(selected.value, channelOpt.sdkUrl, channelOpt.sandbox)
-      : null
-    // 创建占位仍在等待时，预载可能先失败；先接住拒绝，后续 await 再统一显示错误。
-    void sdkPreload?.catch(() => {})
-
-    // current 接口返回的未提交卡会话可直接恢复，签名仍只在用户点击付款时由后端校验并签发。
+    // 表单只需要只读渠道配置；打开页面和切换表单均不创建支付流水。
     const reusableCard = channel === 'CREDIT_CARD' && reusablePayment?.channel === channel
       && reusablePayment.status === 'CREATED' && reusablePayment.session?.sdkType === 'CREDIT_CARD'
       && !reusablePayment.providerPaymentId && !Object.keys(reusablePayment.session.fields).length
       && Boolean(reusablePayment.expireTime && Date.parse(reusablePayment.expireTime) > Date.now())
-    const payment = reusableCard ? reusablePayment : await commerce.createPayment(order.value.order.orderNo, channel, clientType())
-    if (disposed || generation !== currentGeneration) return
-    paymentNo.value = payment.paymentNo
-    providerPaymentId.value = payment.providerPaymentId || ''
-    const deadlines = [orderExpiresAt.value, payment.expireTime ? Date.parse(payment.expireTime) : NaN].filter(Number.isFinite)
+    const option = channelOpt || channelOptions.value.find(item => item.channel === channel && item.enabled)
+    const preview = reusableCard ? reusablePayment.session : option?.enabled ? {
+      sdkUrl: option.sdkUrl, sdkType: channel, sandbox: option.sandbox,
+      fields: {}, initConfig: option.initConfig
+    } : undefined
+    if (!preview) throw new Error('Unable to load payment settings. Please reload the page to try again.')
+    paymentNo.value = reusableCard ? reusablePayment.paymentNo : ''
+    providerPaymentId.value = ''
+    const deadlines = [orderExpiresAt.value, reusableCard && reusablePayment.expireTime ? Date.parse(reusablePayment.expireTime) : NaN].filter(Number.isFinite)
     paymentExpireAt.value = deadlines.length ? Math.min(...deadlines) : null
-    if (isEmbedded(payment.channel)) selected.value = payment.channel
-    if (payment.status === 'SUCCEEDED') {
-      await navigateTo(`/payment/result?paymentNo=${encodeURIComponent(payment.paymentNo)}`)
-      return
-    }
-    if (!payment.session) {
-      providerPaymentId.value = payment.providerPaymentId || ''
-      locked.value = true
-      preparing.value = false
-      sdkMessage.value = 'An existing payment is being confirmed. We will keep checking it.'
-      startPolling()
-      return
-    }
-    session.value = payment.session
+    session.value = preview
 
     const containerId = embeddedAdapters[channel].container
     const container = await ensureContainer(containerId)
     if (!container) throw new Error('Payment element container not found.')
 
-    // 复用已发起的预载 Promise 或从 session 加载
-    const sdk = sdkPreload ? await sdkPreload : await loadSdk(selected.value, payment.session.sdkUrl, payment.session.sandbox)
+    const sdk = await loadSdk(channel, preview.sdkUrl, preview.sandbox)
     if (disposed || generation !== currentGeneration) return
-    const sandbox = payment.session.sandbox ? true : ''
+    const sandbox = preview.sandbox ? true : ''
     if (selected.value === 'CREDIT_CARD') {
       sdk.init(sandbox, '', 'en_US', { showCardName: false })
       readyTimer = setTimeout(() => {
@@ -616,7 +600,7 @@ async function selectChannel(channel: PaymentChannel, channelOpt?: PaymentOption
         preparing.value = false
         sdkMessage.value = 'This wallet is unavailable on this device. Please choose credit card.'
       }, 15000)
-      const config = { ...(payment.session.initConfig || {}) } as Record<string, unknown>
+      const config = { ...(preview.initConfig || {}) } as Record<string, unknown>
       if (selected.value === 'APPLE_PAY') configureApplePayButton(config)
       if (selected.value === 'GOOGLE_PAY' && config.buttonStyle && typeof config.buttonStyle === 'object') {
         config.buttonStyle = {
@@ -644,12 +628,12 @@ async function submit() {
   locked.value = true
   sdkMessage.value = ''
   try {
-    if (cardAttemptNeedsRenewal) {
+    if (!paymentNo.value || cardAttemptNeedsRenewal) {
       let payment: PaymentView
       try {
         payment = await commerce.createPayment(order.value!.order.orderNo, 'CREDIT_CARD', clientType())
       } catch {
-        // 创建的只是未签发参数的占位，重试复用后端唯一活动支付，保留当前卡片输入。
+        // 此时尚未签发付款参数；重试由后端唯一活动流水保证幂等，保留当前卡片输入。
         submitting.value = false
         locked.value = false
         sdkMessage.value = 'Unable to prepare payment. Please try again.'
@@ -659,7 +643,7 @@ async function submit() {
       paymentNo.value = payment.paymentNo
       providerPaymentId.value = payment.providerPaymentId || ''
       cardAttemptNeedsRenewal = false
-      if (!payment.session || payment.status !== 'CREATED') {
+      if (!payment.session || payment.status !== 'CREATED' || payment.channel !== selected.value) {
         session.value = undefined
         startPolling()
         return
@@ -900,9 +884,12 @@ async function load() {
     }
     if (loadedOrder.order.status !== 'PENDING_PAYMENT') return
 
+    channelOptions.value = paymentOptions?.channels || []
     channels.value = available.filter(item => item.enabled && isEmbedded(item.channel) && (item.channel !== 'APPLE_PAY' || supportsApplePay.value))
 
-    if (existing && existing.status !== 'FAILED' && !existing.session) {
+    if (existing && existing.status !== 'FAILED' && (!existing.session
+      || existing.status !== 'CREATED' || existing.providerPaymentId
+      || Object.keys(existing.session.fields).length || existing.session.threeDsUrl)) {
       paymentNo.value = existing.paymentNo
       providerPaymentId.value = existing.providerPaymentId || ''
       if (isEmbedded(existing.channel)) selected.value = existing.channel

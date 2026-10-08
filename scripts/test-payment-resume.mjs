@@ -11,7 +11,7 @@ import * as walletInteraction from '../app/utils/walletInteraction.ts'
 const source = readFileSync(new URL('../app/pages/orders/[orderNo]/pay.vue', import.meta.url), 'utf8')
   .match(/<script setup lang="ts">([\s\S]*?)<\/script>/)[1]
 const compiled = ts.transpileModule(source +
-  '\nObject.assign(exports, { load, submit, selectChannel, selected, session, locked, paymentExpired, orderUnavailable, now, error, callback, sdkMessage, sdkReady, preparing, resetting, submitting, resetEmbeddedSession, startWalletProcessing, cancelWalletProcessing, walletProcessingChannel, walletOverlayVisible, walletActivationConfirmed, hasApplePay, hasGooglePay, initWallets });', {
+  '\nObject.assign(exports, { load, submit, submitWallet, selectChannel, selected, session, locked, paymentExpired, orderUnavailable, now, error, callback, sdkMessage, sdkReady, preparing, resetting, submitting, resetEmbeddedSession, startWalletProcessing, cancelWalletProcessing, walletProcessingChannel, walletOverlayVisible, walletActivationConfirmed, hasApplePay, hasGooglePay, initWallets });', {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText
 
@@ -123,7 +123,7 @@ test('三个 SDK 与订单和支付查询重叠下载，查询结束前不初始
   await settle()
   assert.deepEqual([...page.initializedChannels].sort(), ['APPLE_PAY', 'CREDIT_CARD', 'GOOGLE_PAY'])
   assert.equal(page.scripts.length, 3)
-  assert.equal(page.calls.filter(([name]) => name === 'create').length, 1)
+  assert.equal(page.calls.filter(([name]) => name === 'create').length, 0)
   assert.equal(page.calls.some(([name]) => name === 'issue'), false)
   assert.equal(page.queries.includes('channels'), false)
 })
@@ -169,30 +169,27 @@ test('提前下载失败不打断订单查询，正式初始化可重新下载�
   page.completeSdk('CREDIT_CARD')
   await settle()
   assert.equal(page.sdkReady.value, true)
-  assert.equal(page.calls.filter(([name]) => name === 'create').length, 1)
+  assert.equal(page.calls.filter(([name]) => name === 'create').length, 0)
 })
 
-test('信用卡 SDK 先于创建响应失败时，不产生未处理拒绝或签发付款参数', async () => {
-  const creating = deferred()
-  const page = setup({ coldSdk: true, api: { createPayment: () => creating.promise } })
+test('信用卡 SDK 加载失败时不创建流水或签发付款参数', async () => {
+  const page = setup({ coldSdk: true })
   await page.open()
   page.scripts[0].onerror()
-  // 跨过事件循环，以便测试运行器捕获潜在 unhandledRejection。
   await new Promise(resolve => setImmediate(resolve))
-  creating.resolve({ paymentNo: 'PAY_TEST', channel: 'CREDIT_CARD', status: 'CREATED',
-    expireTime: new Date(Date.now() + 60000).toISOString(), session: { sandbox: true, fields: {} } })
-  await settle()
   assert.equal(page.sdkMessage.value, 'Unable to load this payment method.')
   assert.equal(page.preparing.value, false)
   assert.equal(page.sdkReady.value, false)
-  assert.equal(page.calls.some(([name]) => name === 'issue'), false)
+  assert.deepEqual(page.calls, [])
 })
 
-test('选项失败时保留旧渠道查询兜底，选项为空时不绕过订单渠道限制', async () => {
+test('选项失败时提示重新加载，不通过创建流水获取配置或绕过渠道限制', async () => {
   const fallback = setup({ api: { getPaymentOptions: async () => { throw new Error('Offline') } } })
   await fallback.open()
   assert.equal(fallback.queries.filter(name => name === 'channels').length, 1)
-  assert.equal(fallback.sdkReady.value, true)
+  assert.equal(fallback.sdkReady.value, false)
+  assert.match(fallback.sdkMessage.value, /Unable to load payment settings/)
+  assert.deepEqual(fallback.calls, [])
   const unavailable = setup({ api: { getPaymentOptions: async () => ({ channels: [] }) } })
   await unavailable.open()
   assert.equal(unavailable.queries.includes('channels'), false)
@@ -217,16 +214,16 @@ test('支付核验结果晚于 SDK 下载时仍锁定，页面关闭后不初始
   }
 })
 
-test('过期、带签名或支付商流水的会话不走快捷复用', async () => {
-  for (const scenario of [
-    { attemptExpired: true },
-    { existing: { paymentNo: 'PAY_TEST', status: 'CREATED', channel: 'CREDIT_CARD', session: { fields: { signValue: 'test' } } } },
-    { existing: { paymentNo: 'PAY_TEST', status: 'CREATED', channel: 'CREDIT_CARD', providerPaymentId: 'test', session: {} } },
+test('带签名或支付商流水的旧会话保持锁定，不创建新流水', async () => {
+  for (const existing of [
+    { paymentNo: 'PAY_TEST', status: 'CREATED', channel: 'CREDIT_CARD', session: { fields: { signValue: 'test' } } },
+    { paymentNo: 'PAY_TEST', status: 'CREATED', channel: 'CREDIT_CARD', providerPaymentId: 'test', session: {} },
   ]) {
-    const page = setup({ existing: { paymentNo: 'PAY_TEST', status: 'CREATED', channel: 'CREDIT_CARD', session: {} }, ...scenario })
+    const page = setup({ existing })
     await page.open()
-    assert.equal(page.calls.filter(([name]) => name === 'create').length, 1)
-    assert.equal(page.calls.some(([name]) => name === 'issue'), false)
+    await page.submit()
+    assert.equal(page.locked.value, true)
+    assert.deepEqual(page.calls, [])
   }
 })
 
@@ -250,22 +247,22 @@ test('表单打开期间到期，立即阻止继续提交', async () => {
   assert.equal(page.calls.some(([name]) => name === 'issue'), false)
 })
 
-test('订单仍有效而占位过期时，可以重新加载付款表单', async () => {
-  const page = setup({ attemptExpired: true })
+test('旧占位过期不影响只读表单，明确提交时才申请新的流水', async () => {
+  const page = setup({ existing: { paymentNo: 'PAY_OLD', channel: 'CREDIT_CARD', status: 'CREATED',
+    expireTime: new Date(Date.now() - 1000).toISOString(), session: {} } })
   await page.open()
-  assert.equal(page.paymentExpired.value, true)
+  assert.equal(page.paymentExpired.value, false)
   assert.equal(page.orderUnavailable.value, '')
+  assert.equal(page.calls.some(([name]) => name === 'create'), false)
   await page.submit()
-  assert.equal(page.calls.some(([name]) => name === 'issue'), false)
-  await page.selectChannel('CREDIT_CARD')
-  assert.equal(page.calls.filter(([name]) => name === 'create').length, 2)
+  assert.deepEqual(page.calls.map(([name]) => name), ['init', 'create', 'issue', 'checkout'])
 })
 
-test('返回未提交的钱包占位时，默认显示信用卡表单', async () => {
+test('返回未提交的钱包占位时显示信用卡表单，不自动切换支付流水', async () => {
   const page = setup({ existing: { paymentNo: 'PAY_TEST', channel: 'GOOGLE_PAY', status: 'CREATED', session: {} } })
   await page.open()
   assert.equal(page.selected.value, 'CREDIT_CARD')
-  assert.deepEqual(page.calls[0], ['create', 'CREDIT_CARD'])
+  assert.deepEqual(page.calls.map(([name]) => name), ['init'])
 })
 
 test('已提交或待审核的原支付不自动创建第二笔支付', async () => {
@@ -527,10 +524,12 @@ for (const channel of ['CREDIT_CARD', 'GOOGLE_PAY', 'APPLE_PAY']) {
   test(`${channel} 验证通过的非 3DS 返回进入结果页等待异步通知`, async () => {
     const page = setup({ api: { embeddedResult: async () => ({ status: 'PENDING' }) } })
     await page.open()
+    if (channel === 'CREDIT_CARD') await page.submit()
+    else await page.submitWallet(channel)
     await page.callback(channel, { order_number: 'PAY_TEST', payment_status: '1', pay_url: '', signValue: 'test' })
     assert.deepEqual(page.redirects, ['/payment/result?paymentNo=PAY_TEST'])
     assert.equal(page.locked.value, true)
-    assert.equal(page.calls.filter(([name]) => name === 'checkout').length, 0)
+    assert.equal(page.calls.filter(([name]) => name === 'checkout').length, 1)
   })
 }
 
@@ -538,6 +537,7 @@ test('3DS 只跳转后端验证通过的地址', async () => {
   const verifiedUrl = 'https://secure.oceanpayment.com/3ds/verified'
   const page = setup({ api: { embeddedResult: async () => ({ status: 'PENDING', session: { threeDsUrl: verifiedUrl } }) } })
   await page.open()
+  await page.submitWallet('GOOGLE_PAY')
   await page.callback('GOOGLE_PAY', { order_number: 'PAY_TEST', payment_status: '-1', pay_url: 'https://untrusted.invalid/3ds', signValue: 'test' })
   assert.deepEqual(page.redirects, [verifiedUrl])
 })
@@ -545,10 +545,63 @@ test('3DS 只跳转后端验证通过的地址', async () => {
 test('返回验签失败保持原流水锁定，不跳转未验证的 3DS 地址或重新支付', async () => {
   const page = setup({ api: { embeddedResult: async () => { throw new Error('Invalid result') } } })
   await page.open()
+  await page.submitWallet('GOOGLE_PAY')
   const creates = page.calls.filter(([name]) => name === 'create').length
   await page.callback('GOOGLE_PAY', { order_number: 'PAY_TEST', payment_status: '-1', pay_url: 'https://untrusted.invalid/3ds', signValue: 'test' })
   assert.deepEqual(page.redirects, [])
   assert.equal(page.locked.value, true)
   assert.match(page.sdkMessage.value, /Confirming your payment status/)
   assert.equal(page.calls.filter(([name]) => name === 'create').length, creates)
+})
+
+
+test('新订单打开或重新加载付款页均不创建流水，Google Pay 只创建钱包流水', async () => {
+  const page = setup({ api: { getPaymentOptions: async () => allOptions() } })
+  await page.open()
+  await page.open()
+  assert.equal(page.calls.some(([name]) => name === 'create' || name === 'issue'), false)
+  await page.submitWallet('GOOGLE_PAY')
+  assert.deepEqual(page.calls.filter(([name]) => name === 'create'), [['create', 'GOOGLE_PAY']])
+  assert.equal(page.calls.filter(([name]) => name === 'issue').length, 1)
+  assert.equal(page.calls.filter(([name]) => name === 'checkout').length, 1)
+})
+
+test('首次信用卡提交创建失败可重试，保留表单且不签发未知流水', async () => {
+  let attempts = 0
+  const page = setup({ api: { createPayment: () => {
+    if (++attempts === 1) throw new Error('Offline')
+    return { paymentNo: 'PAY_TEST', channel: 'CREDIT_CARD', status: 'CREATED', session: { fields: {} } }
+  } } })
+  await page.open()
+  await page.submit()
+  assert.equal(page.locked.value, false)
+  assert.match(page.sdkMessage.value, /Unable to prepare payment/)
+  assert.equal(page.calls.some(([name]) => name === 'issue'), false)
+  await page.submit()
+  assert.equal(page.calls.filter(([name]) => name === 'init').length, 1)
+  assert.equal(page.calls.filter(([name]) => name === 'issue').length, 1)
+  assert.equal(page.calls.filter(([name]) => name === 'checkout').length, 1)
+})
+
+test('首次创建尚未返回时，连续点击及钱包回调不并发创建第二笔流水', async () => {
+  const creating = deferred()
+  const page = setup({ api: { createPayment: () => creating.promise } })
+  await page.open()
+  const submitting = page.submit()
+  await page.submit()
+  await page.submitWallet('GOOGLE_PAY')
+  assert.deepEqual(page.calls.filter(([name]) => name === 'create'), [['create', 'CREDIT_CARD']])
+  creating.resolve({ paymentNo: 'PAY_TEST', channel: 'CREDIT_CARD', status: 'CREATED', session: { fields: {} } })
+  await submitting
+  assert.equal(page.calls.filter(([name]) => name === 'checkout').length, 1)
+})
+
+test('点击付款时后端返回已存在的待确认支付，只查询原流水', async () => {
+  const page = setup({ api: { createPayment: async () => ({ paymentNo: 'PAY_EXISTING', channel: 'GOOGLE_PAY', status: 'UNKNOWN' }) } })
+  await page.open()
+  await page.submit()
+  assert.equal(page.locked.value, true)
+  assert.equal(page.calls.some(([name]) => name === 'issue' || name === 'checkout'), false)
+  await page.submit()
+  assert.equal(page.calls.filter(([name]) => name === 'create').length, 1)
 })
