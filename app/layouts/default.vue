@@ -1,5 +1,6 @@
 <template>
-  <div class="app-layout" :class="{ 'app-layout--wish': isWishExperience, 'app-layout--encounters': isEncountersExperience }">
+  <div class="app-layout" :class="{ 'app-layout--wish': isWishExperience, 'app-layout--encounters': isEncountersExperience, 'app-layout--home-with-announcement': isHomePage && !!homePromotions.data.value?.announcement && !homePromotions.announcementDismissed.value }">
+    <HomeAnnouncementBar v-if="isHomePage" :announcement="homePromotions.data.value?.announcement" />
     <!-- Header / Navigation -->
     <header class="navbar" :class="{ 'scrolled': isScrolled }">
       <div class="nav-container">
@@ -165,6 +166,8 @@
     <!-- Main Content Page Slot -->
     <slot />
 
+    <HomePromotionPopup v-if="isHomePage" :popup="homePromotions.popup.value" :open="homePromotions.popupOpen.value" @close="homePromotions.closePopup" />
+
     <!-- Footer -->
     <footer v-if="!hidesFooter" class="footer">
       <div class="container footer-grid">
@@ -267,6 +270,8 @@ const currentPath = computed(() => {
   const path = route.path || '/'
   return path.length > 1 ? path.replace(/\/+$/, '') : path
 })
+const isHomePage = computed(() => currentPath.value === '/')
+const homePromotions = useHomePromotions()
 const isWishExperience = computed(() => currentPath.value === '/wish' || currentPath.value === '/wish/my')
 const isEncountersExperience = computed(() => currentPath.value === '/encounters' || currentPath.value.startsWith('/encounters/'))
 const hidesFooter = computed(() => isWishExperience.value || currentPath.value === '/wish/create')
@@ -310,6 +315,15 @@ const handleNavClick = async (toPath) => {
 
 watch(() => route.path, () => {
   mobileMenuOpen.value = false
+})
+
+const loadHomePromotions = () => {
+  if (isHomePage.value) homePromotions.load().then(() => homePromotions.showPopupIfNeeded())
+}
+
+watch(isHomePage, (value) => {
+  if (value) loadHomePromotions()
+  else homePromotions.closePopup()
 })
 
 watch(mobileMenuOpen, (isOpen) => {
@@ -363,6 +377,7 @@ onMounted(() => {
   window.addEventListener('scroll', handleScroll, { passive: true })
   document.addEventListener('click', handleDocumentClick)
   if (memberToken.value && !member.value) loadMember().catch(() => {})
+  loadHomePromotions()
 })
 
 onBeforeUnmount(() => {
@@ -376,6 +391,14 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.app-layout--home-with-announcement .navbar {
+  top: 60px;
+}
+
+.app-layout--home-with-announcement .navbar.scrolled {
+  top: 0;
+}
+
 .app-layout--wish .navbar,
 .app-layout--wish .navbar.scrolled {
   background: transparent !important;
@@ -445,6 +468,14 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 991px) {
+  .app-layout--home-with-announcement .navbar {
+    top: 60px;
+  }
+
+  .app-layout--home-with-announcement .navbar.scrolled {
+    top: 0;
+  }
+
   .wish-brand-logo {
     width: 106px;
     height: 37px;
