@@ -15,9 +15,8 @@
         <nav class="nav-links">
           <NuxtLink to="/#hero" :class="{ active: currentPath === '/' && activeSection === 'hero' }">Home</NuxtLink>
           <NuxtLink to="/wish" :class="{ active: currentPath.startsWith('/wish') }">Wish</NuxtLink>
-          <NuxtLink to="/encounters" :class="{ active: currentPath.startsWith('/encounters') }">Encounters</NuxtLink>
           <div class="nav-item-dropdown">
-            <a href="javascript:void(0)" @click.prevent :class="{ active: currentPath.startsWith('/cities') }">Cities</a>
+            <NuxtLink to="/encounters" :class="{ active: currentPath.startsWith('/encounters') || currentPath.startsWith('/cities') }">Encounters</NuxtLink>
             <div class="dropdown-menu">
               <NuxtLink to="/cities/xian" class="dropdown-item" :class="{ active: currentPath === '/cities/xian' }">
                 <span class="city-en">Xi'an</span>
@@ -33,6 +32,7 @@
               </NuxtLink>
             </div>
           </div>
+          <NuxtLink to="/health" :class="{ active: currentPath.startsWith('/health') }">Health</NuxtLink>
           <NuxtLink to="/about" :class="{ active: currentPath === '/about' }">About</NuxtLink>
           <NuxtLink to="/en/faq/" :class="{ active: currentPath.includes('/faq') }">FAQ</NuxtLink>
         </nav>
@@ -105,14 +105,21 @@
           <nav class="mobile-nav-links">
             <NuxtLink to="/#hero" class="mobile-nav-item" :class="{ active: currentPath === '/' && activeSection === 'hero' }" @click="handleNavClick('/#hero')">Home</NuxtLink>
             <NuxtLink to="/wish" class="mobile-nav-item" :class="{ active: currentPath === '/wish' }" @click="handleNavClick('/wish')">Wish</NuxtLink>
-            <NuxtLink to="/encounters" class="mobile-nav-item" :class="{ active: currentPath.startsWith('/encounters') }" @click="handleNavClick('/encounters')">Encounters</NuxtLink>
 
-            <!-- Submenu: Cities -->
+            <!-- Encounters with Submenu: Cities -->
             <div class="mobile-nav-item-accordion">
-              <button class="mobile-accordion-trigger" type="button" @click="mobileCitiesOpen = !mobileCitiesOpen">
-                <span>Cities</span>
-                <AuthGlobeIcon :icon="faChevronDown" class="accordion-chevron" :class="{ 'rotated': mobileCitiesOpen }" aria-hidden="true" />
-              </button>
+              <div class="mobile-accordion-header" :class="{ active: currentPath.startsWith('/encounters') || currentPath.startsWith('/cities') }">
+                <NuxtLink to="/encounters" class="mobile-accordion-link" @click="handleNavClick('/encounters')">Encounters</NuxtLink>
+                <button
+                  class="mobile-accordion-toggle"
+                  type="button"
+                  :aria-expanded="mobileCitiesOpen"
+                  aria-label="Toggle Encounters Cities menu"
+                  @click.stop="mobileCitiesOpen = !mobileCitiesOpen"
+                >
+                  <AuthGlobeIcon :icon="faChevronDown" class="accordion-chevron" :class="{ 'rotated': mobileCitiesOpen }" aria-hidden="true" />
+                </button>
+              </div>
               <Transition name="accordion">
                 <div v-if="mobileCitiesOpen" class="mobile-accordion-content">
                   <NuxtLink to="/cities/xian" class="mobile-subnav-item" :class="{ active: currentPath === '/cities/xian' }" @click="handleNavClick('/cities/xian')">
@@ -131,6 +138,7 @@
               </Transition>
             </div>
 
+            <NuxtLink to="/health" class="mobile-nav-item" :class="{ active: currentPath.startsWith('/health') }" @click="handleNavClick('/health')">Health</NuxtLink>
             <NuxtLink to="/about" class="mobile-nav-item" :class="{ active: currentPath === '/about' }" @click="handleNavClick('/about')">About</NuxtLink>
             <NuxtLink to="/en/faq/" class="mobile-nav-item" :class="{ active: currentPath.includes('/faq') }" @click="handleNavClick('/en/faq/')">FAQ</NuxtLink>
           </nav>
