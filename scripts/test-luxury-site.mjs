@@ -72,7 +72,7 @@ test('实际 SSR 构建：活动、错误状态、域名隔离及分享信息', 
     for (let i = 0; i < 100; i++) {
       if (runtime.exitCode !== null) throw new Error(`SSR exited: ${output}`)
       try {
-        const health = await request('/health', 'localhost')
+        const health = await request('/check', 'localhost')
         if (health.ok) { ready = true; break }
       } catch { /* 等待本地测试服务启动。 */ }
       await delay(100)

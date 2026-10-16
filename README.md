@@ -84,7 +84,7 @@ nuxt.config.ts
 SSR 健康检查使用生产服务器本机地址：
 
 ```bash
-curl http://127.0.0.1:3001/health
+curl http://127.0.0.1:3001/check
 ```
 
 HOST=127.0.0.1 \
