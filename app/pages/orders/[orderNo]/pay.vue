@@ -11,7 +11,7 @@
       </div>
       <div v-else-if="orderUnavailable" class="payment-state">
         <p>{{ orderUnavailable }}</p>
-        <NuxtLink to="/orders">Back to orders</NuxtLink>
+        <NuxtLink :to="healthOrder ? '/care' : '/orders'">{{ healthOrder ? 'Back to My Care' : 'Back to orders' }}</NuxtLink>
       </div>
       <section v-else-if="order" class="payment-layout">
         <!-- 左侧区域：Contact info, Traveler details, Payment (Credit Card) -->
@@ -19,7 +19,15 @@
           <!-- Booking & Contact details 卡片（合并 Contact info 与 Traveler information） -->
           <section class="checkout-info-card">
             <h2 class="section-title">Booking & Contact details</h2>
-            <div class="info-grid" :class="{ 'has-departure': Boolean(tripDateText) }">
+            <form v-if="needsHealthBilling" ref="healthBillingForm" class="health-billing-grid" @submit.prevent>
+              <label>First name<input v-model="healthBilling.firstName" required maxlength="64" autocomplete="given-name"></label>
+              <label>Last name<input v-model="healthBilling.lastName" required maxlength="64" autocomplete="family-name"></label>
+              <label>Billing email<input v-model="healthBilling.email" type="email" required maxlength="128" autocomplete="email"></label>
+              <label>Billing phone<input v-model="healthBilling.phone" type="tel" required maxlength="32" autocomplete="tel"></label>
+              <label>Billing country<select v-model="healthBilling.country" required autocomplete="country" @change="healthBilling.state = ''"><option value="">Select country</option><option v-for="country in passportCountryOptions" :key="country.code" :value="country.code">{{ country.name }}</option></select></label>
+              <label>State / province<select v-if="healthBillingStates.length" v-model="healthBilling.state" required autocomplete="address-level1"><option value="">Select state / province</option><option v-for="region in healthBillingStates" :key="region.code" :value="region.code">{{ region.name }}</option></select><input v-else v-model="healthBilling.state" required maxlength="6" pattern="[A-Za-z0-9]{1,6}" autocomplete="address-level1"></label>
+            </form>
+            <div v-else class="info-grid" :class="{ 'has-departure': Boolean(tripDateText) }">
               <div class="info-field-box">
                 <span class="field-label">Email address</span>
                 <span class="field-value">{{ contactEmail || 'Contact information from order' }}</span>
@@ -202,7 +210,9 @@ import CheckoutHeader from '~/components/checkout/CheckoutHeader.vue'
 import { cardPaymentFailureMessage } from '~/utils/paymentMessages'
 import { embeddedAdapters, embeddedEvent, trustedSdkUrl, paymentSdkData, observeCardFormReady, type EmbeddedChannel } from '~/utils/oceanpaymentEmbedded'
 import { observeWalletInteraction } from '~/utils/walletInteraction'
-import type { OrderView, PaymentView, PaymentChannelView, PaymentChannel, PaymentOptionsView } from '~/composables/useTourCommerce'
+import type { OrderView, PaymentView, PaymentChannelView, PaymentChannel, PaymentOptionsView, BillingDetails } from '~/composables/useTourCommerce'
+import { allCountries } from 'country-region-data'
+import { passportCountryOptions } from '~/utils/countries'
 
 definePageMeta({ middleware: 'member-auth', layout: false })
 const cardSdkPath = '/vendor/oceanpayment/oceanpayment.js?v=20260924-blur'
@@ -227,6 +237,18 @@ const commerce = useTourCommerce()
 const auth = useMemberAuth()
 const route = useRoute()
 const order = ref<OrderView>()
+const healthOrder = computed(() => order.value?.order.sourceType === 'HEALTH_SERVICE')
+const healthBillingStored = ref(false)
+const needsHealthBilling = computed(() => healthOrder.value && !healthBillingStored.value)
+const healthBillingForm = ref<HTMLFormElement>()
+const healthBilling = reactive<BillingDetails>({ firstName: auth.member.value?.firstName || '', lastName: auth.member.value?.lastName || '', email: auth.member.value?.email || '', phone: auth.member.value?.mobile || '', country: auth.member.value?.country || '', state: auth.member.value?.stateProvince || '' })
+const healthBillingStates = computed(() => allCountries.find(entry => entry[1] === healthBilling.country)?.[2].map(([name, code]) => ({ name, code })) || [])
+function validateHealthBilling() { return !needsHealthBilling.value || Boolean(healthBillingForm.value?.reportValidity()) }
+async function createOrderPayment(orderNo: string, channel: PaymentChannel) {
+  const payment = await commerce.createPayment(orderNo, channel, clientType(), needsHealthBilling.value ? { ...healthBilling } : undefined)
+  if (healthOrder.value) healthBillingStored.value = true
+  return payment
+}
 const channels = ref<PaymentChannelView[]>([])
 const channelOptions = ref<PaymentOptionsView['channels']>([])
 const selected = ref<EmbeddedChannel>('CREDIT_CARD')
@@ -329,6 +351,7 @@ const contactEmail = computed(() => {
   return auth.member.value?.email || ''
 })
 const travelerCountText = computed(() => {
+  if (healthOrder.value) return '1 appointment'
   const item = order.value?.items?.[0]?.item
   if (!item) return '1 Traveler'
   const adult = item.adultCount || 1
@@ -618,6 +641,7 @@ async function selectChannel(channel: PaymentChannel, channelOpt?: PaymentOption
 }
 
 async function submit() {
+  if (!validateHealthBilling()) return
   if (!session.value || (selected.value === 'CREDIT_CARD' && walletProcessingChannel.value) || submitting.value || preparing.value || resetting.value || locked.value || !sdkReady.value || paymentExpired.value || orderUnavailable.value) return
   const sdk = getSdk(selected.value)
   if (!sdk) {
@@ -631,7 +655,7 @@ async function submit() {
     if (!paymentNo.value || cardAttemptNeedsRenewal) {
       let payment: PaymentView
       try {
-        payment = await commerce.createPayment(order.value!.order.orderNo, 'CREDIT_CARD', clientType())
+        payment = await createOrderPayment(order.value!.order.orderNo, 'CREDIT_CARD')
       } catch {
         // 此时尚未签发付款参数；重试由后端唯一活动流水保证幂等，保留当前卡片输入。
         submitting.value = false
@@ -691,6 +715,7 @@ async function submit() {
 }
 
 async function submitWallet(channel: 'GOOGLE_PAY' | 'APPLE_PAY') {
+  if (!validateHealthBilling()) { cancelWalletProcessing(); return }
   if (submitting.value || locked.value || paymentExpired.value || orderUnavailable.value) return
   const sdk = getSdk(channel)
   if (!sdk) {
@@ -708,7 +733,7 @@ async function submitWallet(channel: 'GOOGLE_PAY' | 'APPLE_PAY') {
     let activePaymentNo = paymentNo.value
     // 如果当前活动的流水不是该钱包渠道，切换并创建该钱包渠道的专用流水
     if (selected.value !== channel || !activePaymentNo) {
-      const payment = await commerce.createPayment(orderNo, channel, clientType())
+      const payment = await createOrderPayment(orderNo, channel)
       if (disposed) return
       activePaymentNo = payment.paymentNo
       paymentNo.value = activePaymentNo
@@ -877,9 +902,10 @@ async function load() {
     ])
     if (disposed) return
     order.value = loadedOrder
+    healthBillingStored.value = Boolean(existing?.billingMasked)
     now.value = Date.now()
     if (loadedOrder.order.status === 'COMPLETED') {
-      await navigateTo('/trips')
+      await navigateTo(loadedOrder.order.sourceType === 'HEALTH_SERVICE' ? '/care' : '/trips')
       return
     }
     if (loadedOrder.order.status !== 'PENDING_PAYMENT') return
@@ -954,6 +980,7 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.health-billing-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:20px}.health-billing-grid label{display:grid;gap:8px;min-width:0;font-size:13px;color:#52665b}.health-billing-grid input,.health-billing-grid select{width:100%;box-sizing:border-box;min-width:0;min-height:44px;padding:10px;border:1px solid #ccd6d0;border-radius:4px;background:#fff;font:inherit;color:#22352c}@media(max-width:600px){.health-billing-grid{grid-template-columns:1fr}}
 .payment-page-shell,
 .payment-page-shell * {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;

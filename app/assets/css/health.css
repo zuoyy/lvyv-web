@@ -1,0 +1,29 @@
+@font-face{font-family:Philosopher;src:url('/fonts/philosopher-bold.ttf') format('truetype');font-style:normal;font-weight:700;font-display:swap}
+@font-face{font-family:'DM Sans';src:url('/fonts/dm-sans-regular.ttf') format('truetype');font-style:normal;font-weight:400;font-display:swap}
+.health-experience{--health-text:#203d33;--health-muted:#677489;--health-bg:#f2f3f2;color:var(--health-text);font:400 16px/1.5 Inter,sans-serif;letter-spacing:0;background:var(--health-bg);min-height:80vh;padding-top:80px}
+.health-experience h1,.health-experience h2,.health-experience h3{letter-spacing:0}
+.health-experience{--font-ui:Inter,sans-serif;--font-body:Inter,sans-serif}
+.health-experience h1{font:700 24px/26px Philosopher,Georgia,serif}
+.health-shell{max-width:1264px;margin:0 auto;padding:60px 0 96px}
+.health-columns{display:grid;grid-template-columns:minmax(0,803fr) minmax(0,441fr);gap:20px;align-items:start}
+.health-panel{background:#fff;border-radius:12px;padding:40px 28px;box-shadow:0 4px 16px #1122110d;min-width:0}
+.health-rail{background:#fff;border-radius:8px;padding:30px 36px;min-width:0}
+.health-page-heading{margin:0 0 18px}
+.health-page-subtitle{font:400 14px/21px Inter,sans-serif;color:#242424;margin:12px 0 0}
+.health-form{display:grid;gap:28px;max-width:664px}
+.health-form label{display:grid;gap:8px;min-width:0;font:700 16px/1.65 Inter,sans-serif;color:#111729}
+.health-form input,.health-form select,.health-form textarea{width:100%;min-width:0;min-height:49px;box-sizing:border-box;padding:11px 16px;background:#fff;border:1px solid #e3e8ef;border-radius:12px;font:400 16px/1.65 Inter,sans-serif;color:#111729;letter-spacing:0}
+/* 下拉框与输入框外观统一，替换浏览器默认箭头避免全局站点样式干扰 */
+.health-form select{appearance:none;-webkit-appearance:none;padding-right:44px;background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='%23111729' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center;cursor:pointer}
+.health-form input::placeholder,.health-form textarea::placeholder{color:#677489;opacity:1}
+.health-form textarea{resize:vertical;min-height:88px}
+.health-form input:focus-visible,.health-form select:focus-visible,.health-form textarea:focus-visible{outline:2px solid #698e4e;outline-offset:2px}
+.health-form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.health-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:12px 24px;border:0;border-radius:99px;background:#105446;color:#cff380;font:500 16px/1.5 Inter,sans-serif;text-decoration:none;cursor:pointer;text-align:center}
+.health-button:disabled{opacity:.5;cursor:not-allowed}
+.health-notice{background:#f8faf8;border-radius:8px;padding:16px 20px;font:400 14px/24px Inter,sans-serif;color:#242424}
+.health-state{padding:50px 0;color:#677489;font:400 16px/1.6 Inter,sans-serif}
+.health-error{color:#a43d32;font:400 14px/1.6 Inter,sans-serif}
+@media(max-width:1320px){.health-shell{margin:0 32px}}
+@media(max-width:850px){.health-shell{margin:0 20px;padding-top:32px;padding-bottom:56px}.health-columns{grid-template-columns:1fr;gap:24px}.health-panel{padding:28px 22px}.health-rail{padding:26px 22px}.health-experience{padding-top:80px}}
+@media(max-width:500px){.health-form-row{grid-template-columns:1fr}.health-form{gap:22px}.health-shell{margin:0 16px}.health-form label{font-size:14px}.health-form input,.health-form select,.health-form textarea{font-size:14px}}

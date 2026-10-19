@@ -38,6 +38,12 @@
             <span>My Trips</span>
           </NuxtLink>
         </li>
+        <li :class="{ active: activeTab === 'care' }">
+          <NuxtLink to="/care" class="nav-link" @click="emit('close')">
+            <font-awesome-icon :icon="['fas', 'heart-pulse']" class="care-nav-icon" aria-hidden="true" />
+            <span>My Care</span>
+          </NuxtLink>
+        </li>
         <li :class="{ active: activeTab === 'orders' }">
           <NuxtLink to="/orders" class="nav-link" @click="emit('close')">
             <span class="nav-icon icon-orders" aria-hidden="true" />
@@ -113,6 +119,7 @@ const handleTabChange = (tab: string) => {
 </script>
 
 <style scoped>
+.care-nav-icon { width: 16px; height: 16px; flex: 0 0 16px; }
 .profile-sidebar {
   position: sticky;
   top: 108px;

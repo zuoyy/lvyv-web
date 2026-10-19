@@ -232,6 +232,7 @@ export interface BillingDetails {
   zip?: string
 }
 export interface PaymentView {
+  successPath?: string
   paymentNo: string
   provider: string
   channel: string

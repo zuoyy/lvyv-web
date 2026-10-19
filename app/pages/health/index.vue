@@ -343,6 +343,10 @@ const form = reactive({
 })
 
 const openConsultModal = (serviceName?: string) => {
+  if (serviceName === 'Health Checkups') return navigateTo('/health/services')
+  if (serviceName === 'Health Concierge' || !serviceName) return navigateTo('/health/concierge')
+  if (serviceName === 'Dental Care') return navigateTo('/health/concierge?type=dental')
+  if (serviceName === 'Eye & Vision Care') return navigateTo('/health/concierge?type=eye')
   if (serviceName) {
     form.service = serviceName
   }
@@ -351,14 +355,7 @@ const openConsultModal = (serviceName?: string) => {
 }
 
 const submitConsultation = async () => {
-  submitting.value = true
-  try {
-    // Simulated submission delay
-    await new Promise(resolve => setTimeout(resolve, 600))
-    submitted.value = true
-  } finally {
-    submitting.value = false
-  }
+  await navigateTo('/health/concierge')
 }
 </script>
 

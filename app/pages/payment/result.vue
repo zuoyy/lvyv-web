@@ -18,16 +18,17 @@ const route = useRoute(); const commerce = useTourCommerce()
 const payment = ref<PaymentView>(); const loading = ref(true); let timer: ReturnType<typeof setTimeout> | undefined; let attempts = 0
 const terminalFailure = computed(() => ['FAILED','EXPIRED','REVIEW_REQUIRED'].includes(payment.value?.status || ''))
 const retryableFailure = computed(() => ['FAILED','EXPIRED'].includes(payment.value?.status || ''))
-const returnPath = computed(() => payment.value?.status === 'SUCCEEDED' ? '/trips' : '/orders')
+const healthPayment = computed(() => payment.value?.successPath === '/care')
+const returnPath = computed(() => payment.value?.status === 'SUCCEEDED' ? (healthPayment.value ? '/care' : '/trips') : (healthPayment.value ? '/care' : '/orders'))
 const actionLabel = computed(() => {
-  if (payment.value?.status === 'SUCCEEDED') return 'View my journeys'
+  if (payment.value?.status === 'SUCCEEDED') return healthPayment.value ? 'View My Care' : 'View my journeys'
   return retryableFailure.value ? 'Try another payment method' : 'View order status'
 })
 const title = computed(() => loading.value ? 'Checking your payment' : payment.value?.status === 'SUCCEEDED' ? 'Payment confirmed' : terminalFailure.value ? 'Payment was not completed' : 'Payment is still processing')
 const failureMessage = computed(() => payment.value?.provider === 'OCEANPAYMENT' && payment.value.status === 'FAILED'
   ? cardPaymentFailureMessage(payment.value.failureCode, payment.value.failureMessage)
   : payment.value?.failureMessage)
-const message = computed(() => payment.value?.status === 'SUCCEEDED' ? 'Your order is complete and your journey is ready.' : payment.value?.status === 'REVIEW_REQUIRED' ? 'This payment needs manual review. Do not submit another payment while our team verifies it.' : terminalFailure.value ? (failureMessage.value || 'No charge has been confirmed. You can try another payment method.') : 'We have not marked this payment successful yet. This page will keep checking the verified payment status.')
+const message = computed(() => payment.value?.status === 'SUCCEEDED' ? (healthPayment.value ? 'Your payment is confirmed. Your appointment is available in My Care.' : 'Your order is complete and your journey is ready.') : payment.value?.status === 'REVIEW_REQUIRED' ? 'This payment needs manual review. Do not submit another payment while our team verifies it.' : terminalFailure.value ? (failureMessage.value || 'No charge has been confirmed. You can try another payment method.') : 'We have not marked this payment successful yet. This page will keep checking the verified payment status.')
 const load = async () => { const no = typeof route.query.paymentNo === 'string' ? route.query.paymentNo : ''; if (!no) { loading.value=false; return } try { payment.value = await commerce.getPayment(no) } finally { loading.value=false } if (payment.value && ['CREATED','PENDING','UNKNOWN'].includes(payment.value.status) && attempts++ < 40) timer=setTimeout(load,3000) }
 onMounted(load); onBeforeUnmount(()=>{ if(timer) clearTimeout(timer) })
 </script>

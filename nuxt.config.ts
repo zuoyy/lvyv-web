@@ -34,6 +34,9 @@ export default defineNuxtConfig({
       '/checkout': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
       '/payment/**': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
       '/orders/**/pay': { headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
+      '/care': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
+      '/care/**': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
+      '/health/appointments/**': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
       '/faq/**': { swr: 60 },
       '/en/faq/**': { swr: 60 },
       '/zh/faq/**': { swr: 60 },
@@ -60,6 +63,7 @@ export default defineNuxtConfig({
         '/referrals', '/referrals/**', '/register', '/register/**', '/auth/**',
         '/badges',
         '/trips',
+        '/care', '/care/**', '/health/appointments/**',
         '/encounters',
         '/encounters/',
         '/encounters/**',
@@ -85,7 +89,8 @@ export default defineNuxtConfig({
     '~/assets/css/fonts.css',
     '~/assets/css/faq-markdown.css',
     '~/assets/css/style.css',
-    '~/assets/css/design-overrides.css'
+    '~/assets/css/design-overrides.css',
+    '~/assets/css/health.css'
   ],
 
   app: {
