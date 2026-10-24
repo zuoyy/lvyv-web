@@ -503,8 +503,19 @@ type HomeHeroSlide = {
 
 const homeHeroSlides: HomeHeroSlide[] = [
   {
-    id: 'xian-city-wall',
+    id: 'healthcare-consultation',
     index: 0,
+    fallback: '/images/home/banner-health-1440.webp',
+    width: 2880,
+    height: 1560,
+    mobileWebpSrcset: '/images/home/banner-sm-health.webp',
+    webpSrcset: '/images/home/banner-health-768.webp 768w, /images/home/banner-health-1440.webp 1440w, /images/home/banner-health-2880.webp 2880w',
+    wideWebpSrcset: '/images/home/banner-health-2880.webp 2880w',
+    alt: 'Healthcare consultation in China with professional doctors and Shanghai skyline'
+  },
+  {
+    id: 'xian-city-wall',
+    index: 1,
     fallback: '/images/home/banner-1-1440.webp',
     width: 2880,
     height: 1560,
@@ -515,7 +526,7 @@ const homeHeroSlides: HomeHeroSlide[] = [
   },
   {
     id: 'xian-pagoda',
-    index: 1,
+    index: 2,
     fallback: '/images/home/banner-2-1440.webp',
     width: 2880,
     height: 1560,
@@ -526,7 +537,7 @@ const homeHeroSlides: HomeHeroSlide[] = [
   },
   {
     id: 'xian-city-gate',
-    index: 2,
+    index: 3,
     fallback: '/images/home/banner-3-1440.webp',
     width: 2880,
     height: 1560,
@@ -537,7 +548,7 @@ const homeHeroSlides: HomeHeroSlide[] = [
   },
   {
     id: 'traditional-opera',
-    index: 3,
+    index: 4,
     fallback: '/images/home/banner-4-1440.webp',
     width: 2880,
     height: 1560,
@@ -555,7 +566,7 @@ useLvyvSeo({
   title: homeTitle,
   description: homeDescription,
   path: '/',
-  image: '/images/home/banner-1-2880.webp',
+  image: '/images/home/banner-health-2880.webp',
   jsonLd: [
     organizationJsonLd(),
     websiteJsonLd(),
@@ -568,8 +579,8 @@ useHead({
     rel: 'preload',
     as: 'image',
     type: 'image/webp',
-    href: '/images/home/banner-1-1440.webp',
-    imagesrcset: '/images/home/banner-sm-1.webp 768w, /images/home/banner-1-1440.webp 1440w, /images/home/banner-1-2880.webp 2880w',
+    href: '/images/home/banner-health-1440.webp',
+    imagesrcset: '/images/home/banner-sm-health.webp 768w, /images/home/banner-health-1440.webp 1440w, /images/home/banner-health-2880.webp 2880w',
     imagesizes: '100vw',
     fetchpriority: 'high'
   }]
