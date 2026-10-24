@@ -133,16 +133,37 @@
                   {{ interest.label }} <span aria-hidden="true">x</span>
                 </button>
               </div>
-              <div class="wish-interest-grid">
+              <div class="wish-interest-tabs" role="tablist" aria-label="Interest categories">
                 <button
-                  v-for="interest in interestOptions"
+                  v-for="group in interestGroups"
+                  :id="`wish-interest-tab-${group.key}`"
+                  :key="group.key"
+                  type="button"
+                  role="tab"
+                  class="wish-interest-tab"
+                  :class="{ 'is-active': activeInterestGroup === group.key }"
+                  :aria-selected="activeInterestGroup === group.key"
+                  aria-controls="wish-interest-panel"
+                  @click="activeInterestGroup = group.key"
+                >
+                  {{ group.label }}
+                </button>
+              </div>
+              <div
+                id="wish-interest-panel"
+                class="wish-interest-grid"
+                role="tabpanel"
+                :aria-labelledby="`wish-interest-tab-${activeInterestGroup}`"
+              >
+                <button
+                  v-for="interest in activeInterestOptions"
                   :key="interest.code"
                   type="button"
                   class="wish-interest"
                   :class="{ 'is-selected': form.interestCodes.includes(interest.code) }"
-                :aria-pressed="form.interestCodes.includes(interest.code)"
-                @click="toggleInterest(interest.code)"
-              >
+                  :aria-pressed="form.interestCodes.includes(interest.code)"
+                  @click="toggleInterest(interest.code)"
+                >
                   <span class="wish-interest__icon" aria-hidden="true">
                     <img v-if="interestIconAsset(interest.icon)" :src="interestIconAsset(interest.icon)" alt="">
                     <font-awesome-icon v-else :icon="['fas', interest.icon]" />
@@ -291,6 +312,16 @@ interface CalendarDay {
   label: string
 }
 
+type InterestGroupKey = 'travel-interests' | 'travel-style' | 'health-care'
+
+interface WishInterestOption {
+  code: string
+  label: string
+  icon: string
+  group: InterestGroupKey
+  defaultSelected: boolean
+}
+
 const DRAFT_KEY = 'lvyv_wish_builder_draft_v2'
 const LEGACY_DRAFT_KEY = 'lvyv_wish_builder_draft_v1'
 const auth = useMemberAuth()
@@ -307,21 +338,40 @@ const steps = [
   { label: 'Confirm', prompt: '' },
 ]
 
-const interestOptions = ref<Array<{ code: string; label: string; icon: string; defaultSelected: boolean }>>([
-  { code: 'history', label: 'History', icon: 'interest-design/history', defaultSelected: false },
-  { code: 'local_life', label: 'Local Life', icon: 'interest-design/local-life', defaultSelected: false },
-  { code: 'solo_friendly', label: 'Solo-friendly', icon: 'interest-design/solo-friendly', defaultSelected: false },
-  { code: 'couple_friendly', label: 'Couple-friendly', icon: 'interest-design/couple-friendly', defaultSelected: false },
-  { code: 'family_friendly', label: 'Family-friendly', icon: 'interest-design/family-friendly', defaultSelected: false },
-  { code: 'senior_friendly', label: 'Senior-friendly', icon: 'interest-design/senior-friendly', defaultSelected: false },
-  { code: 'culture', label: 'Culture', icon: 'interest-design/culture', defaultSelected: false },
-  { code: 'art', label: 'Art', icon: 'interest-design/art', defaultSelected: false },
-  { code: 'nature', label: 'Nature', icon: 'interest-design/nature', defaultSelected: false },
-  { code: 'indoor', label: 'Indoor', icon: 'interest-design/indoor', defaultSelected: false },
-  { code: 'nightlife', label: 'Nightlife', icon: 'interest-design/nightlife', defaultSelected: false },
-  { code: 'outdoor', label: 'Outdoor', icon: 'interest-design/outdoor', defaultSelected: false },
-  { code: 'food', label: 'Food', icon: 'interest-design/food', defaultSelected: false },
-  { code: 'adventure', label: 'Adventure', icon: 'interest-design/adventure', defaultSelected: false },
+const interestGroups: Array<{ key: InterestGroupKey; label: string }> = [
+  { key: 'travel-interests', label: 'Travel Interests' },
+  { key: 'travel-style', label: 'Travel Style' },
+  { key: 'health-care', label: 'Health & Care' },
+]
+
+const activeInterestGroup = ref<InterestGroupKey>(
+  interestGroups.some(g => g.key === route.query.group) ? (route.query.group as InterestGroupKey) : 'travel-interests'
+)
+const interestOptions = ref<WishInterestOption[]>([
+  { code: 'history', label: 'History', icon: 'interest-design/history', group: 'travel-interests', defaultSelected: false },
+  { code: 'food', label: 'Food', icon: 'interest-design/food', group: 'travel-interests', defaultSelected: false },
+  { code: 'culture', label: 'Culture', icon: 'interest-design/culture', group: 'travel-interests', defaultSelected: false },
+  { code: 'nature', label: 'Nature', icon: 'interest-design/nature', group: 'travel-interests', defaultSelected: false },
+  { code: 'nightlife', label: 'Nightlife', icon: 'interest-design/nightlife', group: 'travel-interests', defaultSelected: false },
+  { code: 'local_life', label: 'Local Life', icon: 'interest-design/local-life', group: 'travel-interests', defaultSelected: false },
+  { code: 'adventure', label: 'Adventure', icon: 'interest-design/adventure', group: 'travel-interests', defaultSelected: false },
+  { code: 'art', label: 'Art', icon: 'interest-design/art', group: 'travel-interests', defaultSelected: false },
+  { code: 'indoor', label: 'Indoor', icon: 'interest-design/indoor', group: 'travel-style', defaultSelected: false },
+  { code: 'outdoor', label: 'Outdoor', icon: 'interest-design/outdoor', group: 'travel-style', defaultSelected: false },
+  { code: 'family_friendly', label: 'Family-Friendly', icon: 'interest-design/family-friendly', group: 'travel-style', defaultSelected: false },
+  { code: 'senior_friendly', label: 'Senior-Friendly', icon: 'interest-design/senior-friendly', group: 'travel-style', defaultSelected: false },
+  { code: 'solo_friendly', label: 'Solo-Friendly', icon: 'interest-design/solo-friendly', group: 'travel-style', defaultSelected: false },
+  { code: 'couple_friendly', label: 'Couple-Friendly', icon: 'interest-design/couple-friendly', group: 'travel-style', defaultSelected: false },
+  { code: 'health_checkup', label: 'Health Checkup', icon: 'interest-design/health-checkup', group: 'health-care', defaultSelected: false },
+  { code: 'executive_checkup', label: 'Executive Checkup', icon: 'interest-design/executive-checkup', group: 'health-care', defaultSelected: false },
+  { code: 'dental_care', label: 'Dental Care', icon: 'interest-design/dental-care', group: 'health-care', defaultSelected: false },
+  { code: 'specialist_consultation', label: 'Specialist Consultation', icon: 'interest-design/specialist-consultation', group: 'health-care', defaultSelected: false },
+  { code: 'eye_vision', label: 'Eye & Vision', icon: 'interest-design/eye-vision', group: 'health-care', defaultSelected: false },
+  { code: 'medical_imaging', label: 'Medical Imaging', icon: 'interest-design/medical-imaging', group: 'health-care', defaultSelected: false },
+  { code: 'rehabilitation', label: 'Rehabilitation', icon: 'interest-design/rehabilitation', group: 'health-care', defaultSelected: false },
+  { code: 'physical_therapy', label: 'Physical Therapy', icon: 'interest-design/physical-therapy', group: 'health-care', defaultSelected: false },
+  { code: 'womens_health', label: "Women's Health", icon: 'interest-design/womens-health', group: 'health-care', defaultSelected: false },
+  { code: 'health_concierge', label: 'Health Concierge', icon: 'interest-design/health-concierge', group: 'health-care', defaultSelected: false },
 ])
 const budgetOptions = ref<Array<{ code: string; label: string; price: string; icon: string; features: string[]; defaultSelected: boolean }>>([])
 const journeyOptions = ref<Array<{ code: string; title: string; subtitle: string; image: string; alt: string; story: string; defaultSelected: boolean }>>([])
@@ -471,6 +521,7 @@ const selectedCityLabel = computed(() => {
   return form.cityCodes.map(code => cityCards.value.find(city => city.code === code)?.englishName || code).join(', ')
 })
 const selectedInterestOptions = computed(() => interestOptions.value.filter(option => form.interestCodes.includes(option.code)))
+const activeInterestOptions = computed(() => interestOptions.value.filter(option => option.group === activeInterestGroup.value))
 const selectedBudget = computed(() => budgetOptions.value.find(option => option.code === form.budgetLevel))
 const hasCompleteTravelDates = computed(() => Boolean(form.startDate && form.endDate))
 
@@ -1064,16 +1115,23 @@ useLvyvSeo({
 .wish-calendar__day.is-edge::after { position: absolute; z-index: 1; top: 50%; left: 50%; width: 40px; height: 40px; border-radius: 50%; background: #285c43; content: ''; transform: translate(-50%, -50%); }
 .wish-calendar-card__reset { margin: 0 16px 15px; padding: 8px 13px; border: 1px solid #bfc9c3; border-radius: 20px; background: #fff; color: #3e4d45; font-size: 11px; cursor: pointer; }
 
-.wish-interest-stage { max-width: 720px; }
-.wish-selected-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
-.wish-selected-tags button { min-height: 40px; padding: 0 15px; border: 1px solid #698e4e; border-radius: 26px; background: #edf9e1; color: #2a573f; font-size: 13px; cursor: pointer; }
-.wish-selected-tags span { margin-left: 8px; }
-.wish-interest-grid { display: flex; flex-wrap: wrap; gap: 10px; }
-.wish-interest { position: relative; min-width: 123px; min-height: 44px; height: 44px; display: flex; align-items: center; gap: 10px; padding: 0 30px 0 14px; border: 1px solid #698e4e; border-radius: 10px; background: #f9f9f9; color: #2a573f; font: 400 14px/1 'Outfit', 'Inter', sans-serif; cursor: pointer; }
-.wish-interest:hover, .wish-interest.is-selected { background: #fff; }
-.wish-interest__icon { width: 24px; height: 24px; display: grid; flex: 0 0 24px; place-items: center; }
-.wish-interest__icon img, .wish-interest__icon svg { max-width: 24px; max-height: 24px; }
-.wish-interest__check { position: absolute; top: 7px; right: 7px; width: 16px; height: 16px; display: grid; place-items: center; }
+.wish-interest-stage { max-width: 760px; }
+.wish-selected-tags { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; }
+.wish-selected-tags button { min-height: 40px; height: 40px; display: inline-flex; align-items: center; padding: 0 16px; border: 1px solid #698e4e; border-radius: 20px; background: #edf9e1; color: #2a573f; font: 400 14px/1 'Outfit', 'Inter', sans-serif; cursor: pointer; transition: background-color .15s ease; }
+.wish-selected-tags button:hover { background: #e2f4d3; }
+.wish-selected-tags span { margin-left: 10px; font-size: 14px; line-height: 1; }
+.wish-interest-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; max-width: 705px; height: 32px; margin-bottom: 24px; background: #fff; border-radius: 4px; overflow: hidden; box-shadow: 0 6px 6px rgba(0, 0, 0, .02); }
+.wish-interest-tab { height: 32px; min-height: 32px; padding: 0 10px; border: none; border-radius: 0; background: #fff; color: rgba(0, 0, 0, .5); font: 400 14px/32px 'Inter', sans-serif; text-align: center; cursor: pointer; transition: background-color .2s ease, color .2s ease; white-space: nowrap; }
+.wish-interest-tab:hover:not(.is-active) { color: #203d33; }
+.wish-interest-tab.is-active { background: #203d33; color: #fff; }
+.wish-interest-grid { display: flex; flex-wrap: wrap; gap: 12px; }
+.wish-interest { position: relative; min-width: 130px; min-height: 44px; height: 44px; display: flex; align-items: center; gap: 10px; padding: 0 34px 0 14px; border: 1px solid #698e4e; border-radius: 10px; background: #f9f9f9; color: #2a573f; font: 400 14px/1.2 'Outfit', 'Inter', sans-serif; cursor: pointer; transition: background-color .2s ease, border-color .2s ease; }
+.wish-interest:hover { background: #fff; border-color: #55783e; }
+.wish-interest.is-selected { background: #fff; border-color: #698e4e; }
+.wish-interest__icon { width: 22px; height: 22px; display: grid; flex: 0 0 22px; place-items: center; }
+.wish-interest__icon img, .wish-interest__icon svg { max-width: 22px; max-height: 22px; }
+.wish-interest__icon svg { color: #2a573f; font-size: 18px; }
+.wish-interest__check { position: absolute; top: 50%; right: 10px; transform: translateY(-50%); width: 16px; height: 16px; display: grid; place-items: center; }
 .wish-interest__check img { width: 16px; height: 16px; display: block; }
 
 .wish-budget-grid { display: grid; grid-template-columns: repeat(3, minmax(160px, 210px)); gap: 20px; }
@@ -1199,6 +1257,8 @@ useLvyvSeo({
   .wish-calendar-card { width: 100%; }
   .wish-calendar-card__summary { padding-inline: 14px; font-size: 12px; }
   .wish-calendar { padding-inline: 8px; }
+  .wish-interest-tabs { max-width: 100%; height: 34px; margin-bottom: 16px; }
+  .wish-interest-tab { height: 34px; min-height: 34px; padding-inline: 4px; font-size: 11px; line-height: 34px; }
   .wish-interest { min-width: 0; width: 100%; }
   .wish-budget-grid { grid-template-columns: 1fr; }
   .wish-budget { min-height: 155px; display: grid; grid-template-columns: 52px 1fr; align-content: center; justify-items: start; padding: 20px 24px; text-align: left; }

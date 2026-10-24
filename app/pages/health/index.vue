@@ -12,9 +12,9 @@
             Health checkups, dental care, eye care and more — with clear information, selected providers and English-speaking coordination.
           </p>
           <div class="health-hero__actions">
-            <a href="#explore-care" class="health-btn health-btn--primary">
+            <NuxtLink to="/health/services" class="health-btn health-btn--primary">
               Explore Health Services
-            </a>
+            </NuxtLink>
             <button type="button" class="health-btn health-btn--outline" @click="openConsultModal()">
               Talk to a Care Coordinator
             </button>
@@ -29,26 +29,6 @@
               class="health-hero__image"
               loading="eager"
             >
-          </div>
-
-          <!-- Floating Badge: Hours of meetings (Top Right) -->
-          <div class="health-badge health-badge--top-right">
-            <span class="health-badge__metric">10K+</span>
-            <span class="health-badge__label">hours of patient<br>meetings</span>
-          </div>
-
-          <!-- Floating Badge: Patients trusted us (Bottom Left) -->
-          <div class="health-badge health-badge--bottom-left">
-            <div class="health-badge__row">
-              <div class="health-badge__avatars" aria-hidden="true">
-                <img src="/images/health/avatar-1.webp" alt="" class="health-avatar">
-                <img src="/images/health/avatar-2.webp" alt="" class="health-avatar">
-                <img src="/images/health/avatar-3.webp" alt="" class="health-avatar">
-                <img src="/images/health/avatar-4.webp" alt="" class="health-avatar">
-              </div>
-              <span class="health-badge__metric">2,650+</span>
-            </div>
-            <span class="health-badge__label">patients have trusted us</span>
           </div>
         </div>
       </div>
@@ -468,20 +448,16 @@ const submitConsultation = async () => {
   transform: translateY(-2px);
 }
 
-/* Hero Visual & Badges */
+/* Hero Visual */
 .health-hero__visual {
   position: relative;
-  flex: 0 0 540px;
-  width: 540px;
-  height: 520px;
+  flex: 0 0 500px;
+  width: 500px;
 }
 
 .health-hero__image-wrapper {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  width: 480px;
-  height: 460px;
+  width: 100%;
+  height: 480px;
   border-radius: 30px;
   overflow: hidden;
   box-shadow: 0 20px 48px rgba(21, 75, 63, 0.12);
@@ -493,85 +469,6 @@ const submitConsultation = async () => {
   object-fit: cover;
   object-position: center;
   display: block;
-}
-
-.health-badge {
-  position: absolute;
-  background: #ffffff;
-  border: 1px solid #ecf4fd;
-  border-radius: 20px;
-  box-shadow: 0 16px 36px rgba(21, 75, 63, 0.08), 0 4px 12px rgba(0, 0, 0, 0.03);
-  z-index: 2;
-  backdrop-filter: blur(8px);
-}
-
-.health-badge--top-right {
-  top: 0;
-  right: 0;
-  padding: 16px 22px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.health-badge--top-right .health-badge__metric {
-  font-size: 42px;
-  font-weight: 700;
-  color: #105446;
-  line-height: 1;
-}
-
-.health-badge--top-right .health-badge__label {
-  font-size: 14px;
-  color: #64748b;
-  line-height: 1.35;
-  text-transform: capitalize;
-}
-
-.health-badge--bottom-left {
-  bottom: 0;
-  left: 0;
-  padding: 18px 22px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.health-badge__row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.health-badge__avatars {
-  display: flex;
-  align-items: center;
-}
-
-.health-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 2px solid #ffffff;
-  object-fit: cover;
-  margin-left: -12px;
-}
-
-.health-avatar:first-child {
-  margin-left: 0;
-}
-
-.health-badge--bottom-left .health-badge__metric {
-  font-size: 34px;
-  font-weight: 700;
-  color: #105446;
-  line-height: 1;
-}
-
-.health-badge--bottom-left .health-badge__label {
-  font-size: 14px;
-  color: #64748b;
-  font-weight: 500;
 }
 
 /* ==========================================================================
@@ -1024,50 +921,12 @@ const submitConsultation = async () => {
   .health-hero__visual {
     width: 100%;
     max-width: 100%;
-    height: 380px;
   }
 
   .health-hero__image-wrapper {
-    top: 10px;
-    left: 0;
     width: 100%;
     height: 330px;
     border-radius: 20px;
-  }
-
-  .health-badge--top-right {
-    top: -10px;
-    right: 10px;
-    padding: 10px 14px;
-    gap: 8px;
-  }
-
-  .health-badge--top-right .health-badge__metric {
-    font-size: 28px;
-  }
-
-  .health-badge--top-right .health-badge__label {
-    font-size: 11.5px;
-  }
-
-  .health-badge--bottom-left {
-    bottom: -10px;
-    left: 10px;
-    padding: 12px 16px;
-  }
-
-  .health-avatar {
-    width: 28px;
-    height: 28px;
-    margin-left: -8px;
-  }
-
-  .health-badge--bottom-left .health-badge__metric {
-    font-size: 24px;
-  }
-
-  .health-badge--bottom-left .health-badge__label {
-    font-size: 12px;
   }
 
   .explore-care {

@@ -32,7 +32,12 @@
               </NuxtLink>
             </div>
           </div>
-          <NuxtLink to="/health" :class="{ active: currentPath.startsWith('/health') }">Health</NuxtLink>
+          <NuxtLink to="/health" class="nav-link-health" :class="{ active: currentPath.startsWith('/health') }">
+            <span class="nav-health-badge" aria-hidden="true">
+              <img src="/images/health/hot-badge.svg" alt="" width="30" height="16">
+            </span>
+            <span>Health</span>
+          </NuxtLink>
           <NuxtLink to="/about" :class="{ active: currentPath === '/about' }">About</NuxtLink>
           <NuxtLink to="/en/faq/" :class="{ active: currentPath.includes('/faq') }">FAQ</NuxtLink>
         </nav>
@@ -138,7 +143,12 @@
               </Transition>
             </div>
 
-            <NuxtLink to="/health" class="mobile-nav-item" :class="{ active: currentPath.startsWith('/health') }" @click="handleNavClick('/health')">Health</NuxtLink>
+            <NuxtLink to="/health" class="mobile-nav-item mobile-nav-health" :class="{ active: currentPath.startsWith('/health') }" @click="handleNavClick('/health')">
+              <span>Health</span>
+              <span class="mobile-health-badge" aria-hidden="true">
+                <img src="/images/health/hot-badge.svg" alt="" width="30" height="16">
+              </span>
+            </NuxtLink>
             <NuxtLink to="/about" class="mobile-nav-item" :class="{ active: currentPath === '/about' }" @click="handleNavClick('/about')">About</NuxtLink>
             <NuxtLink to="/en/faq/" class="mobile-nav-item" :class="{ active: currentPath.includes('/faq') }" @click="handleNavClick('/en/faq/')">FAQ</NuxtLink>
           </nav>
@@ -501,5 +511,55 @@ onBeforeUnmount(() => {
     width: 20.63px;
     height: 9.56px;
   }
+}
+
+.nav-link-health {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.nav-health-badge {
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30px;
+  height: 16px;
+  line-height: 0;
+  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.nav-link-health:hover .nav-health-badge {
+  transform: translateX(-50%) translateY(-2px);
+}
+
+.nav-health-badge img {
+  width: 30px;
+  height: 16px;
+  display: block;
+}
+
+.mobile-nav-health {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mobile-health-badge {
+  display: inline-flex;
+  align-items: center;
+  line-height: 0;
+  margin-left: 8px;
+}
+
+.mobile-health-badge img {
+  width: 30px;
+  height: 16px;
+  display: block;
 }
 </style>

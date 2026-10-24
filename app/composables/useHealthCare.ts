@@ -71,8 +71,6 @@ export const useHealthCare = () => {
     listAppointments: (tab: string, page = 1) => auth.request<HealthAppointment[]>(`/health/appointments/page?tab=${encodeURIComponent(tab)}&page=${page}&size=20`, undefined, 'GET'),
     cancelAppointment: (appointmentNo: string) => auth.request<HealthAppointment>(`/health/appointments/${encodeURIComponent(appointmentNo)}/cancel`),
     rescheduleAppointment: (appointmentNo: string) => auth.request<HealthAppointment>(`/health/appointments/${encodeURIComponent(appointmentNo)}/reschedule`),
-    createConciergeRequest: (body: Record<string, unknown>) => auth.token.value
-      ? auth.request<void>('/health/concierge-requests', body)
-      : auth.publicAction<void>('/health/concierge-requests', body),
+    createConciergeRequest: (body: Record<string, unknown>) => auth.request<void>('/health/concierge-requests', body),
   }
 }

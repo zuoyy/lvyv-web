@@ -130,6 +130,123 @@
       </NuxtLink>
     </section>
 
+    <section class="healthcare-highlight" aria-labelledby="healthcare-highlight-title">
+      <div class="healthcare-highlight__inner">
+        <div class="healthcare-highlight__visual" aria-hidden="true">
+          <div class="healthcare-highlight__image healthcare-highlight__image--primary">
+            <picture>
+              <source type="image/webp" srcset="/images/home/healthcare-primary-node.webp">
+              <img
+                src="/images/home/healthcare-primary-node.png"
+                alt="Doctor consultation during cross-border healthcare"
+                width="389"
+                height="322"
+                loading="lazy"
+                decoding="async"
+              >
+            </picture>
+          </div>
+          <div class="healthcare-highlight__note">
+            <p>Lower Costs.<br>Greater Efficiency.<br>Greater Peace of Mind.</p>
+          </div>
+          <div class="healthcare-highlight__image healthcare-highlight__image--secondary">
+            <picture>
+              <source type="image/webp" srcset="/images/home/healthcare-secondary-node.webp">
+              <img
+                src="/images/home/healthcare-secondary-node.png"
+                alt="Experienced healthcare specialist"
+                width="336"
+                height="336"
+                loading="lazy"
+                decoding="async"
+              >
+            </picture>
+          </div>
+        </div>
+
+        <div class="healthcare-highlight__content">
+          <header class="healthcare-highlight__header">
+            <p class="healthcare-highlight__eyebrow">China's Key Advantages in</p>
+            <h2 id="healthcare-highlight-title" class="healthcare-highlight__title">
+              <span>Cross-Border</span> <strong>Healthcare</strong>
+            </h2>
+          </header>
+
+          <div class="healthcare-highlight__advantages">
+            <article class="healthcare-highlight__item">
+              <div class="healthcare-highlight__item-header">
+                <img
+                  src="/images/home/healthcare-cost.svg"
+                  alt=""
+                  class="healthcare-highlight__icon"
+                  width="26"
+                  height="26"
+                  aria-hidden="true"
+                >
+                <h3>Cost Advantage</h3>
+              </div>
+              <p class="healthcare-highlight__desc">
+                Medical services at 1/5–1/10 the cost of comparable services in the US and Europe, and around half the cost in South Korea.
+              </p>
+            </article>
+
+            <article class="healthcare-highlight__item">
+              <div class="healthcare-highlight__item-header">
+                <img
+                  src="/images/home/healthcare-efficiency.svg"
+                  alt=""
+                  class="healthcare-highlight__icon"
+                  width="26"
+                  height="26"
+                  aria-hidden="true"
+                >
+                <h3>Efficiency Advantage</h3>
+              </div>
+              <p class="healthcare-highlight__desc">
+                Same-day consultations and examinations, with reports available as early as the next day.
+              </p>
+            </article>
+
+            <article class="healthcare-highlight__item">
+              <div class="healthcare-highlight__item-header">
+                <img
+                  src="/images/home/healthcare-quality.svg"
+                  alt=""
+                  class="healthcare-highlight__icon"
+                  width="26"
+                  height="26"
+                  aria-hidden="true"
+                >
+                <h3>Quality Assurance</h3>
+              </div>
+              <ul class="healthcare-highlight__desc healthcare-highlight__list">
+                <li>Advanced imported medical equipment</li>
+                <li>Experienced medical professionals</li>
+                <li>A broad network of JCI-accredited healthcare institutions</li>
+              </ul>
+            </article>
+
+            <article class="healthcare-highlight__item">
+              <div class="healthcare-highlight__item-header">
+                <img
+                  src="/images/home/healthcare-access.svg"
+                  alt=""
+                  class="healthcare-highlight__icon"
+                  width="26"
+                  height="26"
+                  aria-hidden="true"
+                >
+                <h3>Streamlined Access</h3>
+              </div>
+              <p class="healthcare-highlight__desc">
+                Visa-free entry for eligible travelers, established medical service channels, and seamless support throughout the healthcare journey.
+              </p>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section
       id="curated-encounters"
       class="curated-section"
@@ -1192,6 +1309,199 @@ onUnmounted(() => {
   height: 30px;
 }
 
+.healthcare-highlight {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: calc(800 * (100vw / 1440));
+  min-height: 560px;
+  justify-content: center;
+  overflow: hidden;
+  background: #f6fff4;
+}
+
+.healthcare-highlight__inner {
+  position: relative;
+  width: 1440px;
+  height: 800px;
+  flex: 0 0 1440px;
+  transform: scale(calc(100vw / 1440));
+  transform-origin: top center;
+}
+
+@media (min-width: 1440px) {
+  .healthcare-highlight {
+    height: 800px;
+  }
+
+  .healthcare-highlight__inner {
+    transform: none;
+  }
+}
+
+.healthcare-highlight__visual {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 688px;
+  height: 800px;
+}
+
+.healthcare-highlight__image {
+  position: absolute;
+  overflow: hidden;
+  background: #dfece6;
+}
+
+.healthcare-highlight__image picture,
+.healthcare-highlight__image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.healthcare-highlight__image img {
+  object-fit: cover;
+}
+
+.healthcare-highlight__image--primary {
+  top: 87px;
+  left: 254px;
+  width: 389px;
+  height: 322px;
+  z-index: 1;
+  border: 5px solid #ffffff;
+  box-sizing: border-box;
+}
+
+.healthcare-highlight__note {
+  position: absolute;
+  top: 199px;
+  left: 100px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  width: 234px;
+  height: 115px;
+  padding: 18px 20px 18px 39px;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 40px 40px -15px rgba(148, 182, 206, 0.15);
+  box-sizing: border-box;
+}
+
+.healthcare-highlight__note p {
+  margin: 0;
+  color: #698e4e;
+  font-family: 'Kalam', cursive, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 27px;
+  text-align: left;
+}
+
+.healthcare-highlight__image--secondary {
+  top: 354px;
+  left: 193px;
+  width: 336px;
+  height: 336px;
+  z-index: 3;
+  border: 4px solid #ffffff;
+  box-sizing: border-box;
+}
+
+.healthcare-highlight__content {
+  position: absolute;
+  top: 123px;
+  left: 688px;
+  width: 700px;
+}
+
+.healthcare-highlight__eyebrow {
+  margin: 0;
+  color: #698e4e;
+  font-family: 'Inter', sans-serif;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 27px;
+}
+
+.healthcare-highlight__title {
+  margin: 0 0 49px;
+  color: #203d33;
+  font-family: 'Poppins', sans-serif;
+  font-size: 48px;
+  font-weight: 600;
+  line-height: 67px;
+  white-space: nowrap;
+}
+
+.healthcare-highlight__title span {
+  color: #203d33;
+}
+
+.healthcare-highlight__title strong {
+  color: #698e4e;
+  font-weight: 600;
+}
+
+.healthcare-highlight__advantages {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 606px;
+  max-width: 100%;
+}
+
+.healthcare-highlight__item {
+  margin: 0;
+}
+
+.healthcare-highlight__item-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.healthcare-highlight__icon {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  display: block;
+}
+
+.healthcare-highlight__item h3 {
+  margin: 0;
+  color: #698e4e;
+  font-family: 'Inter', sans-serif;
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.healthcare-highlight__desc {
+  margin: 10px 0 0;
+  color: #091e29;
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 26px;
+}
+
+.healthcare-highlight__list {
+  padding-left: 20px;
+  list-style-type: disc;
+}
+
+.healthcare-highlight__list li {
+  margin: 0;
+  color: #091e29;
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 26px;
+}
+
 .curated-section {
   position: relative;
   width: 100%;
@@ -1932,6 +2242,117 @@ onUnmounted(() => {
 }
 
 @media (max-width: 1100px) {
+  .healthcare-highlight {
+    height: auto;
+    min-height: 0;
+    padding: 64px 20px 72px !important;
+  }
+
+  .healthcare-highlight__inner {
+    display: flex;
+    flex-direction: column;
+    width: min(640px, 100%);
+    height: auto;
+    flex: 0 1 auto;
+    gap: 36px;
+    margin: 0 auto;
+    transform: none;
+  }
+
+  .healthcare-highlight__content {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+    display: contents;
+  }
+
+  .healthcare-highlight__header {
+    order: 1;
+    width: 100%;
+  }
+
+  .healthcare-highlight__eyebrow {
+    margin: 0 0 8px;
+    font-size: 20px;
+    line-height: 1.25;
+  }
+
+  .healthcare-highlight__title {
+    margin: 0;
+    font-size: clamp(28px, 5.5vw, 42px);
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  .healthcare-highlight__visual {
+    order: 2;
+    position: relative;
+    width: 100%;
+    max-width: 440px;
+    height: 380px;
+    margin: 0 auto;
+  }
+
+  .healthcare-highlight__image--primary {
+    top: 0;
+    right: 0;
+    left: auto;
+    width: 65%;
+    height: 220px;
+    z-index: 1;
+    border: 4px solid #ffffff;
+    border-radius: 6px;
+    box-shadow: 0 10px 24px rgba(16, 84, 70, 0.08);
+  }
+
+  .healthcare-highlight__note {
+    top: 90px;
+    left: 0;
+    width: 200px;
+    height: auto;
+    min-height: 80px;
+    padding: 12px 16px;
+    z-index: 3;
+    border-radius: 8px;
+    box-shadow: 0 16px 36px -8px rgba(148, 182, 206, 0.28);
+  }
+
+  .healthcare-highlight__note p {
+    font-size: 14px;
+    line-height: 21px;
+  }
+
+  .healthcare-highlight__image--secondary {
+    top: 160px;
+    left: 6%;
+    width: 58%;
+    height: 220px;
+    z-index: 2;
+    border: 4px solid #ffffff;
+    border-radius: 6px;
+    box-shadow: 0 12px 28px rgba(16, 84, 70, 0.12);
+  }
+
+  .healthcare-highlight__advantages {
+    order: 3;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .healthcare-highlight__item h3 {
+    font-size: 20px;
+  }
+
+  .healthcare-highlight__desc,
+  .healthcare-highlight__list li {
+    font-size: 15px;
+    line-height: 24px;
+  }
+
   .journey-section__layout {
     gap: 56px;
   }
@@ -1948,8 +2369,73 @@ onUnmounted(() => {
     right: 24px;
     left: 24px;
   }
-
 }
+
+@media (max-width: 640px) {
+  .healthcare-highlight {
+    padding: 48px 16px 56px !important;
+  }
+
+  .healthcare-highlight__inner {
+    gap: 28px;
+  }
+
+  .healthcare-highlight__eyebrow {
+    font-size: 17px;
+  }
+
+  .healthcare-highlight__title {
+    font-size: clamp(22px, 6.4vw, 30px);
+    white-space: normal;
+  }
+
+  .healthcare-highlight__visual {
+    max-width: 360px;
+    height: 310px;
+  }
+
+  .healthcare-highlight__image--primary {
+    width: 66%;
+    height: 175px;
+    border-width: 3px;
+  }
+
+  .healthcare-highlight__note {
+    top: 70px;
+    left: 0;
+    width: 165px;
+    min-height: 68px;
+    padding: 10px 12px;
+  }
+
+  .healthcare-highlight__note p {
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  .healthcare-highlight__image--secondary {
+    top: 130px;
+    left: 5%;
+    width: 58%;
+    height: 180px;
+    border-width: 3px;
+  }
+
+  .healthcare-highlight__advantages {
+    gap: 18px;
+  }
+
+  .healthcare-highlight__item h3 {
+    font-size: 18px;
+  }
+
+  .healthcare-highlight__desc,
+  .healthcare-highlight__list li {
+    font-size: 14px;
+    line-height: 22px;
+  }
+}
+
 
 @media (max-width: 767px) {
   .home-v2 {
