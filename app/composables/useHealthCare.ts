@@ -26,6 +26,7 @@ export interface HealthOptions { cities: HealthDictionaryOption[]; tiers: Health
 export interface HealthServiceDetail {
   service: HealthServiceSummary
   inclusions: { phase: string; title: string; description?: string }[]
+  contentGroups: { title: string; items: { title: string; maleSupported: boolean; femaleSupported: boolean }[] }[]
   providers: { facilityType: string; cityName: string; address?: string; supportedLanguages: string; providerName?: string }[]
 }
 
