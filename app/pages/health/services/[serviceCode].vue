@@ -1,7 +1,7 @@
 <template>
   <main class="health-experience health-detail"><div class="health-shell">
     <nav class="crumbs"><NuxtLink to="/health">Health</NuxtLink><span>›</span><NuxtLink to="/health/services">Health Checkups</NuxtLink><span>›</span><span>{{ detail?.service.title || 'Service' }}</span></nav>
-    <div v-if="loading" class="health-state" role="status">Loading care details...</div><div v-else-if="error" class="health-state health-error" role="alert">{{ error }} <button @click="load">Try again</button></div>
+    <div v-if="loading" class="health-state" role="status">Loading care details...</div><div v-else-if="errorMessage" class="health-state health-error" role="alert">{{ errorMessage }} <button @click="load">Try again</button></div>
     <div v-else-if="detail" class="health-columns">
       <div><section class="health-panel service-description"><h1>{{ detail.service.title }}</h1><p class="lead">{{ detail.service.summary }}</p>
         <div class="tags"><span>{{ detail.service.cityName }}</span><span>{{ detail.service.durationLabel }}</span><span>{{ detail.service.supportLanguages }} support</span><span>Appointment required</span></div>
@@ -18,11 +18,22 @@
   </div></main>
 </template>
 <script setup lang="ts">
-const route = useRoute(), health = useHealthCare(), detail = ref<import('~/composables/useHealthCare').HealthServiceDetail>(), loading = ref(true), error = ref(''), date = ref(''), time = ref('Morning')
-async function load(){ loading.value=true;error.value='';try { detail.value = await health.getService(String(route.params.serviceCode)) } catch (e) { error.value = e instanceof Error ? e.message : 'Unable to load this service.' } finally { loading.value = false } }
-onMounted(load)
+import type { HealthServiceDetail } from '~/composables/useHealthCare'
+
+const route = useRoute()
+const health = useHealthCare()
+const serviceCode = computed(() => String(route.params.serviceCode || ''))
+const { data: detail, status, error, refresh } = await useAsyncData<HealthServiceDetail>(
+  () => `health-service-${serviceCode.value}`,
+  () => health.getService(serviceCode.value),
+  { default: () => undefined }
+)
+const loading = computed(() => status.value === 'pending')
+const errorMessage = computed(() => error.value instanceof Error ? error.value.message : (error.value ? 'Unable to load this service.' : ''))
+const load = () => refresh()
+const date = ref(''), time = ref('Morning')
 const minimumDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai',year:'numeric',month:'2-digit',day:'2-digit' }).format(new Date())
-const request = async () => { await navigateTo('/health/appointments/new?serviceCode='+encodeURIComponent(String(route.params.serviceCode))+'&date='+encodeURIComponent(date.value)+'&time='+encodeURIComponent(time.value)) }
+const request = async () => { await navigateTo('/health/appointments/new?serviceCode='+encodeURIComponent(serviceCode.value)+'&date='+encodeURIComponent(date.value)+'&time='+encodeURIComponent(time.value)) }
 useLvyvSeo({ title: 'Care Service | LVYV Care', description: 'Review service highlights before requesting a planned healthcare appointment.', path: '/health/services/'+route.params.serviceCode })
 </script>
 <style scoped>
