@@ -20,7 +20,7 @@
 
       <section class="legal-section legal-section--reference" aria-labelledby="reference-title">
         <h2 id="reference-title">Terms Reference</h2>
-        <p class="legal-subject"><strong>Contracting entity:</strong> Lvyv International Travel &amp; Culture Co., Ltd.</p>
+        <p class="legal-subject"><strong>Contracting entity:</strong> Beijing LVYV International Travel Co., Ltd.</p>
         <object data="https://www.9-bill.com/index/text" style="width:100%" title="Terms and Conditions reference">
           <p>
             <a href="https://www.9-bill.com/index/text" target="_blank" rel="noopener noreferrer">View the Terms and Conditions reference</a>
