@@ -13,7 +13,7 @@
       </div>
       <div v-else-if="error && (!services || !services.length)" class="health-state health-error" role="alert">
         {{ error?.message || 'Unable to load care services.' }}
-        <button type="button" class="retry-btn" @click="() => refresh()">Try again</button>
+        <button type="button" class="retry-btn" @click="reload">Try again</button>
       </div>
       <div v-else-if="!services || !services.length" class="health-state">
         No services available.
@@ -67,24 +67,66 @@
           </div>
         </article>
       </div>
+      <div ref="loadMoreTarget" class="load-more" aria-live="polite">
+        <span v-if="loadingMore">Loading more care services...</span>
+        <span v-else-if="hasMore">Scroll to load more</span>
+        <span v-else-if="services.length">All care services loaded</span>
+      </div>
     </div>
   </main>
 </template>
 
 <script setup lang="ts">
-import type { HealthServiceSummary } from '~/composables/useHealthCare'
+import type { HealthServiceSummary, HealthServicePage } from '~/composables/useHealthCare'
 
 const health = useHealthCare()
 const failedImages = reactive(new Set<string>())
 
 // 使用 useAsyncData 进行服务端/首屏数据直出，刷新时直接渲染真实数据，彻底删除默认数据避免闪烁
-const { data: services, status, error, refresh } = await useAsyncData<HealthServiceSummary[]>(
+const { data: firstPage, status, error, refresh } = await useAsyncData<HealthServicePage>(
   'health-services',
-  () => health.listServices(),
-  { default: () => [] }
+  () => health.listServices({ page: '1', size: '18' }),
+  { default: () => ({ list: [], total: 0, page: 1, size: 18 }) }
 )
 
+const services = ref<HealthServiceSummary[]>(firstPage.value?.list || [])
+const currentPage = ref(firstPage.value?.page || 1)
+const total = ref(firstPage.value?.total || 0)
+const loadingMore = ref(false)
+const loadMoreTarget = ref<HTMLElement | null>(null)
+const hasMore = computed(() => services.value.length < total.value)
+let loadMoreObserver: IntersectionObserver | undefined
+
 const loading = computed(() => status.value === 'pending')
+
+const reload = async () => {
+  await refresh()
+  services.value = firstPage.value?.list || []
+  currentPage.value = firstPage.value?.page || 1
+  total.value = firstPage.value?.total || 0
+}
+
+const loadMore = async () => {
+  if (loadingMore.value || !hasMore.value) return
+  loadingMore.value = true
+  try {
+    const next = await health.listServices({ page: String(currentPage.value + 1), size: '18' })
+    services.value.push(...next.list)
+    currentPage.value = next.page
+    total.value = next.total
+  } finally {
+    loadingMore.value = false
+  }
+}
+
+onMounted(() => {
+  if (!loadMoreTarget.value || !('IntersectionObserver' in window)) return
+  loadMoreObserver = new IntersectionObserver((entries) => {
+    if (entries.some(entry => entry.isIntersecting)) void loadMore()
+  }, { rootMargin: '480px 0px' })
+  loadMoreObserver.observe(loadMoreTarget.value)
+})
+onBeforeUnmount(() => loadMoreObserver?.disconnect())
 
 const formatPrice = (value: number) => '$' + Number(value).toLocaleString('en-US', { maximumFractionDigits: 2 })
 
@@ -152,6 +194,14 @@ useLvyvSeo({
   margin: 48px auto 0;
   padding: 0 20px 240px;
   box-sizing: border-box;
+}
+
+.load-more {
+  min-height: 48px;
+  padding: 28px 0 0;
+  color: #68706a;
+  font-size: 14px;
+  text-align: center;
 }
 
 .services-grid {

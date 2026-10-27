@@ -20,6 +20,13 @@ export interface HealthServiceSummary {
   sortOrder?: number
 }
 
+export interface HealthServicePage {
+  list: HealthServiceSummary[]
+  total: number
+  page: number
+  size: number
+}
+
 export interface HealthDictionaryOption { code: string; label: string; sort: number; status: number }
 export interface HealthOptions { cities: HealthDictionaryOption[]; tiers: HealthDictionaryOption[] }
 
@@ -62,7 +69,7 @@ export const useHealthCare = () => {
     getOptions: () => auth.publicRequest<HealthOptions>('/health/options'),
     listServices: (params: Record<string, string> = {}) => {
       const query = new URLSearchParams(Object.entries(params).filter(([, value]) => value)).toString()
-      return auth.publicRequest<HealthServiceSummary[]>(`/health/services${query ? `?${query}` : ''}`)
+      return auth.publicRequest<HealthServicePage>(`/health/services${query ? `?${query}` : ''}`)
     },
     getService: (code: string) => auth.publicRequest<HealthServiceDetail>(`/health/services/${encodeURIComponent(code)}`),
     createAppointment: (body: Record<string, unknown>) => auth.request<HealthAppointment>('/health/appointments', body),
