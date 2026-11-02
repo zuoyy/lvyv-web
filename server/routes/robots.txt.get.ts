@@ -7,10 +7,6 @@ export default defineEventHandler((event) => {
     return [
       'User-agent: *',
       'Disallow: /',
-      'Allow: /featured-routes$',
-      'Allow: /featured-routes/$',
-      'Allow: /featured-routes?',
-      'Allow: /activity$',
       'Allow: /activity/',
       'Allow: /_nuxt/',
       'Allow: /images/',

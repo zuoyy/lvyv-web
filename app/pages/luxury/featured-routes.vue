@@ -36,7 +36,8 @@
           v-for="activity in activities"
           :key="activity.activityCode"
           class="activity-card"
-          :to="`/activity/${encodeURIComponent(activity.activityCode)}`"
+          :to="activityUrl(activity.activityCode)"
+          external
         >
           <div class="activity-card__image-wrap">
             <img
@@ -68,7 +69,7 @@
 </template>
 
 <script setup lang="ts">
-import { LUXURY_ORIGIN } from '~~/shared/utils/luxurySite'
+import { FEATURED_ROUTES_PATH, LUXURY_ORIGIN, MAIN_SITE_ORIGIN } from '~~/shared/utils/luxurySite'
 
 interface ActivityCard {
   activityCode: string
@@ -131,14 +132,14 @@ const retry = () => { void refresh() }
 
 const seoTitle = 'Featured Routes | Lvyv'
 const seoDescription = 'Discover published private journeys curated by Lvyv travel specialists.'
-const canonicalUrl = computed(() => `${LUXURY_ORIGIN}/featured-routes${page.value > 1 ? `?page=${page.value}` : ''}`)
+const canonicalUrl = computed(() => `${MAIN_SITE_ORIGIN}${FEATURED_ROUTES_PATH}${page.value > 1 ? `?page=${page.value}` : ''}`)
 useSeoMeta({
   title: seoTitle,
   description: seoDescription,
   ogTitle: seoTitle,
   ogDescription: seoDescription,
   ogUrl: () => canonicalUrl.value,
-  ogImage: `${LUXURY_ORIGIN}${fallbackImage}`,
+  ogImage: `${MAIN_SITE_ORIGIN}${fallbackImage}`,
   twitterCard: 'summary_large_image',
   robots: 'index, follow'
 })
@@ -162,6 +163,11 @@ const cityLabel = (city = '') => {
   const names: Record<string, string> = { beijing: 'Beijing', chengdu: 'Chengdu', chongqing: 'Chongqing', xian: "Xi’an", xi_an: "Xi’an", nanjing: 'Nanjing' }
   const normalized = city.trim().toLowerCase().replace(/[’']/g, '').replace(/[\s-]+/g, '_')
   return names[normalized] || city.trim().replace(/\b\w/g, character => character.toUpperCase()) || 'China'
+}
+
+const activityUrl = (code: string) => {
+  const path = `/activity/${encodeURIComponent(code)}`
+  return import.meta.dev ? path : `${LUXURY_ORIGIN}${path}`
 }
 
 const changePage = async (nextPage: number) => {

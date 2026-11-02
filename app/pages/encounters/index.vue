@@ -101,7 +101,7 @@
 
 <script setup lang="ts">
 import type { CatalogProductListView } from '~/composables/useTourCommerce'
-import { LUXURY_ORIGIN } from '~~/shared/utils/luxurySite'
+import { FEATURED_ROUTES_PATH, LUXURY_ORIGIN, MAIN_SITE_ORIGIN } from '~~/shared/utils/luxurySite'
 
 interface ActivityCard {
   activityCode: string
@@ -128,7 +128,7 @@ interface ApiResult<T> {
 const title = 'Encounters | Lvyv'
 const description = 'Find currently available handcrafted journeys across China.'
 const fallbackImage = '/images/common/logo.png'
-const activityListUrl = import.meta.dev ? '/featured-routes' : `${LUXURY_ORIGIN}/featured-routes`
+const activityListUrl = import.meta.dev ? FEATURED_ROUTES_PATH : `${MAIN_SITE_ORIGIN}${FEATURED_ROUTES_PATH}`
 useLvyvSeo({
   title,
   description,
