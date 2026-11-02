@@ -24,6 +24,9 @@ export default defineNuxtConfig({
       '/register/**': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
       '/auth/**': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
 
+      '/featured-routes': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0' } },
+      '/featured-routes/**': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0' } },
+      '/activity': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0' } },
       '/activity/**': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0' } },
       '/badges': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
       '/badges/**': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
@@ -80,6 +83,8 @@ export default defineNuxtConfig({
         '/zh/faq',
         '/zh/faq/',
         '/zh/faq/**',
+        '/featured-routes',
+        '/featured-routes/**',
         '/activity',
         '/activity/**',
         '/luxury/activity',

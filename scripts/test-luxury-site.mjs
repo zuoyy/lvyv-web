@@ -7,6 +7,14 @@ import test from 'node:test'
 import { luxuryPageError } from '../shared/utils/luxurySite.ts'
 
 test('活动入口策略覆盖生产域名、本地开发和停用入口', () => {
+  assert.equal(luxuryPageError('luxury.lvyv.com', '/featured-routes'), undefined)
+  assert.equal(luxuryPageError('luxury.lvyv.com', '/featured-routes/'), undefined)
+  assert.equal(luxuryPageError('www.lvyv.com', '/featured-routes'), 410)
+  assert.equal(luxuryPageError('localhost', '/featured-routes'), 410)
+  assert.equal(luxuryPageError('localhost', '/featured-routes', true), undefined)
+  assert.equal(luxuryPageError('luxury.lvyv.com', '/featured-routes/extra'), 404)
+  assert.equal(luxuryPageError('luxury.lvyv.com', '/activity'), undefined)
+  assert.equal(luxuryPageError('www.lvyv.com', '/activity'), 410)
   assert.equal(luxuryPageError('luxury.lvyv.com', '/activity/act_123'), undefined)
   assert.equal(luxuryPageError('www.lvyv.com', '/activity/act_123'), 410)
   assert.equal(luxuryPageError('localhost', '/activity/act_123'), 410)
@@ -21,6 +29,15 @@ test('活动入口策略覆盖生产域名、本地开发和停用入口', () =>
 test('实际 SSR 构建：活动、错误状态、域名隔离及分享信息', { timeout: 60_000 }, async (t) => {
   const api = createServer((req, res) => {
     res.setHeader('Content-Type', 'application/json')
+    if (req.url.startsWith('/web-api/luxury/activity/published?')) {
+      const page = Number(new URL(req.url, 'http://localhost').searchParams.get('page') || 1)
+      res.end(JSON.stringify({ code: 200, data: { list: [{
+        activityCode: page === 1 ? 'featured-list-item' : 'second-page-item', title: 'Private list activity', shareTitle: 'Private list activity',
+        shareDesc: 'List fixture', shareImageUrl: '/images/common/logo.png',
+        archiveImageUrl: '/images/common/logo.png', city: 'Shanghai',
+      }], total: 25, page, size: 12 } }))
+      return
+    }
     const code = req.url.split('/').at(-1)
     if (code === 'offline' || code === 'missing') {
       res.end(JSON.stringify({ code: code === 'offline' ? 1013002002 : 1013002001, data: null }))
@@ -95,6 +112,39 @@ test('实际 SSR 构建：活动、错误状态、域名隔离及分享信息', 
       assert.equal((await request('/activity/second')).status, 200)
     })
 
+    await t.test('精选活动列表路由仅在高奢站点开放并渲染卡片', async () => {
+      const response = await request('/featured-routes')
+      assert.equal(response.status, 200)
+      assert.match(response.headers.get('cache-control'), /no-store/)
+      const html = await response.text()
+      assert.match(html, /Featured Routes/)
+      assert.doesNotMatch(html, /Featured Activities|All Activities/)
+      assert.match(html, /Private list activity/)
+      assert.match(html, /\/activity\/featured-list-item/)
+      assert.match(html, /rel="canonical" href="https:\/\/luxury\.lvyv\.com\/featured-routes"/)
+      assert.match(html, /aria-current="page"/)
+      assert.equal((await request('/featured-routes', 'www.lvyv.com')).status, 410)
+    })
+
+    await t.test('新版列表保留分页及旧地址查询参数', async () => {
+      const redirect = await request('/activity?page=2')
+      assert.equal(redirect.status, 301)
+      assert.equal(redirect.headers.get('location'), '/featured-routes?page=2')
+      const response = await request('/featured-routes?page=2')
+      assert.equal(response.status, 200)
+      const html = await response.text()
+      assert.match(html, /\/activity\/second-page-item/)
+      assert.doesNotMatch(html, /\/activity\/featured-list-item/)
+      assert.match(html, /rel="canonical" href="https:\/\/luxury\.lvyv\.com\/featured-routes\?page=2"/)
+      assert.equal((await request('/activity', 'www.lvyv.com')).status, 410)
+    })
+
+    await t.test('官网 See All 使用 Featured Routes 地址', async () => {
+      const response = await request('/encounters', 'www.lvyv.com')
+      assert.equal(response.status, 200)
+      assert.match(await response.text(), /href="https:\/\/luxury\.lvyv\.com\/featured-routes"/)
+    })
+
     for (const code of ['missing', 'offline']) {
       await t.test(`${code} 返回 404 和不可用空态`, async () => {
         const response = await request(`/activity/${code}`)
@@ -120,7 +170,7 @@ test('实际 SSR 构建：活动、错误状态、域名隔离及分享信息', 
       }
     })
     await t.test('高奢站点不展示主站业务页面或多层伪活动路径', async () => {
-      for (const path of ['/login', '/encounters', '/activity', '/activity/published/extra']) {
+      for (const path of ['/login', '/encounters', '/activity/published/extra', '/featured-routes/extra']) {
         assert.equal((await request(path)).status, 404, path)
       }
       const root = await request('/')
@@ -132,6 +182,8 @@ test('实际 SSR 构建：活动、错误状态、域名隔离及分享信息', 
         const robots = await (await request('/robots.txt', host)).text()
         if (host === 'luxury.lvyv.com') {
           assert.match(robots, /Allow: \/activity\//)
+          assert.match(robots, /Allow: \/activity\$/)
+          assert.match(robots, /Allow: \/featured-routes\$/)
           assert.doesNotMatch(robots, /Sitemap:/)
         } else {
           assert.match(robots, /Sitemap: https:\/\/www\.lvyv\.com\/sitemap.xml/)

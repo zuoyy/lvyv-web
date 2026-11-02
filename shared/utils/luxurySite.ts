@@ -7,8 +7,13 @@ export function luxuryPageError(hostname: string, pathname: string, development 
 
   const luxuryHost = hostname.toLowerCase() === LUXURY_HOST
   const localDevelopment = development && ['localhost', '127.0.0.1', '[::1]'].includes(hostname)
+  if (/^\/featured-routes(?:\/|$)/.test(pathname)) {
+    if (!luxuryHost && !localDevelopment) return 410
+    return /^\/featured-routes\/?$/.test(pathname) ? undefined : 404
+  }
   if (/^\/activity(?:\/|$)/.test(pathname)) {
     if (!luxuryHost && !localDevelopment) return 410
+    if (pathname === '/activity' || pathname === '/activity/') return
     if (!/^\/activity\/[A-Za-z0-9_-]+\/?$/.test(pathname)) return 404
     return
   }

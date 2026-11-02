@@ -187,7 +187,7 @@
     <HomePromotionPopup v-if="isHomePage" :popup="homePromotions.popup.value" :open="homePromotions.popupOpen.value" @close="homePromotions.closePopup" />
 
     <!-- Footer -->
-    <footer v-if="!hidesFooter" class="footer">
+    <footer v-if="!hidesFooter && currentPath !== '/encounters'" class="footer">
       <div class="container footer-grid">
         <div class="footer-brand-info">
           <img src="/images/common/logo-footer.svg" alt="Lvyv Logo" class="footer-logo">

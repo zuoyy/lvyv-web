@@ -1,992 +1,324 @@
 <template>
   <main class="encounters-page">
     <section class="encounters-hero" aria-labelledby="encounters-title">
-      <img
-        class="encounters-hero__image"
-        src="/images/encounters/hero.webp"
-        alt="A panoramic view of China"
-      >
-      <div class="encounters-hero__shade" />
+      <img class="encounters-hero__image" src="/images/encounters/hero-design.webp" alt="Misty mountain peaks in China">
       <div class="encounters-hero__copy">
         <h1 id="encounters-title">Find Your Encounter</h1>
         <p>Handcrafted journeys ready for you to step into</p>
       </div>
     </section>
 
-    <section class="catalog-shell" aria-label="Available encounters">
-      <div class="catalog-layout">
-        <aside class="filter-panel" aria-label="Filter encounters">
-          <h2>Filters</h2>
-
-          <div class="filter-group">
-            <div class="filter-group__heading">
-              <h3>Price</h3>
-              <span class="chevron" aria-hidden="true" />
-            </div>
-            <div class="price-range">
-              <div class="price-range__track" />
-              <input
-                v-model.number="priceMin"
-                type="range"
-                :min="priceFloor"
-                :max="priceCeiling"
-                :step="10"
-                aria-label="Minimum price"
-                @input="clampPrice('min')"
-              >
-              <input
-                v-model.number="priceMax"
-                type="range"
-                :min="priceFloor"
-                :max="priceCeiling"
-                :step="10"
-                aria-label="Maximum price"
-                @input="clampPrice('max')"
-              >
-            </div>
-            <div class="price-range__labels">
-              <span>${{ priceMin }}</span>
-              <span>${{ priceMax }}</span>
-            </div>
-          </div>
-
-          <div class="filter-group">
-            <div class="filter-group__heading">
-              <h3>Duration</h3>
-              <span class="chevron" aria-hidden="true" />
-            </div>
-            <div class="duration-options">
-              <button
-                v-for="option in durationOptions"
-                :key="option.value"
-                type="button"
-                :class="{ active: activeDuration === option.value }"
-                :aria-pressed="activeDuration === option.value"
-                @click="activeDuration = option.value"
-              >
-                {{ option.label }}
-              </button>
-            </div>
-          </div>
-
-          <div class="filter-group filter-group--themes">
-            <div class="filter-group__heading">
-              <h3>Theme</h3>
-              <span class="chevron" aria-hidden="true" />
-            </div>
-            <div class="theme-options">
-              <label v-for="theme in themeOptions" :key="theme.value">
-                <input
-                  type="checkbox"
-                  :checked="selectedThemes.has(theme.value)"
-                  @change="toggleTheme(theme.value)"
-                >
-                <span class="theme-check" aria-hidden="true">✓</span>
-                <span>{{ theme.label }}</span>
-              </label>
-            </div>
-          </div>
-        </aside>
-
-        <div class="catalog-results">
-          <nav class="city-tabs" aria-label="Filter encounters by city">
-            <button
-              v-for="filter in cityFilters"
-              :key="filter.value"
-              type="button"
-              :class="{ active: activeCity === filter.value }"
-              :aria-pressed="activeCity === filter.value"
-              @click="activeCity = filter.value"
-            >
-              {{ filter.label }}
-            </button>
-          </nav>
-
-          <div class="results-toolbar">
-            <p>
-              Showing <strong>{{ visibleProducts.length }}</strong> of
-              <span>{{ filteredProducts.length }} places</span>
-            </p>
-            <label class="sort-control">
-              <span>Sort by</span>
-              <select v-model="sortBy" aria-label="Sort encounters">
-                <option value="recommended">Recommended</option>
-                <option value="price-asc">Price: Low to High</option>
-                <option value="price-desc">Price: High to Low</option>
-              </select>
-              <span class="sort-control__chevron" aria-hidden="true" />
-            </label>
-          </div>
-
-          <div v-if="loading && !products.length" class="catalog-state" role="status">
-            <span class="loading-mark" />
-            <span>Loading encounters...</span>
-          </div>
-
-          <div v-else-if="!visibleProducts.length" class="catalog-state">
-            No encounters match these filters yet.
-          </div>
-
-          <div v-else class="encounter-list">
-            <article
-              v-for="product in visibleProducts"
-              :key="product.productCode"
-              class="encounter-card"
-              role="link"
-              tabindex="0"
-              @click="explore(product.productCode)"
-              @keydown.enter="explore(product.productCode)"
-            >
-              <div class="encounter-card__visual">
-                <img
-                  :src="product.imageUrls[0]"
-                  :alt="product.title"
-                  loading="lazy"
-                >
-              </div>
-
-              <div class="encounter-card__body">
-                <h2>{{ cardTitle(product) }}</h2>
-                <FirstOrderOffer :promotion="product.firstOrderPromotion" />
-                <p v-if="product.features.length" class="encounter-card__features">{{ product.features.join('  |  ') }}</p>
-
-                <div class="encounter-card__summary">
-                  <div class="encounter-card__details">
-                    <p class="encounter-card__location">
-                      <font-awesome-icon :icon="['fas', 'location-dot']" class="location-pin" aria-hidden="true" />
-                      {{ encounterSubtitle(product) }}
-                    </p>
-                    <p class="encounter-card__reviews">
-                      <strong>Very Good</strong>
-                      <span>{{ product.reviewCount }} reviews</span>
-                    </p>
-                  </div>
-                  <div class="encounter-card__price">
-                    <del v-if="product.lowestAdultListPrice > product.lowestAdultSalePrice">{{ formatPrice(product.lowestAdultListPrice, product.currency) }}</del>
-                    <p>
-                      <strong>{{ formatPrice(product.lowestAdultSalePrice, product.currency) }}</strong><span>/starting price/person</span>
-                    </p>
-                    <small v-if="product.priceNote" class="encounter-card__tax-note">{{ product.priceNote }}</small>
-                  </div>
-                </div>
-              </div>
-            </article>
-          </div>
-
-          <button v-if="hasMore" class="show-more" type="button" @click="showMore">
-            Show more results
-          </button>
-          <p v-if="loadWarning" class="load-warning" role="alert">Live encounter data is currently unavailable. Please try again.</p>
-        </div>
+    <section class="routes-section featured-section" aria-labelledby="featured-title">
+      <div class="section-heading">
+        <h2 id="featured-title">Featured Routes</h2>
+        <NuxtLink class="section-link" :to="activityListUrl" external>See All</NuxtLink>
       </div>
+
+      <div v-if="featuredLoading" class="section-state" role="status">Loading featured routes...</div>
+      <div v-else-if="featuredError" class="section-state section-state--error" role="alert">
+        Featured routes are temporarily unavailable.
+      </div>
+      <div v-else-if="!featuredActivities.length" class="section-state">No featured routes are available right now.</div>
+      <div v-else class="featured-grid">
+        <NuxtLink
+          v-for="activity in featuredActivities"
+          :key="activity.activityCode"
+          class="featured-card"
+          :to="activityUrl(activity.activityCode)"
+          target="_blank"
+          rel="noopener noreferrer"
+          external
+        >
+          <div class="featured-card__image-wrap">
+            <img
+              class="featured-card__backdrop"
+              :src="activityImage(activity)"
+              alt=""
+              aria-hidden="true"
+              loading="lazy"
+              @error="useFallbackImage"
+            >
+            <img
+              class="featured-card__image"
+              :src="activityImage(activity)"
+              :alt="activity.city || activity.title"
+              loading="lazy"
+              @error="useFallbackImage"
+            >
+            <div class="featured-card__overlay">
+              <h3>{{ featuredCityLabel(activity.city) }}</h3>
+              <p>{{ activity.shareTitle || activity.title }}</p>
+              <span class="featured-card__action">Book</span>
+            </div>
+          </div>
+        </NuxtLink>
+      </div>
+    </section>
+
+    <section class="routes-section popular-section" aria-labelledby="popular-title">
+      <div class="section-heading">
+        <h2 id="popular-title">Popular Routes</h2>
+      </div>
+
+      <div v-if="productsLoading && !products.length" class="section-state" role="status">Loading popular routes...</div>
+      <div v-else-if="productsError && !products.length" class="section-state section-state--error" role="alert">
+        Popular routes are temporarily unavailable. <button type="button" @click="retryProducts">Try again</button>
+      </div>
+      <div v-else-if="!products.length" class="section-state">No routes are available right now.</div>
+      <div v-else class="popular-grid">
+        <NuxtLink
+          v-for="product in visibleProducts"
+          :key="product.productCode"
+          class="popular-card"
+          :to="`/encounters/${encodeURIComponent(product.productCode)}`"
+        >
+          <div class="popular-card__image-wrap">
+            <img
+              :src="product.imageUrls[0] || fallbackImage"
+              :alt="product.title"
+              loading="lazy"
+              @error="useFallbackImage"
+            >
+            <span class="popular-card__duration">{{ product.duration }}</span>
+          </div>
+          <div class="popular-card__body">
+            <h3>{{ product.title }}</h3>
+            <p class="popular-card__city">An {{ cityLabel(product.cityCode) }} Encounter</p>
+            <div class="popular-card__footer">
+              <del v-if="product.lowestAdultListPrice > product.lowestAdultSalePrice" class="popular-card__list-price">
+                {{ formatPrice(product.lowestAdultListPrice, product.currency) }}
+              </del>
+              <p><span>From</span> <strong>{{ formatPrice(product.lowestAdultSalePrice, product.currency) }}</strong></p>
+              <span class="popular-card__explore">Explore This Encounter <span aria-hidden="true">→</span></span>
+            </div>
+          </div>
+        </NuxtLink>
+      </div>
+      <p v-if="productsError && products.length" class="load-warning" role="alert">Some route data may be out of date.</p>
     </section>
   </main>
 </template>
 
 <script setup lang="ts">
-interface EncounterProduct {
-  productCode: string
+import type { CatalogProductListView } from '~/composables/useTourCommerce'
+import { LUXURY_ORIGIN } from '~~/shared/utils/luxurySite'
+
+interface ActivityCard {
+  activityCode: string
   title: string
-  cityCode: string
-  imageUrls: string[]
-  duration: string
-  days: number
-  currency: string
-  lowestAdultListPrice: number
-  lowestAdultSalePrice: number
-  themes: string[]
-  features: string[]
-  reviewCount: number
-  firstOrderPromotion?: import('~/composables/useTourCommerce').FirstOrderPromotion | null
-  priceNote?: string
+  shareTitle: string
+  shareDesc: string
+  shareImageUrl: string
+  archiveImageUrl: string
+  city: string
+}
+
+interface PageResult<T> {
+  list: T[]
+  total: number
+  page: number
+  size: number
+}
+
+interface ApiResult<T> {
+  code: number
+  data: T
 }
 
 const title = 'Encounters | Lvyv'
 const description = 'Find currently available handcrafted journeys across China.'
-
+const fallbackImage = '/images/common/logo.png'
+const activityListUrl = import.meta.dev ? '/featured-routes' : `${LUXURY_ORIGIN}/featured-routes`
 useLvyvSeo({
   title,
   description,
   path: '/encounters',
-  jsonLd: [
-    webPageJsonLd(title, description, '/encounters'),
-    breadcrumbJsonLd([
-      { name: 'Home', path: '/' },
-      { name: 'Encounters', path: '/encounters' }
-    ])
-  ]
+  jsonLd: [webPageJsonLd(title, description, '/encounters')]
 })
 
+const config = useRuntimeConfig()
+const apiBase = String(import.meta.server ? config.contentApiBase : config.public.apiBase || '/web-api').replace(/\/$/, '')
 const commerce = useTourCommerce()
-const products = ref<EncounterProduct[]>([])
-const activeCity = ref('all')
-const activeDuration = ref('all')
-const selectedThemes = ref(new Set(['all']))
-const sortBy = ref('recommended')
-const visibleCount = ref(10)
-const priceFloor = ref(0)
-const priceCeiling = ref(0)
-const priceMin = ref(0)
-const priceMax = ref(0)
-const availableCityCodes = ref(new Set<string>())
+const tourCities = useTourCities()
 
-const { cities, load: loadCities } = useTourCities()
-const cityFilters = computed(() => [
-  { label: 'All', value: 'all' },
-  ...cities.value.filter(city => availableCityCodes.value.has(city.code))
-    .map(city => ({ label: city.label, value: city.code }))
+const [{ data: featuredResponse, error: featuredRequestError, status: featuredStatus }, {
+  data: catalogData, error: catalogError, status: catalogStatus, refresh: refreshProducts
+}] = await Promise.all([
+  useFetch<ApiResult<PageResult<ActivityCard>>>(`${apiBase}/luxury/activity/published?featured=true`, {
+    key: 'encounters-featured-activities',
+    timeout: 10_000,
+    retry: 0,
+    getCachedData: (key, nuxtApp) => nuxtApp.isHydrating ? nuxtApp.payload.data[key] : undefined
+  }),
+  useAsyncData<CatalogProductListView[]>(
+    'encounters-catalog-products',
+    () => commerce.listCatalogProducts(),
+    {
+      default: () => [],
+      lazy: true,
+      getCachedData: (key, nuxtApp) => nuxtApp.isHydrating ? nuxtApp.payload.data[key] : undefined
+    }
+  )
 ])
 
-const durationOptions = [
-  { label: 'All', value: 'all' },
-  { label: 'Weekend (3-4days)', value: 'weekend' },
-  { label: 'Deep (7-8days)', value: 'deep' }
-]
-
-const themeOptions = computed(() => [
-  { label: 'All', value: 'all' },
-  ...[...new Set(products.value.flatMap(product => product.themes))]
-    .filter(Boolean)
-    .map(value => ({ label: value, value }))
-])
-
-const filteredProducts = computed(() => {
-  const themes = [...selectedThemes.value].filter(theme => theme !== 'all')
-  const filtered = products.value.filter((product) => {
-    const matchesCity = activeCity.value === 'all' || product.cityCode === activeCity.value
-    const matchesPrice = product.lowestAdultSalePrice >= priceMin.value && product.lowestAdultSalePrice <= priceMax.value
-    const matchesDuration = activeDuration.value === 'all'
-      || (activeDuration.value === 'weekend' && product.days >= 3 && product.days <= 4)
-      || (activeDuration.value === 'deep' && product.days >= 7 && product.days <= 8)
-    const matchesTheme = !themes.length || themes.some(theme => product.themes.includes(theme))
-    return matchesCity && matchesPrice && matchesDuration && matchesTheme
-  })
-
-  if (sortBy.value === 'price-asc') return [...filtered].sort((a, b) => a.lowestAdultSalePrice - b.lowestAdultSalePrice)
-  if (sortBy.value === 'price-desc') return [...filtered].sort((a, b) => b.lowestAdultSalePrice - a.lowestAdultSalePrice)
-  return filtered
+const featuredActivities = computed(() => {
+  const response = featuredResponse.value
+  if (!response || (response.code !== 0 && response.code !== 200)) return []
+  return response.data?.list || []
 })
+const featuredLoading = computed(() => featuredStatus.value === 'idle' || featuredStatus.value === 'pending')
+const featuredError = computed(() => Boolean(featuredRequestError.value)
+  || Boolean(featuredResponse.value && featuredResponse.value.code !== 0 && featuredResponse.value.code !== 200))
 
-const visibleProducts = computed(() => filteredProducts.value.slice(0, visibleCount.value))
-const hasMore = computed(() => visibleCount.value < filteredProducts.value.length)
+const products = computed(() => (catalogData.value || []).map((item) => {
+  const listPrice = Number(item.lowestAdultListPrice ?? 0)
+  const salePrice = Number(item.lowestAdultSalePrice ?? listPrice)
+  return {
+    productCode: item.productCode,
+    title: item.name,
+    cityCode: item.cityCode,
+    imageUrls: item.imageUrls || [],
+    duration: durationLabel(item.dateText, item.dayCount),
+    currency: item.currency || 'USD',
+    lowestAdultSalePrice: salePrice,
+    lowestAdultListPrice: listPrice
+  }
+}).filter(item => item.productCode && item.title))
+const visibleProducts = computed(() => products.value)
+const productsLoading = computed(() => catalogStatus.value === 'idle' || catalogStatus.value === 'pending')
+const productsError = computed(() => Boolean(catalogError.value))
 
-watch([activeCity, activeDuration, priceMin, priceMax, sortBy, selectedThemes], () => {
-  visibleCount.value = 10
-})
-
-const cityLabel = (cityCode: string) => cities.value.find(city => city.code === cityCode)?.label || cityCode
-
-const encounterSubtitle = (product: EncounterProduct) => {
-  const label = cityLabel(product.cityCode)
-  return `${/^([aeiou])/i.test(label) ? 'An' : 'A'} ${label} Encounter`
+const cityNames: Record<string, string> = {
+  beijing: 'Beijing',
+  chengdu: 'Chengdu',
+  chongqing: 'Chongqing',
+  nanjing: 'Nanjing',
+  xi_an: "Xi'an",
+  xian: "Xi'an"
 }
-
+const cityLabel = (cityCode: string) => {
+  const code = cityCode.trim().toLowerCase()
+  if (cityNames[code]) return cityNames[code]
+  const label = tourCities.cities.value.find(city => city.code === cityCode)?.label || cityCode
+  return label.includes('/') ? label.split('/').at(-1)?.trim() || cityCode : label
+}
+const featuredCityLabel = (city = '') => {
+  const normalized = city.trim().toLowerCase().replace(/[’']/g, '').replace(/[\s-]+/g, '_')
+  return cityNames[normalized] || city.trim().replace(/\b\w/g, character => character.toUpperCase()) || 'China'
+}
 const durationLabel = (dateText: string | undefined, days: number) => {
   if (dateText?.trim()) return dateText.trim()
   if (!days) return 'Handcrafted Journey'
   return `${days}D${Math.max(0, days - 1)}N`
 }
-
-const cardTitle = (product: EncounterProduct) => product.title.startsWith(product.duration)
-  ? product.title
-  : `${product.duration} · ${product.title}`
-
 const formatPrice = (value: number, currency: string) => new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: currency || 'USD',
-  maximumFractionDigits: 0
+  style: 'currency', currency: currency || 'USD', maximumFractionDigits: 0
 }).format(value)
-
-const generatedReviewCount = (productCode: string) => {
-  const seed = [...productCode].reduce((hash, character) => ((hash * 31) + character.charCodeAt(0)) >>> 0, 0)
-  return 200 + (seed % 301)
+const activityImage = (activity: ActivityCard) => {
+  if (activity.archiveImageUrl || activity.shareImageUrl) return activity.archiveImageUrl || activity.shareImageUrl
+  const city = activity.city?.trim().toLowerCase() || ''
+  if (city.includes('chongqing') || city.includes('重庆')) return '/images/encounters/featured-chongqing.webp'
+  if (city.includes('chengdu') || city.includes('成都')) return '/images/encounters/featured-chengdu.webp'
+  if (city.includes('beijing') || city.includes('北京')) return '/images/encounters/featured-beijing.webp'
+  if (city.includes('xi') || city.includes('西安')) return '/images/encounters/featured-xian.webp'
+  return '/images/encounters/hero-design.webp'
 }
-
-const clampPrice = (handle: 'min' | 'max') => {
-  if (handle === 'min' && priceMin.value > priceMax.value - 10) priceMin.value = priceMax.value - 10
-  if (handle === 'max' && priceMax.value < priceMin.value + 10) priceMax.value = priceMin.value + 10
+const activityUrl = (code: string) => {
+  const path = `/activity/${encodeURIComponent(code)}`
+  return import.meta.dev ? path : `${LUXURY_ORIGIN}${path}`
 }
-
-const toggleTheme = (theme: string) => {
-  const next = new Set(selectedThemes.value)
-  if (theme === 'all') {
-    next.clear()
-    next.add('all')
-  } else {
-    next.delete('all')
-    if (next.has(theme)) next.delete(theme)
-    else next.add(theme)
-    if (!next.size) next.add('all')
-  }
-  selectedThemes.value = next
+const useFallbackImage = (event: Event) => {
+  const image = event.currentTarget as HTMLImageElement
+  image.removeAttribute('src')
+  image.classList.add('is-missing')
 }
-
-const showMore = () => {
-  if (hasMore.value) visibleCount.value += 5
-}
-
-const applyCatalog = (catalog: import('~/composables/useTourCommerce').CatalogProductListView[], updateCities = false) => {
-  products.value = catalog.map((item) => {
-        const lowestAdultListPrice = Number(item.lowestAdultListPrice ?? 0)
-        const lowestAdultSalePrice = Number(item.lowestAdultSalePrice ?? lowestAdultListPrice)
-        const features = [
-          ...(item.serviceLanguages || []),
-          item.guaranteedDeparture ? 'Guaranteed Departure' : '',
-          item.shoppingPolicy,
-          item.travelType
-        ].filter((value): value is string => Boolean(value?.trim()))
-        return {
-          firstOrderPromotion: item.firstOrderPromotion,
-          productCode: item.productCode,
-          title: item.name,
-          cityCode: item.cityCode,
-          imageUrls: item.imageUrls || [],
-          duration: durationLabel(item.dateText, item.dayCount),
-          days: item.dayCount,
-          currency: item.currency || 'USD',
-          lowestAdultListPrice,
-          lowestAdultSalePrice,
-          themes: item.themes || [],
-          features,
-          reviewCount: generatedReviewCount(item.productCode),
-          priceNote: item.priceNote
-        }
-      }).filter(product => product.imageUrls.length > 0)
-  if (updateCities) availableCityCodes.value = new Set(products.value.map(product => product.cityCode))
-  if (products.value.length) {
-    const prices = products.value.map(product => product.lowestAdultSalePrice)
-    priceFloor.value = Math.floor(Math.min(...prices) / 10) * 10
-    priceCeiling.value = Math.max(priceFloor.value + 10, Math.ceil(Math.max(...prices) / 10) * 10)
-    priceMin.value = priceFloor.value
-    priceMax.value = priceCeiling.value
-  }
-}
-
-const { data: catalogData, status: catalogStatus, refresh: refreshCatalog } = await useAsyncData(
-  'encounters-catalog-products',
-  () => commerce.listCatalogProducts(),
-  {
-    default: () => [],
-    // Client-side navigation should complete even when the catalog API is slow.
-    lazy: true,
-    getCachedData: (key, nuxtApp) => nuxtApp.isHydrating ? nuxtApp.payload.data[key] : undefined
-  }
-)
-const loading = computed(() => catalogStatus.value === 'idle' || catalogStatus.value === 'pending')
-const loadWarning = computed(() => catalogStatus.value === 'error')
-watch(catalogData, value => applyCatalog(value || [], true), { immediate: true })
-
-watch(activeCity, async (cityCode) => {
-  if (cityCode === 'all') {
-    await refreshCatalog()
-    return
-  }
-  if (!cities.value.some(city => city.code === cityCode)) {
-    activeCity.value = 'all'
-    return
-  }
-  const filtered = await commerce.listCatalogProducts(cityCode)
-  applyCatalog(filtered)
-})
-
-const refreshCatalogOnFocus = () => {
-  void refreshCatalog()
-}
-onMounted(() => {
-  // City labels are optional filter metadata. Do not block SSR or the catalog
-  // page when the server-only API endpoint is unavailable.
-  void loadCities().catch(() => undefined)
-  window.addEventListener('focus', refreshCatalogOnFocus)
-})
-onBeforeUnmount(() => window.removeEventListener('focus', refreshCatalogOnFocus))
-
-const explore = async (productCode: string) => {
-  await navigateTo(`/encounters/${encodeURIComponent(productCode)}`)
-}
-
+const retryProducts = () => { void refreshProducts() }
+onMounted(() => { void tourCities.load().catch(() => undefined) })
 </script>
 
 <style scoped>
-.encounters-page {
-  min-height: 100vh;
-  padding-top: 80px;
-  overflow: hidden;
-  background: #f4f6f4;
-  color: #1d332b;
+.encounters-page { min-height: 100vh; padding-top: 80px; color: #203d33; background: #fff; }
+.encounters-hero { position: relative; height: 260px; overflow: hidden; }
+.encounters-hero__image { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; object-position: center 49%; }
+.encounters-hero__copy { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 20px; text-align: center; }
+.encounters-hero h1 { margin: 0; color: #fff; font: 400 56px/1.2 Didot, 'Bodoni 72', 'Playfair Display', Georgia, serif; }
+.encounters-hero p { margin: 2px 0 0; color: #cff380; font: 400 24px/1.25 'Philosopher', Georgia, serif; }
+.routes-section { width: min(1232px, calc(100% - 80px)); margin: 0 auto; }
+.featured-section { padding: 30px 0 0; }
+.popular-section { padding: 60px 0 300px; }
+.section-heading { display: flex; min-height: 40px; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 20px; }
+.section-heading h2 { margin: 0; color: #203d33; font: 700 24px/26px 'Philosopher', Georgia, serif; }
+.section-link { display: inline-flex; min-width: 78px; height: 40px; align-items: center; justify-content: center; gap: 8px; padding: 0 15px; border: 1px solid #698e4e; border-radius: 4px; color: #112211; font: 500 14px/1 'Inter', sans-serif; text-decoration: none; }
+.section-link:hover { background: #edf9e1; }
+.featured-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.featured-card { min-width: 0; color: inherit; text-decoration: none; }
+.featured-card__image-wrap { position: relative; aspect-ratio: 296 / 420; overflow: hidden; border-radius: 12px; background: #e2e6dd; }
+.featured-card__image-wrap > img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.featured-card__backdrop { object-fit: cover; filter: blur(16px); transform: scale(1.12); }
+.featured-card__image { object-fit: contain; object-position: center top; transform-origin: center top; transition: transform .35s ease; }
+.featured-card:hover .featured-card__image { transform: scale(1.035); }
+.featured-card__image-wrap > img.is-missing { display: none; }
+.featured-card__overlay { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; padding: 24px; color: #fff; background: linear-gradient(180deg, transparent 42%, rgba(7, 20, 16, .54) 100%); }
+.featured-card__overlay h3 { margin: 0; overflow: hidden; font: 600 24px/29px 'Inter', sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+.featured-card__overlay p { margin: 0 0 16px; overflow: hidden; color: #fff; font: 400 14px/17px 'Inter', sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+.featured-card__action { display: flex; width: 100%; height: 48px; align-items: center; justify-content: center; border-radius: 4px; color: #112211; background: #cff380; font: 500 14px/1 'Montserrat', 'Inter', sans-serif; }
+.popular-section .section-heading { min-height: 26px; margin-bottom: 30px; }
+.popular-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 40px 16px; }
+.popular-card { position: relative; min-width: 0; height: 410px; overflow: hidden; border: 1px solid #111; border-radius: 12px; color: inherit; background: #fff; text-decoration: none; }
+.popular-card__image-wrap { position: relative; height: 300px; overflow: hidden; background: #e3e8e3; }
+.popular-card__image-wrap img { width: 100%; height: 100%; display: block; object-fit: cover; transition: transform .35s ease; }
+.popular-card__image-wrap img.is-missing { display: none; }
+.popular-card:hover img { transform: scale(1.035); }
+.popular-card__duration { position: absolute; top: 16px; left: 16px; max-width: calc(100% - 32px); overflow: hidden; padding: 3px 10px; border: 1px solid #698e4e; border-radius: 26px; color: #2a573f; background: #edf9e1; font: 400 12px/16px 'Inter', sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+.popular-card__body { position: relative; height: 110px; padding: 18px 10px 12px; }
+.popular-card__city { margin: 1px 0 0; overflow: hidden; color: #979797; font: 400 12px/15px 'Inter', sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+.popular-card h3 { overflow: hidden; margin: 0; color: #203d33; font: 500 16px/19px 'Inter', sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+.popular-card__footer { position: absolute; right: 10px; bottom: 12px; left: 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.popular-card__footer p { margin: 0; color: #53675f; font: 300 14px/18px 'Inter', sans-serif; white-space: nowrap; }
+.popular-card__footer strong { color: #203d33; font: 600 16px/18px 'Inter', sans-serif; }
+.popular-card__list-price { position: absolute; bottom: 17px; left: 51px; color: #ff3d00; font: 400 10px/12px 'Inter', sans-serif; }
+.popular-card__explore { flex: 0 0 auto; color: #698e4e; font: 400 14px/18px 'Inter', sans-serif; white-space: nowrap; }
+.section-state { min-height: 170px; display: flex; align-items: center; justify-content: center; gap: 8px; color: #748078; font: 400 14px/1.5 'Inter', sans-serif; text-align: center; }
+.section-state--error { color: #795b52; }
+.section-state button { padding: 0; border: 0; border-bottom: 1px solid currentColor; background: none; color: inherit; font: inherit; cursor: pointer; }
+.load-warning { margin: 20px 0 0; color: #795b52; font: 400 12px/1.4 'Inter', sans-serif; text-align: center; }
+@media (max-width: 1024px) {
+  .routes-section { width: calc(100% - 48px); }
+  .featured-grid, .popular-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .featured-grid { gap: 16px; }
+  .popular-grid { gap: 32px 16px; }
 }
-
-.encounters-hero {
-  position: relative;
-  height: 400px;
-  padding: 0;
-  overflow: hidden;
-}
-
-.encounters-hero__image {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: cover;
-  object-position: center;
-}
-
-.encounters-hero__shade {
-  position: absolute;
-  inset: 0;
-  background: rgba(8, 28, 23, .13);
-}
-
-.encounters-hero__copy {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 9px 20px 0;
-  text-align: center;
-}
-
-.encounters-hero h1 {
-  margin: 0;
-  color: #fff;
-  font: 400 56px/1.08 'Playfair Display', Georgia, serif;
-}
-
-.encounters-hero p {
-  margin: 25px 0 0;
-  color: #cff380;
-  font: 400 24px/1.25 'Playfair Display', Georgia, serif;
-}
-
-.catalog-shell {
-  min-height: 1647px;
-  padding: 40px 0 28px;
-  background: #f4f6f4;
-}
-
-.catalog-layout {
-  width: calc(100% - 208px);
-  max-width: 1232px;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: 342px minmax(0, 838px);
-  align-items: start;
-  gap: 52px;
-}
-
-.filter-panel {
-  min-width: 0;
-  color: #1f352d;
-}
-
-.filter-panel h2 {
-  margin: 0 0 22px;
-  color: #1d332b;
-  font: 700 20px/1.25 'Inter', sans-serif;
-}
-
-.filter-group {
-  padding: 8px 0 33px;
-  border-bottom: 1px solid #d6ddd9;
-}
-
-.filter-group + .filter-group {
-  padding-top: 29px;
-}
-
-.filter-group--themes {
-  border-bottom: 0;
-}
-
-.filter-group__heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 25px;
-}
-
-.filter-group__heading h3 {
-  margin: 0;
-  color: #1d332b;
-  font: 700 15px/1.2 'Inter', sans-serif;
-}
-
-.chevron,
-.sort-control__chevron {
-  width: 9px;
-  height: 9px;
-  border-top: 1.5px solid #1d332b;
-  border-left: 1.5px solid #1d332b;
-  transform: rotate(45deg);
-}
-
-.price-range {
-  position: relative;
-  height: 18px;
-}
-
-.price-range__track {
-  position: absolute;
-  top: 8px;
-  right: 6px;
-  left: 6px;
-  height: 2px;
-  background: #203d33;
-}
-
-.price-range input {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 18px;
-  margin: 0;
-  appearance: none;
-  background: transparent;
-  pointer-events: none;
-}
-
-.price-range input::-webkit-slider-thumb {
-  width: 23px;
-  height: 23px;
-  appearance: none;
-  border: 0;
-  border-radius: 50%;
-  background: #698e4e;
-  cursor: pointer;
-  pointer-events: auto;
-}
-
-.price-range input::-moz-range-thumb {
-  width: 23px;
-  height: 23px;
-  border: 0;
-  border-radius: 50%;
-  background: #698e4e;
-  cursor: pointer;
-  pointer-events: auto;
-}
-
-.price-range__labels {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 11px;
-  color: #233b32;
-  font: 400 12px/1 'Inter', sans-serif;
-}
-
-.duration-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.duration-options button {
-  height: 34px;
-  padding: 0 12px;
-  border: 1px solid #7e8984;
-  border-radius: 4px;
-  background: transparent;
-  color: #33453e;
-  font: 400 12px/1 'Inter', sans-serif;
-  cursor: pointer;
-}
-
-.duration-options button.active {
-  border-color: #698e4e;
-  background: #fff;
-  color: #698e4e;
-}
-
-.theme-options {
-  display: grid;
-  gap: 13px;
-}
-
-.theme-options label {
-  width: max-content;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  color: #33453e;
-  font: 400 14px/1 'Inter', sans-serif;
-  cursor: pointer;
-}
-
-.theme-options input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.theme-check {
-  width: 19px;
-  height: 19px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #30483e;
-  border-radius: 3px;
-  color: transparent;
-  font: 600 12px/1 'Inter', sans-serif;
-}
-
-.theme-options input:checked + .theme-check {
-  border-color: #698e4e;
-  color: #698e4e;
-}
-
-.catalog-results {
-  min-width: 0;
-}
-
-.city-tabs {
-  height: 80px;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
-  padding: 16px 24px;
-  overflow: hidden;
-  box-sizing: border-box;
-  border-radius: 12px;
-  background: #fff;
-  box-shadow: 0 4px 16px rgba(17, 34, 17, .05);
-}
-
-.city-tabs button {
-  position: relative;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: #1d332b;
-  font: 700 15px/1 'Inter', sans-serif;
-  text-align: left;
-  cursor: pointer;
-}
-
-.city-tabs button:not(:last-child)::before {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 1px;
-  background: #d5e0e5;
-  content: '';
-}
-
-.city-tabs button::after {
-  position: absolute;
-  right: 24px;
-  bottom: -16px;
-  left: 0;
-  height: 4px;
-  background: #698e4e;
-  content: '';
-  opacity: 0;
-}
-
-.city-tabs button.active::after {
-  opacity: 1;
-}
-
-.results-toolbar {
-  height: 91px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.results-toolbar p {
-  margin: 0;
-  color: #263a32;
-  font: 400 13px/1 'Inter', sans-serif;
-}
-
-.results-toolbar p strong {
-  font-weight: 500;
-}
-
-.results-toolbar p span {
-  color: #ff858b;
-}
-
-.sort-control {
-  position: relative;
-  display: flex;
-  align-items: center;
-  color: #263a32;
-  font: 400 13px/1 'Inter', sans-serif;
-}
-
-.sort-control select {
-  max-width: 145px;
-  padding: 0 20px 0 5px;
-  border: 0;
-  appearance: none;
-  background: transparent;
-  color: #1d332b;
-  font: 700 13px/1 'Inter', sans-serif;
-  cursor: pointer;
-}
-
-.sort-control__chevron {
-  position: absolute;
-  top: 1px;
-  right: 2px;
-  width: 8px;
-  height: 8px;
-  transform: rotate(225deg);
-  pointer-events: none;
-}
-
-.encounter-list {
-  display: grid;
-  gap: 20px;
-}
-
-.encounter-card {
-  height: 248px;
-  display: grid;
-  grid-template-columns: 296px minmax(0, 1fr);
-  overflow: hidden;
-  border-radius: 12px;
-  background: #fff;
-  box-shadow: 0 7px 16px rgba(42, 61, 54, .08);
-  cursor: pointer;
-}
-
-.encounter-card:focus-visible {
-  outline: 2px solid #698e4e;
-  outline-offset: 3px;
-}
-
-.encounter-card__visual {
-  position: relative;
-  min-width: 0;
-  overflow: hidden;
-  background: #dce6dd;
-}
-
-.encounter-card__visual > img {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: cover;
-  object-position: center;
-  transition: transform 300ms ease;
-}
-
-.encounter-card:hover .encounter-card__visual > img {
-  transform: scale(1.018);
-}
-
-.encounter-card__body {
-  min-width: 0;
-  padding: 25px 14px 13px 25px;
-}
-
-.encounter-card__body > h2 {
-  min-height: 66px;
-  margin: 0;
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  color: #1d332b;
-  font: 700 18px/1.31 'Inter', sans-serif;
-}
-
-.encounter-card__features {
-  margin: 17px 0 0;
-  overflow: hidden;
-  color: #49625a;
-  font: 400 11px/1 'Inter', sans-serif;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.encounter-card__summary {
-  height: 80px;
-  margin-top: 16px;
-  padding: 13px 12px 10px 0;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  border-radius: 8px;
-  background: #f5f6fa;
-}
-
-.encounter-card__details {
-  min-width: 0;
-  padding-left: 8px;
-}
-
-.encounter-card__location {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  margin: 0;
-  overflow: hidden;
-  color: #66716d;
-  font: 400 15px/1.2 'Inter', sans-serif;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.location-pin {
-  width: 16px;
-  height: 16px;
-  flex: 0 0 16px;
-  color: #203d33;
-}
-
-.encounter-card__reviews {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin: 13px 0 0;
-  color: #293d35;
-  font: 400 12px/15px 'Inter', sans-serif;
-}
-
-.encounter-card__reviews strong {
-  font-weight: 800;
-}
-
-.encounter-card__price {
-  min-width: 119px;
-  margin-top: -2px;
-  text-align: right;
-  white-space: nowrap;
-}
-
-.encounter-card__price del {
-  display: block;
-  height: 16px;
-  color: #ff8b90;
-  font: 400 12px/1 'Inter', sans-serif;
-}
-
-.encounter-card__price p {
-  margin: 0;
-  color: #203d33;
-}
-
-.encounter-card__price strong {
-  font: 800 24px/1 'Inter', sans-serif;
-}
-
-.encounter-card__price p span {
-  font: 700 12px/1 'Inter', sans-serif;
-}
-
-.encounter-card__price small {
-  display: block;
-  margin-top: 4px;
-  color: #67746f;
-  font: 400 11px/1 'Inter', sans-serif;
-}
-
-.show-more {
-  width: 100%;
-  height: 48px;
-  margin-top: 40px;
-  border: 0;
-  border-radius: 3px;
-  background: #203d33;
-  color: #fff;
-  font: 700 13px/1 'Inter', sans-serif;
-  cursor: pointer;
-}
-
-.load-warning {
-  margin: 10px 0 -22px;
-  color: #738079;
-  font: 400 11px/1.3 'Inter', sans-serif;
-  text-align: center;
-}
-
-.catalog-state {
-  min-height: 500px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  color: #6d7a74;
-  font: 400 15px/1.5 'Inter', sans-serif;
-  text-align: center;
-}
-
-.loading-mark {
-  width: 18px;
-  height: 18px;
-  border: 2px solid #d3dbd6;
-  border-top-color: #105446;
-  border-radius: 50%;
-  animation: spin 700ms linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-@media (max-width: 1100px) {
-  .catalog-layout {
-    width: calc(100% - 48px);
-    grid-template-columns: 260px minmax(0, 1fr);
-    gap: 28px;
-  }
-
-  .encounter-card {
-    grid-template-columns: 250px minmax(0, 1fr);
-  }
-
-  .encounter-card__body {
-    padding-left: 20px;
-  }
-}
-
-@media (max-width: 820px) {
-  .encounters-page { padding-top: 72px; }
-  .encounters-hero { height: 360px; }
-  .encounters-hero h1 { font-size: 45px; }
-  .encounters-hero p { font-size: 20px; }
-  .catalog-shell { padding-top: 24px; }
-  .catalog-layout { width: calc(100% - 32px); display: block; }
-  .filter-panel { margin-bottom: 24px; }
-  .filter-panel h2 { margin-bottom: 10px; }
-  .filter-group { padding-bottom: 20px; }
-  .filter-group + .filter-group { padding-top: 20px; }
-  .theme-options { grid-template-columns: repeat(3, max-content); gap: 12px 24px; }
-  .city-tabs { height: 64px; }
-  .results-toolbar { height: 72px; }
-}
-
 @media (max-width: 620px) {
-  .encounters-hero { height: 310px; }
-  .encounters-hero h1 { font-size: 37px; }
-  .encounters-hero p { max-width: 330px; margin-top: 16px; font-size: 17px; }
-  .theme-options { grid-template-columns: repeat(2, max-content); }
-  .city-tabs { gap: 8px; padding: 16px; }
-  .city-tabs button { font-size: 12px; }
-  .city-tabs button::after { right: 10px; }
-  .results-toolbar { align-items: center; }
-  .results-toolbar p { font-size: 11px; }
-  .sort-control, .sort-control select { font-size: 11px; }
-  .encounter-card { height: auto; display: block; }
-  .encounter-card__visual { height: 270px; }
-  .encounter-card__body { padding: 20px 16px 16px; }
-  .encounter-card__body > h2 { min-height: 0; }
-  .encounter-card__summary { margin-top: 14px; }
+  .encounters-page { padding-top: 60px; }
+  .encounters-hero { height: 220px; }
+  .encounters-hero h1 { font-size: 36px; }
+  .encounters-hero p { max-width: 340px; margin-top: 8px; font-size: 18px; }
+  .routes-section { width: calc(100% - 32px); }
+  .featured-section { padding-top: 28px; }
+  .popular-section { padding-top: 44px; padding-bottom: 80px; }
+  .section-heading { min-height: 38px; margin-bottom: 16px; }
+  .section-heading h2 { font-size: 22px; line-height: 26px; }
+  .section-link { min-width: 72px; height: 38px; padding: 0 10px; font-size: 13px; }
+  .featured-grid, .popular-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 10px; }
+  .featured-card__overlay { padding: 12px; }
+  .featured-card__overlay h3 { font-size: 18px; line-height: 22px; }
+  .featured-card__overlay p { margin-bottom: 10px; font-size: 11px; line-height: 14px; }
+  .featured-card__action { height: 36px; font-size: 12px; }
+  .popular-grid { row-gap: 18px; }
+  .popular-card { height: auto; aspect-ratio: auto; border-radius: 8px; }
+  .popular-card__image-wrap { height: auto; aspect-ratio: 1 / 1; }
+  .popular-card__body { height: 116px; padding: 9px 7px 8px; }
+  .popular-card h3 { font-size: 12px; line-height: 15px; }
+  .popular-card__city { font-size: 10px; line-height: 13px; }
+  .popular-card__footer { right: 7px; bottom: 8px; left: 7px; flex-wrap: wrap; gap: 2px; }
+  .popular-card__footer p { font-size: 10px; line-height: 13px; }
+  .popular-card__footer strong { font-size: 12px; line-height: 13px; }
+  .popular-card__list-price { bottom: 11px; left: 37px; font-size: 8px; line-height: 9px; }
+  .popular-card__explore { font-size: 9px; line-height: 12px; }
+  .popular-card__duration { top: 8px; left: 8px; max-width: calc(100% - 16px); padding: 2px 7px; font-size: 9px; line-height: 13px; }
 }
-
 @media (prefers-reduced-motion: reduce) {
-  .encounter-card__visual > img { transition: none; }
-  .encounter-card:hover .encounter-card__visual > img { transform: none; }
+  .featured-card__image, .popular-card__image-wrap img { transition: none; }
+  .featured-card:hover .featured-card__image, .popular-card:hover img { transform: none; }
 }
 </style>
