@@ -37,6 +37,8 @@
           :key="activity.activityCode"
           class="activity-card"
           :to="activityUrl(activity.activityCode)"
+          target="_blank"
+          rel="noopener noreferrer"
           external
         >
           <div class="activity-card__image-wrap">

@@ -127,6 +127,7 @@ test('实际 SSR 构建：活动、错误状态、域名隔离及分享信息', 
       assert.doesNotMatch(html, /Featured Activities|All Activities/)
       assert.match(html, /Private list activity/)
       assert.match(html, /href="https:\/\/luxury\.lvyv\.com\/activity\/featured-list-item"/)
+      assert.match(html, /target="_blank" rel="noopener noreferrer"/)
       assert.match(html, /rel="canonical" href="https:\/\/www\.lvyv\.com\/luxury\/featured-routes"/)
       assert.match(html, /aria-current="page"/)
       assert.equal((await request('/luxury/featured-routes', 'luxury.lvyv.com')).status, 404)
