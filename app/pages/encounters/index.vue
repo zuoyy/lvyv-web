@@ -25,8 +25,6 @@
           :key="activity.activityCode"
           class="featured-card"
           :to="activityUrl(activity.activityCode)"
-          target="_blank"
-          rel="noopener noreferrer"
           external
         >
           <div class="featured-card__image-wrap">

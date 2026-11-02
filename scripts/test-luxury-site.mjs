@@ -127,7 +127,9 @@ test('实际 SSR 构建：活动、错误状态、域名隔离及分享信息', 
       assert.doesNotMatch(html, /Featured Activities|All Activities/)
       assert.match(html, /Private list activity/)
       assert.match(html, /href="https:\/\/luxury\.lvyv\.com\/activity\/featured-list-item"/)
-      assert.match(html, /target="_blank" rel="noopener noreferrer"/)
+      const activityLink = html.match(/<a\b[^>]*href="https:\/\/luxury\.lvyv\.com\/activity\/featured-list-item"[^>]*>/)?.[0]
+      assert.ok(activityLink)
+      assert.doesNotMatch(activityLink, /target="_blank"/)
       assert.match(html, /rel="canonical" href="https:\/\/www\.lvyv\.com\/luxury\/featured-routes"/)
       assert.match(html, /aria-current="page"/)
       assert.equal((await request('/luxury/featured-routes', 'luxury.lvyv.com')).status, 404)
@@ -150,7 +152,11 @@ test('实际 SSR 构建：活动、错误状态、域名隔离及分享信息', 
     await t.test('官网 See All 使用 Featured Routes 地址', async () => {
       const response = await request('/encounters', 'www.lvyv.com')
       assert.equal(response.status, 200)
-      assert.match(await response.text(), /href="https:\/\/www\.lvyv\.com\/luxury\/featured-routes"/)
+      const html = await response.text()
+      assert.match(html, /href="https:\/\/www\.lvyv\.com\/luxury\/featured-routes"/)
+      const activityLink = html.match(/<a\b[^>]*href="https:\/\/luxury\.lvyv\.com\/activity\/featured-list-item"[^>]*>/)?.[0]
+      assert.ok(activityLink)
+      assert.doesNotMatch(activityLink, /target="_blank"/)
     })
 
     for (const code of ['missing', 'offline']) {
