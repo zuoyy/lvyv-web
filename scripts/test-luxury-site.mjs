@@ -31,6 +31,10 @@ test('活动入口策略覆盖生产域名、本地开发和停用入口', () =>
 test('实际 SSR 构建：活动、错误状态、域名隔离及分享信息', { timeout: 60_000 }, async (t) => {
   const api = createServer((req, res) => {
     res.setHeader('Content-Type', 'application/json')
+    if (req.url.startsWith('/web-api/commerce/catalog/products') || req.url.startsWith('/web-api/tour/cities/options')) {
+      res.end(JSON.stringify({ code: 200, data: [] }))
+      return
+    }
     if (req.url.startsWith('/web-api/luxury/activity/published?')) {
       const page = Number(new URL(req.url, 'http://localhost').searchParams.get('page') || 1)
       res.end(JSON.stringify({ code: 200, data: { list: [{
@@ -139,7 +143,7 @@ test('实际 SSR 构建：活动、错误状态、域名隔离及分享信息', 
       assert.match(html, /https:\/\/luxury\.lvyv\.com\/activity\/second-page-item/)
       assert.doesNotMatch(html, /https:\/\/luxury\.lvyv\.com\/activity\/featured-list-item/)
       assert.match(html, /rel="canonical" href="https:\/\/www\.lvyv\.com\/luxury\/featured-routes\?page=2"/)
-      assert.equal((await request('/activity', 'www.lvyv.com')).status, 301)
+      assert.equal((await request('/activity', 'www.lvyv.com')).status, 410)
     })
 
     await t.test('官网 See All 使用 Featured Routes 地址', async () => {
