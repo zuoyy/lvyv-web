@@ -99,6 +99,10 @@
 
 <script setup lang="ts">
 import type { CatalogProductListView } from '~/composables/useTourCommerce'
+import interRegularFont from '@fontsource/inter/files/inter-latin-400-normal.woff2?url'
+import interMediumFont from '@fontsource/inter/files/inter-latin-500-normal.woff2?url'
+import interSemiBoldFont from '@fontsource/inter/files/inter-latin-600-normal.woff2?url'
+import playfairRegularFont from '@fontsource/playfair-display/files/playfair-display-latin-400-normal.woff2?url'
 import { FEATURED_ROUTES_PATH, LUXURY_ORIGIN, MAIN_SITE_ORIGIN } from '~~/shared/utils/luxurySite'
 
 interface ActivityCard {
@@ -132,6 +136,17 @@ useLvyvSeo({
   description,
   path: '/encounters',
   jsonLd: [webPageJsonLd(title, description, '/encounters')]
+})
+
+// 首屏字体与样式表使用同一资源地址，提前下载以减少冷刷新时的字体替换。
+useHead({
+  link: [
+    { rel: 'preload', as: 'font', type: 'font/ttf', href: '/fonts/philosopher-bold.ttf', crossorigin: 'anonymous' },
+    { rel: 'preload', as: 'font', type: 'font/woff2', href: playfairRegularFont, crossorigin: 'anonymous' },
+    { rel: 'preload', as: 'font', type: 'font/woff2', href: interRegularFont, crossorigin: 'anonymous' },
+    { rel: 'preload', as: 'font', type: 'font/woff2', href: interMediumFont, crossorigin: 'anonymous' },
+    { rel: 'preload', as: 'font', type: 'font/woff2', href: interSemiBoldFont, crossorigin: 'anonymous' }
+  ]
 })
 
 const config = useRuntimeConfig()
@@ -240,12 +255,12 @@ onMounted(() => { void tourCities.load().catch(() => undefined) })
 .encounters-hero__image { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; object-position: center 49%; }
 .encounters-hero__copy { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 20px; text-align: center; }
 .encounters-hero h1 { margin: 0; color: #fff; font: 400 56px/1.2 Didot, 'Bodoni 72', 'Playfair Display', Georgia, serif; }
-.encounters-hero p { margin: 2px 0 0; color: #cff380; font: 400 24px/1.25 'Philosopher', Georgia, serif; }
+.encounters-hero p { margin: 2px 0 0; color: #cff380; font: 400 24px/1.25 'Inter', sans-serif; }
 .routes-section { width: min(1232px, calc(100% - 80px)); margin: 0 auto; }
 .featured-section { padding: 30px 0 0; }
 .popular-section { padding: 60px 0 300px; }
 .section-heading { display: flex; min-height: 40px; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 20px; }
-.section-heading h2 { margin: 0; color: #203d33; font: 700 24px/26px 'Philosopher', Georgia, serif; }
+.section-heading h2 { margin: 0; color: #203d33; font: 700 24px/26px 'Philosopher Encounters', Georgia, serif; }
 .section-link { display: inline-flex; min-width: 78px; height: 40px; align-items: center; justify-content: center; gap: 8px; padding: 0 15px; border: 1px solid #698e4e; border-radius: 4px; color: #112211; font: 500 14px/1 'Inter', sans-serif; text-decoration: none; }
 .section-link:hover { background: #edf9e1; }
 .featured-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
@@ -259,7 +274,7 @@ onMounted(() => { void tourCities.load().catch(() => undefined) })
 .featured-card__overlay { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; padding: 24px; color: #fff; background: linear-gradient(180deg, transparent 42%, rgba(7, 20, 16, .54) 100%); }
 .featured-card__overlay h3 { margin: 0; overflow: hidden; font: 600 24px/29px 'Inter', sans-serif; text-overflow: ellipsis; white-space: nowrap; }
 .featured-card__overlay p { margin: 0 0 16px; overflow: hidden; color: #fff; font: 400 14px/17px 'Inter', sans-serif; text-overflow: ellipsis; white-space: nowrap; }
-.featured-card__action { display: flex; width: 100%; height: 48px; align-items: center; justify-content: center; border-radius: 4px; color: #112211; background: #cff380; font: 500 14px/1 'Montserrat', 'Inter', sans-serif; }
+.featured-card__action { display: flex; width: 100%; height: 48px; align-items: center; justify-content: center; border-radius: 4px; color: #112211; background: #cff380; font: 500 14px/1 'Inter', sans-serif; }
 .popular-section .section-heading { min-height: 26px; margin-bottom: 30px; }
 .popular-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 40px 16px; }
 .popular-card { position: relative; min-width: 0; height: 410px; overflow: hidden; border: 1px solid #111; border-radius: 12px; color: inherit; background: #fff; text-decoration: none; }

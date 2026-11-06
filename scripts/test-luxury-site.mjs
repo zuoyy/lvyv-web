@@ -159,6 +159,25 @@ test('实际 SSR 构建：活动、错误状态、域名隔离及分享信息', 
       assert.doesNotMatch(activityLink, /target="_blank"/)
     })
 
+    await t.test('官网首屏提前加载标题和卡片使用的字体', async () => {
+      const response = await request('/encounters', 'www.lvyv.com')
+      assert.equal(response.status, 200)
+      const html = await response.text()
+      const fontPreloads = [...html.matchAll(/<link\b[^>]*>/g)]
+        .map(match => match[0])
+        .filter(link => /rel="preload"/.test(link) && /as="font"/.test(link))
+      const fontPaths = fontPreloads.map(link => {
+        assert.match(link, /crossorigin="anonymous"/)
+        return link.match(/href="([^"]+)"/)[1]
+      })
+      assert.ok(fontPaths.includes('/fonts/philosopher-bold.ttf'))
+      for (const name of ['playfair-display-latin-400', 'inter-latin-400', 'inter-latin-500', 'inter-latin-600']) {
+        assert.ok(fontPaths.some(path => path.includes(`${name}-normal.`) && path.endsWith('.woff2')), name)
+      }
+      const fonts = await Promise.all(fontPaths.map(path => request(path, 'www.lvyv.com')))
+      fonts.forEach((font, index) => assert.equal(font.status, 200, fontPaths[index]))
+    })
+
     for (const code of ['missing', 'offline']) {
       await t.test(`${code} 返回 404 和不可用空态`, async () => {
         const response = await request(`/activity/${code}`)

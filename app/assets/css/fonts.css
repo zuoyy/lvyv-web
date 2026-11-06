@@ -39,3 +39,12 @@
 @import '@fontsource/roboto/latin-700.css';
 
 @import '@fontsource/kalam/latin-700.css';
+
+/* /encounters 首屏独立字体，预加载期间避免 Georgia 替换标题字形。 */
+@font-face {
+  font-family: 'Philosopher Encounters';
+  src: url('/fonts/philosopher-bold.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+}
