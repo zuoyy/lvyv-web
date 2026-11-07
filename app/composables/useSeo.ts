@@ -14,6 +14,8 @@ interface LvyvSeoOptions {
   alternates?: SeoAlternate[]
   jsonLd?: JsonLdValue
   noindex?: boolean
+  noindexFollow?: boolean
+  canonicalUrl?: string
 }
 
 export const LVYV_SITE_ORIGIN = 'https://www.lvyv.com'
@@ -30,8 +32,11 @@ export const stripHtml = (value = '') => value.replace(/<[^>]*>/g, ' ').replace(
 
 export const useLvyvSeo = (options: LvyvSeoOptions) => {
   const url = absoluteUrl(options.path)
+  const canonical = options.canonicalUrl ? absoluteUrl(options.canonicalUrl) : url
   const image = absoluteUrl(options.image || '/images/common/logo.png')
-  const robots = options.noindex ? 'noindex, nofollow' : 'index, follow'
+  const robots = options.noindex
+    ? options.noindexFollow ? 'noindex, follow' : 'noindex, nofollow'
+    : 'index, follow'
 
   useSeoMeta({
     title: options.title,
@@ -40,7 +45,7 @@ export const useLvyvSeo = (options: LvyvSeoOptions) => {
     ogDescription: options.description,
     ogSiteName: LVYV_SITE_NAME,
     ogType: options.type || 'website',
-    ogUrl: url,
+    ogUrl: canonical,
     ogImage: image,
     twitterCard: 'summary_large_image',
     twitterTitle: options.title,
@@ -51,7 +56,7 @@ export const useLvyvSeo = (options: LvyvSeoOptions) => {
 
   useHead(() => ({
     link: [
-      { rel: 'canonical', href: url },
+      { rel: 'canonical', href: canonical },
       ...(options.alternates || []).map(item => ({
         rel: 'alternate' as const,
         hreflang: item.hreflang,

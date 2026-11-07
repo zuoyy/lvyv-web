@@ -1,9 +1,9 @@
 <template>
   <FaqDocumentShell
-    v-if="document"
+    v-if="landing"
     :locale="locale"
     :locale-path="localePath"
-    :document="document"
+    :landing="landing"
     :navigation="navigation || []"
     :manifest="manifest || []"
   />
@@ -16,37 +16,38 @@ const locale = rawLocale === 'zh' ? 'zh-CN' : rawLocale === 'en' ? 'en-US' : nul
 if (!locale) throw createError({ statusCode: 404, statusMessage: 'Locale not found' })
 
 const localePath = rawLocale
-const { getDocument, getManifest, getNavigation } = useContentApi()
-const [{ data: manifest }, { data: navigation }] = await Promise.all([
+const { getLanding, getManifest, getNavigation } = useContentApi()
+const [{ data: landing }, { data: manifest }, { data: navigation }] = await Promise.all([
+  useAsyncData(`faq-landing-${locale}`, () => getLanding(locale)),
   useAsyncData(`docs-manifest-${locale}`, () => getManifest(locale)),
   useAsyncData(`docs-nav-${locale}`, () => getNavigation(locale))
 ])
-const defaultItem = manifest.value?.find(item => item.contentKey === 'welcome') || manifest.value?.[0]
-if (!defaultItem) throw createError({ statusCode: 404, statusMessage: 'No published documents' })
-const { data: document } = await useAsyncData(`doc-${locale}-${defaultItem.contentKey}`, () => getDocument(locale, defaultItem.contentKey))
-if (!document.value) throw createError({ statusCode: 404, statusMessage: 'Document not found' })
-
-const title = locale === 'zh-CN' ? '帮助中心 - Lvyv 旅遇' : 'Help Center - Lvyv'
-const description = locale === 'zh-CN'
-  ? '了解如何使用 Lvyv，开始一段真实、有温度的中国旅遇。'
-  : 'Find answers about using Lvyv and start a meaningful journey through China.'
+if (!landing.value) throw createError({ statusCode: 404, statusMessage: 'FAQ landing page not configured' })
+const title = landing.value.seoTitle || landing.value.title
+const description = landing.value.seoDescription || stripHtml(landing.value.introHtml) || landing.value.title
 const path = `/${localePath}/faq/`
+const localePaths: Record<string, string> = { 'en-US': 'en', 'zh-CN': 'zh' }
+const availableLocales = landing.value.availableLocales || []
 
 useLvyvSeo({
   title,
   description,
   path,
+  noindex: !landing.value.indexable,
+  noindexFollow: true,
   alternates: [
-    { hreflang: 'x-default', path: '/faq/' },
-    { hreflang: 'en-US', path: '/en/faq/' },
-    { hreflang: 'zh-CN', path: '/zh/faq/' }
+    ...(availableLocales.length ? [{ hreflang: 'x-default', path: '/faq/' }] : []),
+    ...availableLocales.filter(item => localePaths[item]).map(item => ({
+      hreflang: item,
+      path: `/${localePaths[item]}/faq/`
+    }))
   ],
   jsonLd: [
     {
       '@context': 'https://schema.org',
       '@type': 'CollectionPage',
       '@id': `${absoluteUrl(path)}#collection`,
-      name: title,
+      name: landing.value.title,
       description,
       url: absoluteUrl(path),
       isPartOf: { '@id': absoluteUrl('/#website') }
@@ -58,7 +59,7 @@ useLvyvSeo({
     {
       '@context': 'https://schema.org',
       '@type': 'ItemList',
-      itemListElement: (manifest.value || []).map((item, index) => ({
+      itemListElement: (manifest.value || []).filter(item => item.indexable !== false && (!item.canonicalUrl || item.canonicalUrl === absoluteUrl(`/${localePath}/faq/${item.contentKey}`))).map((item, index) => ({
         '@type': 'ListItem',
         position: index + 1,
         url: absoluteUrl(`/${localePath}/faq/${item.contentKey}`),

@@ -36,40 +36,37 @@ const breadcrumbItems = [
   ...(doc.breadcrumbs || []).map(name => ({ name, path: `/${localePath}/faq/` })),
   { name: doc.title, path }
 ]
-const articleJsonLd = doc.contentType === 'FAQ'
-  ? {
-      '@context': 'https://schema.org',
-      '@type': 'FAQPage',
-      '@id': `${absoluteUrl(path)}#faqpage`,
-      name: doc.title,
-      description,
-      url: absoluteUrl(path),
-      mainEntity: [{
-        '@type': 'Question',
-        name: doc.title,
-        acceptedAnswer: { '@type': 'Answer', text: stripHtml(doc.renderedHtml) }
-      }]
-    }
-  : {
-      '@context': 'https://schema.org',
-      '@type': 'TechArticle',
-      '@id': `${absoluteUrl(path)}#article`,
-      headline: doc.title,
-      description,
-      url: absoluteUrl(path),
-      dateModified: doc.updatedAt,
-      author: { '@type': 'Organization', name: 'Lvyv' },
-      publisher: { '@id': absoluteUrl('/#organization') },
-      mainEntityOfPage: { '@id': `${absoluteUrl(path)}#webpage` }
-    }
+const authorJsonLd = doc.author ? {
+  '@type': doc.author.type === 'PERSON' ? 'Person' : 'Organization',
+  name: doc.author.name,
+  ...(doc.author.profileUrl ? { url: doc.author.profileUrl } : {})
+} : undefined
+const articleJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  '@id': `${absoluteUrl(path)}#article`,
+  headline: doc.title,
+  description,
+  url: absoluteUrl(path),
+  datePublished: doc.datePublished,
+  dateModified: doc.dateModified,
+  inLanguage: locale,
+  ...(authorJsonLd ? { author: authorJsonLd } : {}),
+  ...(doc.coverImageUrl ? { image: [doc.coverImageUrl] } : {}),
+  publisher: { '@id': absoluteUrl('/#organization') },
+  mainEntityOfPage: { '@id': `${absoluteUrl(path)}#webpage` }
+}
 
 useLvyvSeo({
   title,
   description,
   path,
+  image: doc.coverImageUrl,
+  canonicalUrl: doc.canonicalUrl,
+  noindex: doc.indexable === false,
+  noindexFollow: true,
   type: 'article',
   alternates: [
-    { hreflang: 'x-default', path: '/faq/' },
     ...(doc.availableLocales || [])
       .filter(item => localePaths[item])
       .map(item => ({

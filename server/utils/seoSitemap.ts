@@ -7,7 +7,14 @@ interface ApiResult<T> {
 
 interface FaqManifestItem {
   contentKey: string
-  updatedAt?: string
+  lastmod?: string
+  indexable?: boolean
+  canonicalUrl?: string
+}
+
+interface FaqLanding {
+  indexable?: boolean
+  availableLocales?: string[]
 }
 
 const ORIGIN = 'https://www.lvyv.com'
@@ -19,12 +26,12 @@ const FAQ_LOCALES = [
 export async function buildFaqSitemap(event: H3Event, localeApi: string, localePath: string) {
   const config = useRuntimeConfig(event)
   const base = String(config.contentApiBase || 'http://127.0.0.1:8088/web-api').replace(/\/$/, '')
-  const manifests = await loadFaqManifests(base)
-  const current = manifests[localeApi] || []
+  const [manifests, landings] = await Promise.all([loadFaqManifests(base), loadFaqLandings(base)])
+  const current = (manifests[localeApi] || []).filter(item => isIndexableUrl(item, localePath))
 
-  const publishedLocaleEntries = FAQ_LOCALES.filter(locale => (manifests[locale.api] || []).length > 0)
+  const publishedLocaleEntries = FAQ_LOCALES.filter(locale => landings[locale.api]?.indexable)
   const urls = [
-    ...(current.length
+    ...(landings[localeApi]?.indexable
       ? [sitemapUrl(`${ORIGIN}/${localePath}/faq/`, undefined, publishedLocaleEntries.map(locale => ({
           hreflang: locale.api,
           href: `${ORIGIN}/${locale.path}/faq/`
@@ -32,18 +39,23 @@ export async function buildFaqSitemap(event: H3Event, localeApi: string, localeP
       : []),
     ...current.map(item => {
       const alternates = FAQ_LOCALES
-        .filter(locale => manifests[locale.api]?.some(candidate => candidate.contentKey === item.contentKey))
+        .filter(locale => manifests[locale.api]?.some(candidate => candidate.contentKey === item.contentKey && isIndexableUrl(candidate, locale.path)))
         .map(locale => ({
           hreflang: locale.api,
           href: `${ORIGIN}/${locale.path}/faq/${item.contentKey}`
         }))
-      return sitemapUrl(`${ORIGIN}/${localePath}/faq/${item.contentKey}`, item.updatedAt, alternates)
+      return sitemapUrl(`${ORIGIN}/${localePath}/faq/${item.contentKey}`, item.lastmod, alternates)
     })
   ]
 
   setHeader(event, 'Content-Type', 'application/xml; charset=utf-8')
   setHeader(event, 'Cache-Control', 'public, max-age=300, stale-while-revalidate=3600')
   return `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">${urls.join('')}</urlset>`
+}
+
+function isIndexableUrl(item: FaqManifestItem, localePath: string) {
+  const expected = `${ORIGIN}/${localePath}/faq/${item.contentKey}`
+  return item.indexable !== false && (!item.canonicalUrl || item.canonicalUrl === expected)
 }
 
 async function loadFaqManifests(base: string) {
@@ -56,6 +68,18 @@ async function loadFaqManifests(base: string) {
     }
   }))
   return Object.fromEntries(entries) as Record<string, FaqManifestItem[]>
+}
+
+async function loadFaqLandings(base: string) {
+  const entries = await Promise.all(FAQ_LOCALES.map(async (locale) => {
+    try {
+      const result = await $fetch<ApiResult<FaqLanding>>(`${base}/content/docs/${encodeURIComponent(locale.api)}/landing-page`)
+      return [locale.api, result.code === 200 ? result.data : null] as const
+    } catch {
+      return [locale.api, null] as const
+    }
+  }))
+  return Object.fromEntries(entries) as Record<string, FaqLanding | null>
 }
 
 function sitemapUrl(

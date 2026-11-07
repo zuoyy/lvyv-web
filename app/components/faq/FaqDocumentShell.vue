@@ -4,8 +4,7 @@
       <div class="help-toolbar">
         <div class="help-breadcrumb">
           <span>{{ copy.helpCenter }}</span>
-          <span class="breadcrumb-separator">/</span>
-          <span>{{ currentCategoryLabel }}</span>
+          <template v-if="document"><span class="breadcrumb-separator">/</span><span>{{ currentCategoryLabel }}</span></template>
         </div>
 
         <label class="help-search">
@@ -65,7 +64,7 @@
                   :key="article.contentKey"
                   :to="`/${localePath}/faq/${article.contentKey}`"
                   class="article-link"
-                  :class="{ active: article.contentKey === document.contentKey }"
+                  :class="{ active: article.contentKey === document?.contentKey }"
                   @click="mobileNavOpen = false"
                 >
                   {{ article.title }}
@@ -87,19 +86,30 @@
           </div>
         </aside>
 
-        <article class="help-article">
+        <article v-if="document" class="help-article">
           <header class="article-header">
             <div class="article-eyebrow">{{ currentCategoryLabel }} <span>/</span> {{ copy.documentation }}</div>
             <h1>{{ document.title }}</h1>
             <p v-if="document.summary" class="article-summary">{{ document.summary }}</p>
             <div class="article-meta">
               <span>{{ copy.updated }}{{ formatDate(document.updatedAt) }}</span>
+              <template v-if="document.author"><span class="meta-dot" /><span>{{ copy.by }}{{ document.author.name }}</span></template>
+              <template v-if="document.lastReviewedDate"><span class="meta-dot" /><span>{{ copy.reviewed }}{{ formatDate(document.lastReviewedDate) }}</span></template>
               <span class="meta-dot" />
               <span>{{ copy.readTime(readTime) }}</span>
             </div>
           </header>
 
+          <section v-if="document.cta && document.cta.position === 'START'" class="article-cta-block">
+            <h2 v-if="document.cta.title">{{ document.cta.title }}</h2><p v-if="document.cta.description">{{ document.cta.description }}</p>
+            <a class="article-cta" :href="document.cta.destination" :target="externalCta(document.cta.destination) ? '_blank' : undefined" :rel="externalCta(document.cta.destination) ? 'noopener noreferrer' : undefined" @click="trackCta">{{ document.cta.text }}</a>
+          </section>
+          <img v-if="document.coverImageUrl" class="article-cover" :src="document.coverImageUrl" :alt="document.coverImageAlt || ''">
           <div class="article-body faq-markdown" v-html="document.renderedHtml" />
+          <section v-if="document.cta && document.cta.position !== 'START'" class="article-cta-block">
+            <h2 v-if="document.cta.title">{{ document.cta.title }}</h2><p v-if="document.cta.description">{{ document.cta.description }}</p>
+            <a class="article-cta" :href="document.cta.destination" :target="externalCta(document.cta.destination) ? '_blank' : undefined" :rel="externalCta(document.cta.destination) ? 'noopener noreferrer' : undefined" @click="trackCta">{{ document.cta.text }}</a>
+          </section>
 
           <footer class="article-footer">
             <span>{{ copy.wasHelpful }}</span>
@@ -109,6 +119,17 @@
             </div>
           </footer>
         </article>
+
+        <section v-else class="help-article help-landing">
+          <header class="article-header"><div class="article-eyebrow">{{ copy.helpCenter }}</div><h1>{{ landing?.title || copy.helpCenter }}</h1></header>
+          <div v-if="landing?.introHtml" class="article-body faq-markdown" v-html="landing.introHtml" />
+          <h2>{{ copy.browseArticles }}</h2>
+          <div v-for="category in filteredCategories" :key="category.id" class="landing-category">
+            <h3>{{ category.name }}</h3>
+            <ul><li v-for="article in category.articles" :key="article.contentKey"><NuxtLink :to="`/${localePath}/faq/${article.contentKey}`">{{ article.title }}</NuxtLink><p v-if="article.summary">{{ article.summary }}</p></li></ul>
+          </div>
+          <p v-if="searchQuery.trim() && filteredCategories.length === 0" class="empty-search">{{ copy.noResults }}</p>
+        </section>
 
         <aside v-if="toc.length" class="help-toc" :aria-label="copy.pageNavigation">
           <p class="toc-title">{{ copy.onThisPage }}</p>
@@ -127,7 +148,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ContentManifestItem, ContentTranslation, NavigationItem } from '~/composables/useContent'
+import type { ContentLanding, ContentManifestItem, ContentTranslation, NavigationItem } from '~/composables/useContent'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import {
   faArrowUpRightFromSquare,
@@ -141,7 +162,8 @@ import {
 const props = defineProps<{
   locale: 'en-US' | 'zh-CN'
   localePath: string
-  document: ContentTranslation
+  document?: ContentTranslation
+  landing?: ContentLanding
   navigation: NavigationItem[]
   manifest: ContentManifestItem[]
 }>()
@@ -165,6 +187,9 @@ const copy = computed(() => props.locale === 'zh-CN' ? {
   needsImprovement: '需要改进',
   pageNavigation: '当前文章目录',
   onThisPage: '本页导航',
+  by: '作者：',
+  reviewed: '最后核验：',
+  browseArticles: '浏览文章',
   uncategorized: '其他文档'
 } : {
   helpCenter: 'Help Center',
@@ -185,16 +210,19 @@ const copy = computed(() => props.locale === 'zh-CN' ? {
   needsImprovement: 'Needs improvement',
   pageNavigation: 'Current article contents',
   onThisPage: 'On this page',
+  by: 'By ',
+  reviewed: 'Last reviewed: ',
+  browseArticles: 'Browse articles',
   uncategorized: 'Other documents'
 })
 
 const searchInput = ref<HTMLInputElement>()
 const searchQuery = ref('')
 const mobileNavOpen = ref(false)
-const currentManifestItem = computed(() => props.manifest.find(item => item.contentKey === props.document.contentKey))
+const currentManifestItem = computed(() => props.document ? props.manifest.find(item => item.contentKey === props.document?.contentKey) : undefined)
 const currentCategoryId = computed(() => currentManifestItem.value?.navigationNodeId)
 const expandedCategories = ref(new Set<number>())
-const toc = computed(() => normalizeToc(props.document.toc))
+const toc = computed(() => normalizeToc(props.document?.toc))
 
 const categories = computed(() => {
   const mapped = props.navigation.map(category => ({
@@ -221,11 +249,11 @@ const filteredCategories = computed(() => {
 
 const currentCategoryLabel = computed(() => {
   const category = categories.value.find(item => item.id === currentCategoryId.value)
-  return category?.name || props.document.breadcrumbs?.at(-1) || copy.value.uncategorized
+  return category?.name || props.document?.breadcrumbs?.at(-1) || copy.value.uncategorized
 })
 
 const readTime = computed(() => {
-  const text = `${props.document.title} ${props.document.summary || ''} ${props.document.renderedHtml.replace(/<[^>]*>/g, ' ')}`
+  const text = `${props.document?.title || ''} ${props.document?.summary || ''} ${(props.document?.renderedHtml || '').replace(/<[^>]*>/g, ' ')}`
   const units = props.locale === 'zh-CN' ? text.replace(/\s/g, '').length / 400 : text.trim().split(/\s+/).length / 200
   return Math.max(1, Math.ceil(units))
 })
@@ -258,6 +286,14 @@ watch(searchQuery, (value) => {
 watch(currentCategoryId, (value) => {
   if (!searchQuery.value.trim()) expandedCategories.value = new Set(value === undefined ? [] : [value])
 }, { immediate: true })
+
+const externalCta = (destination: string) => /^https?:\/\//i.test(destination)
+const trackCta = () => {
+  const eventName = props.document?.cta?.event || 'article_cta_click'
+  const target = window as Window & { dataLayer?: Array<Record<string, unknown>> }
+  target.dataLayer ||= []
+  target.dataLayer.push({ event: eventName, contentKey: props.document?.contentKey, locale: props.locale, destination: props.document?.cta?.destination })
+}
 
 const handleShortcut = (event: KeyboardEvent) => {
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
