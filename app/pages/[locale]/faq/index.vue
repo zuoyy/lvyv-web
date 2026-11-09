@@ -59,10 +59,10 @@ useLvyvSeo({
     {
       '@context': 'https://schema.org',
       '@type': 'ItemList',
-      itemListElement: (manifest.value || []).filter(item => item.indexable !== false && (!item.canonicalUrl || item.canonicalUrl === absoluteUrl(`/${localePath}/faq/${item.contentKey}`))).map((item, index) => ({
+      itemListElement: (manifest.value || []).filter(item => item.indexable !== false && item.categoryKey && (!item.canonicalUrl || item.canonicalUrl === absoluteUrl(faqArticlePath(localePath, item)))).map((item, index) => ({
         '@type': 'ListItem',
         position: index + 1,
-        url: absoluteUrl(`/${localePath}/faq/${item.contentKey}`),
+        url: absoluteUrl(faqArticlePath(localePath, item)),
         name: item.title
       }))
     }

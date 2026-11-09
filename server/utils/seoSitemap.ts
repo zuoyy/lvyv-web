@@ -7,6 +7,7 @@ interface ApiResult<T> {
 
 interface FaqManifestItem {
   contentKey: string
+  categoryKey: string
   lastmod?: string
   indexable?: boolean
   canonicalUrl?: string
@@ -42,9 +43,9 @@ export async function buildFaqSitemap(event: H3Event, localeApi: string, localeP
         .filter(locale => manifests[locale.api]?.some(candidate => candidate.contentKey === item.contentKey && isIndexableUrl(candidate, locale.path)))
         .map(locale => ({
           hreflang: locale.api,
-          href: `${ORIGIN}/${locale.path}/faq/${item.contentKey}`
+          href: articleUrl(locale.path, item)
         }))
-      return sitemapUrl(`${ORIGIN}/${localePath}/faq/${item.contentKey}`, item.lastmod, alternates)
+      return sitemapUrl(articleUrl(localePath, item), item.lastmod, alternates)
     })
   ]
 
@@ -54,8 +55,13 @@ export async function buildFaqSitemap(event: H3Event, localeApi: string, localeP
 }
 
 function isIndexableUrl(item: FaqManifestItem, localePath: string) {
-  const expected = `${ORIGIN}/${localePath}/faq/${item.contentKey}`
+  if (!item.categoryKey) return false
+  const expected = articleUrl(localePath, item)
   return item.indexable !== false && (!item.canonicalUrl || item.canonicalUrl === expected)
+}
+
+function articleUrl(localePath: string, item: FaqManifestItem) {
+  return `${ORIGIN}/${localePath}/faq/${encodeURIComponent(item.categoryKey)}/${encodeURIComponent(item.contentKey)}`
 }
 
 async function loadFaqManifests(base: string) {

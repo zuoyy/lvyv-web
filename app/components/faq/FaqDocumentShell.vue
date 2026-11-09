@@ -62,7 +62,7 @@
                 <NuxtLink
                   v-for="article in category.articles"
                   :key="article.contentKey"
-                  :to="`/${localePath}/faq/${article.contentKey}`"
+                  :to="faqArticlePath(localePath, article)"
                   class="article-link"
                   :class="{ active: article.contentKey === document?.contentKey }"
                   @click="mobileNavOpen = false"
@@ -126,7 +126,7 @@
           <h2>{{ copy.browseArticles }}</h2>
           <div v-for="category in filteredCategories" :key="category.id" class="landing-category">
             <h3>{{ category.name }}</h3>
-            <ul><li v-for="article in category.articles" :key="article.contentKey"><NuxtLink :to="`/${localePath}/faq/${article.contentKey}`">{{ article.title }}</NuxtLink><p v-if="article.summary">{{ article.summary }}</p></li></ul>
+            <ul><li v-for="article in category.articles" :key="article.contentKey"><NuxtLink :to="faqArticlePath(localePath, article)">{{ article.title }}</NuxtLink><p v-if="article.summary">{{ article.summary }}</p></li></ul>
           </div>
           <p v-if="searchQuery.trim() && filteredCategories.length === 0" class="empty-search">{{ copy.noResults }}</p>
         </section>
@@ -149,6 +149,7 @@
 
 <script setup lang="ts">
 import type { ContentLanding, ContentManifestItem, ContentTranslation, NavigationItem } from '~/composables/useContent'
+import { faqArticlePath } from '~/composables/useContent'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import {
   faArrowUpRightFromSquare,

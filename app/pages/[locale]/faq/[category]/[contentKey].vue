@@ -10,12 +10,15 @@
 </template>
 
 <script setup lang="ts">
+import { faqArticlePath } from '~/composables/useContent'
+
 const route = useRoute()
 const rawLocale = String(route.params.locale).toLowerCase()
 const locale = rawLocale === 'zh' ? 'zh-CN' : rawLocale === 'en' ? 'en-US' : null
 if (!locale) throw createError({ statusCode: 404, statusMessage: 'Locale not found' })
 
 const localePath = rawLocale
+const category = String(route.params.category)
 const contentKey = String(route.params.contentKey)
 const localePaths: Record<string, string> = { 'en-US': 'en', 'zh-CN': 'zh' }
 const { getDocument, getManifest, getNavigation } = useContentApi()
@@ -24,10 +27,13 @@ const [{ data: document }, { data: manifest }, { data: navigation }] = await Pro
   useAsyncData(`docs-manifest-${locale}`, () => getManifest(locale)),
   useAsyncData(`docs-nav-${locale}`, () => getNavigation(locale))
 ])
-if (!document.value) throw createError({ statusCode: 404, statusMessage: 'Document not found' })
+const entry = manifest.value?.find(item => item.contentKey === contentKey)
+if (!document.value || !entry || entry.categoryKey !== category) {
+  throw createError({ statusCode: 404, statusMessage: 'Document not found' })
+}
 
 const doc = document.value
-const path = `/${localePath}/faq/${contentKey}`
+const path = faqArticlePath(localePath, entry)
 const title = doc.seo?.title || doc.title || 'Lvyv'
 const description = doc.seo?.description || doc.summary || ''
 const breadcrumbItems = [
@@ -66,14 +72,9 @@ useLvyvSeo({
   noindex: doc.indexable === false,
   noindexFollow: true,
   type: 'article',
-  alternates: [
-    ...(doc.availableLocales || [])
-      .filter(item => localePaths[item])
-      .map(item => ({
-        hreflang: item,
-        path: `/${localePaths[item]}/faq/${contentKey}`
-      }))
-  ],
+  alternates: (doc.availableLocales || [])
+    .filter(item => localePaths[item])
+    .map(item => ({ hreflang: item, path: faqArticlePath(localePaths[item]!, entry) })),
   jsonLd: [
     webPageJsonLd(title, description, path),
     breadcrumbJsonLd(breadcrumbItems),
