@@ -41,7 +41,7 @@
         >
           <div class="activity-card__image-wrap">
             <img
-              :src="activity.archiveImageUrl || activity.shareImageUrl || fallbackImage"
+              :src="activity.shareImageUrl || fallbackImage"
               :alt="activity.shareTitle || activity.title"
               loading="lazy"
               @error="useFallbackImage"
@@ -77,7 +77,6 @@ interface ActivityCard {
   shareTitle: string
   shareDesc: string
   shareImageUrl: string
-  archiveImageUrl: string
   city: string
 }
 

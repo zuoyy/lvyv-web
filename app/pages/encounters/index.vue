@@ -111,7 +111,6 @@ interface ActivityCard {
   shareTitle: string
   shareDesc: string
   shareImageUrl: string
-  archiveImageUrl: string
   city: string
 }
 
@@ -228,7 +227,7 @@ const formatPrice = (value: number, currency: string) => new Intl.NumberFormat('
   style: 'currency', currency: currency || 'USD', maximumFractionDigits: 0
 }).format(value)
 const activityImage = (activity: ActivityCard) => {
-  if (activity.archiveImageUrl || activity.shareImageUrl) return activity.archiveImageUrl || activity.shareImageUrl
+  if (activity.shareImageUrl) return activity.shareImageUrl
   const city = activity.city?.trim().toLowerCase() || ''
   if (city.includes('chongqing') || city.includes('重庆')) return '/images/encounters/featured-chongqing.webp'
   if (city.includes('chengdu') || city.includes('成都')) return '/images/encounters/featured-chengdu.webp'
