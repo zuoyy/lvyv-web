@@ -159,6 +159,7 @@ import {
   faMagnifyingGlass,
   faXmark
 } from '@fortawesome/free-solid-svg-icons'
+import interBoldFont from '@fontsource/inter/files/inter-latin-700-normal.woff2?url'
 
 const props = defineProps<{
   locale: 'en-US' | 'zh-CN'
@@ -168,6 +169,11 @@ const props = defineProps<{
   navigation: NavigationItem[]
   manifest: ContentManifestItem[]
 }>()
+
+// FAQ 标题是文章页最大文本元素，提前发现对应字重，避免等待全局样式表解析后才请求字体。
+useHead({
+  link: [{ rel: 'preload', as: 'font', type: 'font/woff2', href: interBoldFont, crossorigin: 'anonymous' }]
+})
 
 const copy = computed(() => props.locale === 'zh-CN' ? {
   helpCenter: '帮助中心',
@@ -260,7 +266,7 @@ const readTime = computed(() => {
 })
 
 const formatDate = (value?: string) => value
-  ? new Date(value).toLocaleDateString(props.locale === 'zh-CN' ? 'zh-CN' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  ? new Date(value).toLocaleDateString(props.locale, { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })
   : ''
 
 const syncCategoryExpansion = (categoryId: number, event: Event) => {
@@ -306,6 +312,10 @@ const handleShortcut = (event: KeyboardEvent) => {
 onMounted(() => window.addEventListener('keydown', handleShortcut))
 onBeforeUnmount(() => window.removeEventListener('keydown', handleShortcut))
 </script>
+
+<style>
+@import '~/assets/css/faq-markdown.css';
+</style>
 
 <style scoped>
 .help-center {
@@ -358,11 +368,22 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleShortcut))
 .article-header { border-bottom: 1px solid var(--help-border); padding-bottom: 30px; }
 .article-eyebrow { color: var(--help-accent); font-size: 12px; font-weight: 700; letter-spacing: 0.04em; margin-bottom: 14px; }
 .article-eyebrow span { color: #aab6b0; margin: 0 6px; }
-.article-header h1 { color: var(--help-ink); font-family: var(--font-body); font-size: clamp(30px, 3vw, 44px); font-weight: 800; letter-spacing: 0; line-height: 1.2; margin: 0 0 14px; }
+.article-header h1 { color: var(--help-ink); font-family: var(--font-body); font-size: clamp(30px, 3vw, 44px); font-weight: 700; letter-spacing: 0; line-height: 1.2; margin: 0 0 14px; }
+.help-center :deep(h2), .help-center :deep(h3), .help-center :deep(h4), .help-center :deep(h5), .help-center :deep(h6) { font-family: var(--font-body); }
 .article-summary { color: var(--help-muted); font-size: 16px; line-height: 1.8; margin: 0; max-width: 680px; }
 .article-meta { align-items: center; color: #9aa7a1; display: flex; font-size: 11px; gap: 9px; margin-top: 18px; }
 .meta-dot { background: #b8c2bd; border-radius: 50%; height: 3px; width: 3px; }
 .article-body { padding: 34px 0 10px; }
+.help-landing > h2 { font-family: var(--font-body); font-size: 22px; font-weight: 700; line-height: 1.4; margin: 24px 0; }
+.landing-category + .landing-category { margin-top: 28px; }
+.landing-category h3 { font-family: var(--font-body); font-size: 16px; font-weight: 700; line-height: 1.5; margin: 0; }
+.landing-category ul { list-style: disc outside; margin: 12px 0 0; padding-inline-start: 24px; }
+.landing-category li { line-height: 1.6; padding-inline-start: 4px; }
+.landing-category li + li { margin-top: 10px; }
+.landing-category li::marker { color: var(--help-muted); }
+.landing-category a { color: var(--help-accent); text-decoration: none; }
+.landing-category a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.landing-category p { color: var(--help-muted); font-size: 14px; line-height: 1.7; margin: 6px 0 0; }
 .article-footer { align-items: center; border-top: 1px solid var(--help-border); color: var(--help-muted); display: flex; font-size: 12px; gap: 14px; justify-content: space-between; margin-top: 30px; padding-top: 22px; }
 .article-feedback { display: flex; gap: 7px; }
 .article-feedback button { background: #fff; border: 1px solid var(--help-border); border-radius: 5px; color: var(--help-muted); cursor: pointer; font: inherit; padding: 6px 10px; }

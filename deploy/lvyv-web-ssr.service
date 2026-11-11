@@ -1,0 +1,21 @@
+[Unit]
+Description=Lvyv Nuxt SSR content site
+After=network.target
+
+[Service]
+Type=simple
+User=nginx
+WorkingDirectory=/var/www/lvyv-web/current
+Environment=NODE_ENV=production
+Environment=NITRO_HOST=127.0.0.1
+Environment=NITRO_PORT=3001
+Environment=NUXT_CONTENT_API_BASE=http://47.109.99.83:8088/web-api
+Environment=NUXT_PUBLIC_API_BASE=/web-api
+ExecStart=/usr/bin/node /var/www/lvyv-web/current/server/index.mjs
+Restart=always
+RestartSec=3
+TimeoutStopSec=15
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

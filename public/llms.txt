@@ -1,0 +1,21 @@
+# Lvyv
+
+> Lvyv helps international travelers discover China through local people, cultural experiences, and practical travel guides.
+
+## Help and travel guides
+
+- [Help Center in English](https://www.lvyv.com/en/faq/): Practical guides to planning a trip to China and using Lvyv.
+- [中文帮助中心](https://www.lvyv.com/zh/faq/): 中国旅行及旅遇服务帮助文档。
+
+## Explore Lvyv
+
+- [Encounters](https://www.lvyv.com/encounters): Discover local travel experiences.
+- [About Lvyv](https://www.lvyv.com/about): Learn about Lvyv and its approach to travel.
+
+## Resource discovery
+
+- [ARD resource manifest](https://www.lvyv.com/.well-known/ard.json): Machine-readable public resource descriptions.
+- [Sitemap](https://www.lvyv.com/sitemap.xml): Published pages and localized FAQ sitemaps.
+- [Robots.txt](https://www.lvyv.com/robots.txt): Crawler access directives.
+
+Travel policies and service availability can change. Follow the linked pages and their official sources for current information.

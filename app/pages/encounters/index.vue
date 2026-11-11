@@ -33,14 +33,14 @@
               :src="activityImage(activity)"
               alt=""
               aria-hidden="true"
-              loading="lazy"
+              loading="lazy" width="600" height="600"
               @error="useFallbackImage"
             >
             <img
               class="featured-card__image"
               :src="activityImage(activity)"
               :alt="activity.city || activity.title"
-              loading="lazy"
+              loading="lazy" width="600" height="600"
               @error="useFallbackImage"
             >
             <div class="featured-card__overlay">
@@ -74,19 +74,19 @@
             <img
               :src="product.imageUrls[0] || fallbackImage"
               :alt="product.title"
-              loading="lazy"
+              loading="lazy" width="600" height="600"
               @error="useFallbackImage"
             >
             <span class="popular-card__duration">{{ product.duration }}</span>
           </div>
           <div class="popular-card__body">
             <h3>{{ product.title }}</h3>
-            <p class="popular-card__city">An {{ cityLabel(product.cityCode) }} Encounter</p>
+            <p class="popular-card__city">{{ product.summary }}</p>
             <div class="popular-card__footer">
               <del v-if="product.lowestAdultListPrice > product.lowestAdultSalePrice" class="popular-card__list-price">
                 {{ formatPrice(product.lowestAdultListPrice, product.currency) }}
               </del>
-              <p><span>From</span> <strong>{{ formatPrice(product.lowestAdultSalePrice, product.currency) }}</strong></p>
+              <p v-if="product.hasPrice"><span>From</span> <strong>{{ formatPrice(product.lowestAdultSalePrice, product.currency) }}</strong></p>
               <span class="popular-card__explore">Explore This Encounter <span aria-hidden="true">→</span></span>
             </div>
           </div>
@@ -160,6 +160,7 @@ const [{ data: featuredResponse, error: featuredRequestError, status: featuredSt
     key: 'encounters-featured-activities',
     timeout: 10_000,
     retry: 0,
+    server: false,
     getCachedData: (key, nuxtApp) => nuxtApp.isHydrating ? nuxtApp.payload.data[key] : undefined
   }),
   useAsyncData<CatalogProductListView[]>(
@@ -167,7 +168,7 @@ const [{ data: featuredResponse, error: featuredRequestError, status: featuredSt
     () => commerce.listCatalogProducts(),
     {
       default: () => [],
-      lazy: true,
+      lazy: true, server: false,
       getCachedData: (key, nuxtApp) => nuxtApp.isHydrating ? nuxtApp.payload.data[key] : undefined
     }
   )
@@ -182,23 +183,27 @@ const featuredLoading = computed(() => featuredStatus.value === 'idle' || featur
 const featuredError = computed(() => Boolean(featuredRequestError.value)
   || Boolean(featuredResponse.value && featuredResponse.value.code !== 0 && featuredResponse.value.code !== 200))
 
-const products = computed(() => (catalogData.value || []).map((item) => {
-  const listPrice = Number(item.lowestAdultListPrice ?? 0)
-  const salePrice = Number(item.lowestAdultSalePrice ?? listPrice)
+const { data: publicManifest, error: manifestError, status: manifestStatus, refresh: refreshManifest } = await useAsyncData('public-product-manifest-en-US', () => usePublicProducts().manifest())
+// 清单故障时仍可展示已通过后端公开资格校验的实时列表；成功的空清单保持空态。
+const productEntries = computed(() => publicManifest.value?.products ?? (manifestError.value ? catalogData.value || [] : []))
+const products = computed(() => productEntries.value.map((entry) => {
+  const item = catalogData.value?.find(row => row.productCode === entry.productCode)
+  const listPrice = Number(item?.lowestAdultListPrice ?? 0)
+  const salePrice = Number(item?.lowestAdultSalePrice ?? listPrice)
   return {
-    productCode: item.productCode,
-    title: item.name,
-    cityCode: item.cityCode,
-    imageUrls: item.imageUrls || [],
-    duration: durationLabel(item.dateText, item.dayCount),
-    currency: item.currency || 'USD',
+    productCode: entry.productCode,
+    title: entry.name, summary: entry.summary, hasPrice: Boolean(item),
+    cityCode: entry.cityCode,
+    imageUrls: item?.imageUrls || [],
+    duration: durationLabel(item?.dateText, entry.dayCount),
+    currency: item?.currency || 'USD',
     lowestAdultSalePrice: salePrice,
     lowestAdultListPrice: listPrice
   }
 }).filter(item => item.productCode && item.title))
 const visibleProducts = computed(() => products.value)
-const productsLoading = computed(() => catalogStatus.value === 'idle' || catalogStatus.value === 'pending')
-const productsError = computed(() => Boolean(catalogError.value))
+const productsLoading = computed(() => [catalogStatus.value, manifestStatus.value].some(status => status === 'idle' || status === 'pending'))
+const productsError = computed(() => Boolean(catalogError.value || (manifestError.value && !catalogData.value?.length)))
 
 const cityNames: Record<string, string> = {
   beijing: 'Beijing',
@@ -244,7 +249,7 @@ const useFallbackImage = (event: Event) => {
   image.removeAttribute('src')
   image.classList.add('is-missing')
 }
-const retryProducts = () => { void refreshProducts() }
+const retryProducts = () => Promise.all([refreshProducts(), refreshManifest()])
 onMounted(() => { void tourCities.load().catch(() => undefined) })
 </script>
 
@@ -276,14 +281,14 @@ onMounted(() => { void tourCities.load().catch(() => undefined) })
 .featured-card__action { display: flex; width: 100%; height: 48px; align-items: center; justify-content: center; border-radius: 4px; color: #112211; background: #cff380; font: 500 14px/1 'Inter', sans-serif; }
 .popular-section .section-heading { min-height: 26px; margin-bottom: 30px; }
 .popular-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 40px 16px; }
-.popular-card { position: relative; min-width: 0; height: 410px; overflow: hidden; border: 1px solid #111; border-radius: 12px; color: inherit; background: #fff; text-decoration: none; }
+.popular-card { position: relative; min-width: 0; height: 445px; overflow: hidden; border: 1px solid #111; border-radius: 12px; color: inherit; background: #fff; text-decoration: none; }
 .popular-card__image-wrap { position: relative; height: 300px; overflow: hidden; background: #e3e8e3; }
 .popular-card__image-wrap img { width: 100%; height: 100%; display: block; object-fit: cover; transition: transform .35s ease; }
 .popular-card__image-wrap img.is-missing { display: none; }
 .popular-card:hover img { transform: scale(1.035); }
 .popular-card__duration { position: absolute; top: 16px; left: 16px; max-width: calc(100% - 32px); overflow: hidden; padding: 3px 10px; border: 1px solid #698e4e; border-radius: 26px; color: #2a573f; background: #edf9e1; font: 400 12px/16px 'Inter', sans-serif; text-overflow: ellipsis; white-space: nowrap; }
-.popular-card__body { position: relative; height: 110px; padding: 18px 10px 12px; }
-.popular-card__city { margin: 1px 0 0; overflow: hidden; color: #979797; font: 400 12px/15px 'Inter', sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+.popular-card__body { position: relative; height: 145px; padding: 18px 10px 12px; }
+.popular-card__city { max-height: 38px; white-space: normal !important; margin: 1px 0 0; overflow: hidden; color: #979797; font: 400 12px/15px 'Inter', sans-serif; text-overflow: ellipsis; white-space: nowrap; }
 .popular-card h3 { overflow: hidden; margin: 0; color: #203d33; font: 500 16px/19px 'Inter', sans-serif; text-overflow: ellipsis; white-space: nowrap; }
 .popular-card__footer { position: absolute; right: 10px; bottom: 12px; left: 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .popular-card__footer p { margin: 0; color: #53675f; font: 300 14px/18px 'Inter', sans-serif; white-space: nowrap; }
@@ -319,7 +324,7 @@ onMounted(() => { void tourCities.load().catch(() => undefined) })
   .popular-grid { row-gap: 18px; }
   .popular-card { height: auto; aspect-ratio: auto; border-radius: 8px; }
   .popular-card__image-wrap { height: auto; aspect-ratio: 1 / 1; }
-  .popular-card__body { height: 116px; padding: 9px 7px 8px; }
+  .popular-card__body { height: 150px; padding: 9px 7px 8px; }
   .popular-card h3 { font-size: 12px; line-height: 15px; }
   .popular-card__city { font-size: 10px; line-height: 13px; }
   .popular-card__footer { right: 7px; bottom: 8px; left: 7px; flex-wrap: wrap; gap: 2px; }

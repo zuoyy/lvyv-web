@@ -28,15 +28,15 @@
           </header>
           <FirstOrderOffer :promotion="firstOrderPromotion" />
 
-          <section :class="['gallery', `gallery--${Math.min(galleryImages.length, 3)}`]" aria-label="Encounter photos">
+          <section v-if="galleryImages.length" :class="['gallery', `gallery--${Math.min(galleryImages.length, 3)}`]" aria-label="Encounter photos">
             <button class="gallery__main" type="button" @click="openPhoto(galleryImages[0]!)">
-              <img :src="galleryImages[0]" :alt="detail.title">
+              <img :src="galleryImages[0]" :alt="detail.title" width="960" height="640" fetchpriority="high">
             </button>
             <button v-if="galleryImages[1]" type="button" @click="openPhoto(galleryImages[1])">
-              <img :src="galleryImages[1]" :alt="`${cityLabel} encounter photo 2`">
+              <img width="600" height="400" loading="lazy" :src="galleryImages[1]" :alt="`${cityLabel} encounter photo 2`">
             </button>
             <button v-if="galleryImages[2]" type="button" @click="openPhoto(galleryImages[2])">
-              <img :src="galleryImages[2]" :alt="`${cityLabel} encounter photo 3`">
+              <img width="600" height="400" loading="lazy" :src="galleryImages[2]" :alt="`${cityLabel} encounter photo 3`">
               <span class="gallery__count"><i aria-hidden="true" />All photos ({{ galleryImages.length }})</span>
             </button>
           </section>
@@ -49,7 +49,7 @@
 
           <section v-if="detail.summary || detail.designerMessage" class="journey-introduction" aria-label="Journey introduction">
             <div v-if="detail.summary" class="journey-introduction__summary">
-              <p class="journey-introduction__eyebrow">Journey summary</p>
+              <h2 class="journey-introduction__eyebrow">Experience overview</h2>
               <p>{{ detail.summary }}</p>
             </div>
             <blockquote v-if="detail.designerMessage" class="journey-introduction__designer-message">
@@ -58,6 +58,26 @@
             </blockquote>
           </section>
 
+          <dl class="product-facts">
+            <div><dt>Destination</dt><dd>{{ cityLabel }}</dd></div>
+            <div><dt>Duration</dt><dd>{{ duration }}</dd></div>
+            <div v-if="detail.travelType"><dt>Travel type</dt><dd>{{ detail.travelType }}</dd></div>
+            <div v-if="detail.serviceLanguages.length"><dt>Languages</dt><dd>{{ detail.serviceLanguages.join(', ') }}</dd></div>
+            <div><dt>Adults</dt><dd>{{ detail.adultAgeLabel }}</dd></div>
+            <div><dt>Children</dt><dd>{{ detail.childAgeLabel }}</dd></div>
+          </dl>
+          <section v-for="block in listBlocks" :key="block.title" class="product-copy">
+            <h2>{{ block.title }}</h2><ul><li v-for="(item, index) in block.items" :key="index">{{ item }}</li></ul>
+          </section>
+          <section v-for="block in serviceBlocks" :key="block.title" class="product-copy">
+            <h2>{{ block.title }}</h2><p>{{ block.text }}</p>
+          </section>
+          <section v-if="presentation.faq.length" class="product-copy"><h2>Frequently asked questions</h2>
+            <details v-for="(item, index) in presentation.faq" :key="index"><summary>{{ item.question }}</summary><p>{{ item.answer }}</p></details>
+          </section>
+          <p v-if="content?.updatedAt || presentation.lastReviewedDate" class="content-dates"><span v-if="content?.updatedAt">Content updated: <time :datetime="content.updatedAt">{{ content.updatedAt.slice(0, 10) }}</time></span>
+            <span v-if="presentation.lastReviewedDate"> · Reviewed: <time :datetime="presentation.lastReviewedDate">{{ presentation.lastReviewedDate }}</time></span>
+          </p>
           <section class="itinerary" aria-labelledby="itinerary-title">
             <div class="itinerary__title-row">
               <h2 id="itinerary-title">{{ detail.days.length }}-day itinerary</h2>
@@ -75,19 +95,14 @@
             </div>
 
             <div class="day-list">
-              <article v-for="day in detail.days" :key="day.dayNo" class="day-item">
-                <button
-                  class="day-item__heading"
-                  type="button"
-                  :aria-expanded="openDays.has(day.dayNo)"
-                  @click="toggleDay(day.dayNo)"
-                >
+              <details v-for="day in detail.days" :key="day.dayNo" class="day-item" :open="openDays.has(day.dayNo)" @toggle="onDayToggle(day.dayNo, $event)">
+                <summary class="day-item__heading">
                   <strong>Day {{ day.dayNo }}</strong>
                   <span>{{ day.title }}<template v-if="day.summary"> · {{ day.summary }}</template></span>
                   <i :class="{ open: openDays.has(day.dayNo) }" aria-hidden="true" />
-                </button>
+                </summary>
 
-                <div v-if="openDays.has(day.dayNo)" class="day-item__content">
+                <div class="day-item__content">
                   <div v-for="(item, itemIndex) in day.items" :key="`${day.dayNo}-${itemIndex}-${item.title}`" class="schedule-item">
                     <div class="schedule-item__line">
                       <span :class="['schedule-icon', `schedule-icon--${iconType(item.projectType)}`]" aria-hidden="true">
@@ -114,19 +129,22 @@
                         :aria-label="`Preview ${item.title} photo ${imageIndex + 1}`"
                         @click="openPhoto(image)"
                       >
-                        <img :src="image" :alt="`${item.title} photo ${imageIndex + 1}`">
+                        <img :src="image" :alt="`${item.title} photo ${imageIndex + 1}`" width="600" height="400" loading="lazy">
                       </button>
                     </div>
                   </div>
 
-                  <p v-if="!day.items.length" class="empty-day">More local experiences are being arranged for this day.</p>
+                  <p v-if="!day.items.length" class="empty-day">No additional details published for this day.</p>
                 </div>
-              </article>
+              </details>
             </div>
           </section>
         </div>
 
+        <ClientOnly>
         <aside class="booking-panel" aria-label="Choose departure date and travelers">
+          <p v-if="bookingLoading" role="status">Loading current booking information…</p>
+          <p v-if="bookingError" role="alert">{{ bookingError }} <button type="button" @click="refreshBooking">Try again</button></p>
           <div class="date-range">
             <time :datetime="departureDate">{{ shortDate(departureDate) }}</time>
             <span aria-hidden="true">⟶</span>
@@ -166,7 +184,7 @@
             <div class="stepper">
               <button type="button" :disabled="adults <= 1" aria-label="Remove adult" @click="adults--">−</button>
               <strong>{{ adults }}</strong>
-              <button type="button" aria-label="Add adult" @click="adults++">+</button>
+              <button type="button" :disabled="adults >= 100" aria-label="Add adult" @click="adults++">+</button>
             </div>
           </div>
 
@@ -178,14 +196,14 @@
             <div class="stepper">
               <button type="button" :disabled="children <= 0" aria-label="Remove child" @click="children--">−</button>
               <strong>{{ children }}</strong>
-              <button type="button" aria-label="Add child" @click="children++">+</button>
+              <button type="button" :disabled="children >= 100" aria-label="Add child" @click="children++">+</button>
             </div>
           </div>
 
           <div class="booking-total" aria-live="polite">
             <div class="booking-total__heading">
               <div><span>Current price</span><strong v-if="selectedTier">{{ formatPrice(bookingTotal) }}</strong><strong v-else>Unavailable</strong></div>
-              <small>From {{ formatPrice(detail.lowestAdultSalePrice) }}/person<br>{{ travelerCount }} {{ travelerCount === 1 ? 'traveler' : 'travelers' }}</small>
+              <small v-if="booking?.available && detail.tiers.length">From {{ formatPrice(detail.lowestAdultSalePrice) }}/person<br>{{ travelerCount }} {{ travelerCount === 1 ? 'traveler' : 'travelers' }}</small>
             </div>
             <div v-if="selectedTier" class="booking-breakdown">
               <div><span>Adults {{ adults }} × {{ formatPrice(selectedTier.adultSalePrice) }}</span><strong>{{ formatPrice(adultSubtotal) }}</strong></div>
@@ -197,7 +215,7 @@
               <div class="price-tiers__heading"><strong>Prices by group size</strong><span>Per traveler</span></div>
               <div class="price-tiers__table" role="table" aria-label="Prices by group size">
                 <div class="price-tiers__row price-tiers__row--header" role="row"><span>Group size</span><span>Adult</span><span>Child</span></div>
-                <div v-for="tier in detail.tiers" :key="`${tier.minTravelerCount}-${tier.maxTravelerCount}`" :class="['price-tiers__row', { 'price-tiers__row--active': selectedTier === tier }]" role="row">
+                <div v-for="tier in detail.tiers" :key="`${tier.minTravelerCount}-${tier.maxTravelerCount}`" :class="['price-tiers__row', { 'price-tiers__row--active': selectedTier?.minTravelerCount === tier.minTravelerCount && selectedTier?.maxTravelerCount === tier.maxTravelerCount }]" role="row">
                   <span>{{ tierLabel(tier) }}</span><strong>{{ formatPrice(tier.adultSalePrice) }}</strong><strong>{{ formatPrice(tier.childSalePrice) }}</strong>
                 </div>
               </div>
@@ -205,8 +223,10 @@
             <p v-if="detail.priceNote" class="price-note">{{ detail.priceNote }}</p>
           </div>
 
-          <button class="next-button" type="button" :disabled="!selectedTier" @click="bookNow">Next</button>
+          <button class="next-button" type="button" :disabled="bookingLoading || !selectedTier" @click="bookNow">Next</button>
         </aside>
+        <template #fallback><aside class="booking-panel"><p>Enable JavaScript to check current availability and book.</p></aside></template>
+        </ClientOnly>
       </section>
     </div>
 
@@ -223,6 +243,9 @@
 </template>
 
 <script setup lang="ts">
+import type { PublicProductContent, BookingSummary } from '~~/shared/types/publicProducts'
+import { earliestTravelDate, addTravelDays } from '~~/shared/utils/chinaDate'
+
 interface DetailItem {
   title: string
   description?: string
@@ -232,7 +255,7 @@ interface DetailItem {
   endTime?: string
   timeText?: string
   projectImageUrls: string[]
-  tagGroups: import('~/composables/useTourCommerce').ItineraryTagGroupView[]
+  tagGroups: Array<{ code: string; label: string; tags: Array<{ code: string; label: string }> }>
 }
 
 interface DetailDay {
@@ -266,7 +289,6 @@ interface EncounterDetail {
 }
 
 const route = useRoute()
-const commerce = useTourCommerce()
 const auth = useMemberAuth()
 const { cities, load: loadCities } = useTourCities()
 const productCode = computed(() => String(route.params.productCode || ''))
@@ -291,30 +313,27 @@ const detail = ref<EncounterDetail>({
   days: []
 })
 
-const loading = ref(true)
+const loading = computed(() => !content.value || content.value.product.productCode !== productCode.value)
+const booking = ref<BookingSummary | null>(null)
+const bookingLoading = ref(true)
+const bookingError = ref('')
+const clientReady = ref(false)
+const publicProducts = usePublicProducts()
 const loadError = ref('')
 const activePhoto = ref('')
-const queryAdults = Number(route.query.adultCount)
-const adults = ref(Number.isFinite(queryAdults) && queryAdults > 0 ? Math.floor(queryAdults) : 1)
-const queryChildren = Number(route.query.childCount)
-const children = ref(Number.isFinite(queryChildren) && queryChildren >= 0 ? Math.floor(queryChildren) : 0)
+const adults = ref(1)
+const children = ref(0)
 const openDays = ref(new Set<number>())
 const openDaysBeforePrint = ref<Set<number> | null>(null)
 const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
-const calculateEarliestDate = (minimumAdvanceDays = 1) => {
-  const date = new Date()
-  date.setHours(12, 0, 0, 0)
-  date.setDate(date.getDate() + Math.max(1, minimumAdvanceDays))
-  return date.toISOString().slice(0, 10)
-}
-const earliestDate = ref(calculateEarliestDate())
-const departureDate = ref(earliestDate.value)
-const initialMonth = new Date(`${earliestDate.value}T12:00:00`)
-const calendarYear = ref(initialMonth.getFullYear())
-const calendarMonth = ref(initialMonth.getMonth())
+const calculateEarliestDate = earliestTravelDate
+const earliestDate = ref('2000-01-01')
+const departureDate = ref('2000-01-01')
+const calendarYear = ref(2000)
+const calendarMonth = ref(0)
 
-const cityLabel = computed(() => cities.value.find(city => city.code === detail.value.cityCode)?.label || detail.value.cityCode)
+const cityLabel = computed(() => cities.value.find(city => city.code === detail.value.cityCode)?.label || manifest.value?.products.find(product => product.productCode === productCode.value)?.cityLabel || detail.value.cityCode)
 const duration = computed(() => detail.value.dateText.trim() || `${detail.value.days.length}D${Math.max(0, detail.value.days.length - 1)}N`)
 const journeyTitle = computed(() => [duration.value, detail.value.travelType, detail.value.title].filter(Boolean).join(' · '))
 const allDaysOpen = computed(() => detail.value.days.length > 0 && detail.value.days.every(day => openDays.value.has(day.dayNo)))
@@ -324,35 +343,20 @@ const productFeatures = computed(() => [
   detail.value.shoppingPolicy
 ].filter((value): value is string => Boolean(value?.trim())))
 const travelerCount = computed(() => adults.value + children.value)
-const selectedTier = computed(() => detail.value.tiers.find((tier) => tier.minTravelerCount <= travelerCount.value
-  && (tier.maxTravelerCount == null || travelerCount.value <= tier.maxTravelerCount)) || null)
+const selectedTier = computed(() => booking.value?.available ? booking.value.selectedTier || null : null)
 const adultSubtotal = computed(() => selectedTier.value ? adults.value * selectedTier.value.adultSalePrice : 0)
 const childSubtotal = computed(() => selectedTier.value ? children.value * selectedTier.value.childSalePrice : 0)
 const bookingTotal = computed(() => adultSubtotal.value + childSubtotal.value)
 
-const endDate = computed(() => {
-  const date = new Date(`${departureDate.value}T12:00:00`)
-  date.setDate(date.getDate() + Math.max(0, detail.value.days.length - 1))
-  return date.toISOString().slice(0, 10)
-})
-
-const monthLabel = computed(() => new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(new Date(calendarYear.value, calendarMonth.value, 1)))
-const calendarLeadingBlanks = computed(() => new Date(calendarYear.value, calendarMonth.value, 1).getDay())
-const calendarDayCount = computed(() => new Date(calendarYear.value, calendarMonth.value + 1, 0).getDate())
+const endDate = computed(() => addTravelDays(departureDate.value, Math.max(0, detail.value.days.length - 1)))
+const monthLabel = computed(() => new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(Date.UTC(calendarYear.value, calendarMonth.value, 1))))
+const calendarLeadingBlanks = computed(() => new Date(Date.UTC(calendarYear.value, calendarMonth.value, 1)).getUTCDay())
+const calendarDayCount = computed(() => new Date(Date.UTC(calendarYear.value, calendarMonth.value + 1, 0)).getUTCDate())
 const galleryImages = computed(() => detail.value.imageUrls.filter((image, index, all) => Boolean(image) && all.indexOf(image) === index))
 const previewImages = computed(() => [...new Set([
   ...galleryImages.value,
   ...detail.value.days.flatMap(day => day.items.flatMap(item => item.projectImageUrls))
 ])])
-
-const title = computed(() => `${detail.value.title} | Lvyv`)
-useSeoMeta({
-  title,
-  description: computed(() => detail.value.summary || `Explore ${cityLabel.value} with a handcrafted Lvyv encounter.`),
-  ogTitle: title,
-  ogImage: computed(() => detail.value.imageUrls[0] ? absoluteUrl(detail.value.imageUrls[0]) : undefined)
-})
-useHead(() => ({ link: [{ rel: 'canonical', href: absoluteUrl(`/encounters/${encodeURIComponent(productCode.value)}`) }] }))
 
 const formatPrice = (value: number) => new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -361,13 +365,11 @@ const formatPrice = (value: number) => new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 2
 }).format(value)
 
-const mapCatalog = (catalog: import('~/composables/useTourCommerce').CatalogProductView): EncounterDetail => {
-  firstOrderPromotion.value = catalog.firstOrderPromotion
+const mapCatalog = (catalog: PublicProductContent): EncounterDetail => {
   if (catalog.product.cityCode !== catalog.itinerary.cityCode) {
     throw new Error('This encounter has inconsistent city data.')
   }
-  const lowestAdultListPrice = Math.min(...(catalog.price?.tiers || []).map((tier) => Number(tier.adultListPrice)))
-  const lowestAdultSalePrice = Math.min(...(catalog.price?.tiers || []).map((tier) => Number(tier.adultSalePrice)))
+
   const mappedDays = catalog.itinerary.days.map(day => ({
     dayNo: day.dayNo,
     title: day.title || `Day ${day.dayNo}`,
@@ -390,20 +392,9 @@ const mapCatalog = (catalog: import('~/composables/useTourCommerce').CatalogProd
     title: catalog.product.name || catalog.itinerary.title,
     cityCode: catalog.product.cityCode,
     imageUrls: catalog.itinerary.imageUrls || [],
-    summary: catalog.itinerary.summary || catalog.product.summary || '',
+    summary: catalog.presentation.answerSummary?.trim() || catalog.product.summary || '',
     designerMessage: catalog.itinerary.designerMessage?.trim() || undefined,
-    currency: catalog.price?.currency || 'USD',
-    lowestAdultListPrice: Number.isFinite(lowestAdultListPrice) ? lowestAdultListPrice : 0,
-    lowestAdultSalePrice: Number.isFinite(lowestAdultSalePrice) ? lowestAdultSalePrice : 0,
-    tiers: (catalog.price?.tiers || []).map((tier: any) => ({
-      ...tier,
-      minTravelerCount: Number(tier.minTravelerCount),
-      maxTravelerCount: tier.maxTravelerCount == null ? null : Number(tier.maxTravelerCount),
-      adultListPrice: Number(tier.adultListPrice),
-      adultSalePrice: Number(tier.adultSalePrice),
-      childListPrice: Number(tier.childListPrice),
-      childSalePrice: Number(tier.childSalePrice)
-    })),
+    currency: 'USD', lowestAdultListPrice: 0, lowestAdultSalePrice: 0, tiers: [],
     dateText: catalog.itinerary.dateText || '',
     serviceLanguages: catalog.serviceLanguages || [],
     travelType: catalog.product.travelType,
@@ -417,33 +408,100 @@ const mapCatalog = (catalog: import('~/composables/useTourCommerce').CatalogProd
   }
 }
 
-const load = async () => {
-  loading.value = true
-  loadError.value = ''
-  try {
-    detail.value = mapCatalog(await commerce.getCatalogProduct(productCode.value))
-    if (!detail.value.imageUrls.length) throw new Error('This encounter does not have a published image gallery.')
-    earliestDate.value = calculateEarliestDate(detail.value.minimumAdvanceDays)
-    const queryDate = typeof route.query.date === 'string' ? route.query.date.trim() : ''
-    const isValidQueryDate = queryDate && /^\d{4}-\d{2}-\d{2}$/.test(queryDate) && queryDate >= earliestDate.value
-    departureDate.value = isValidQueryDate ? queryDate : earliestDate.value
-    const activeDateObj = new Date(`${departureDate.value}T12:00:00`)
-    calendarYear.value = activeDateObj.getFullYear()
-    calendarMonth.value = activeDateObj.getMonth()
-  } catch (caught) {
-    loadError.value = caught instanceof Error ? caught.message : 'Could not load this encounter.'
-  } finally {
-    const initiallyOpen = detail.value.days[0]
-    openDays.value = new Set(initiallyOpen ? [initiallyOpen.dayNo] : [])
-    loading.value = false
-  }
-}
+const { data: manifest } = await useAsyncData('public-product-manifest-en-US', () => publicProducts.manifest())
+const contentKey = computed(() => `product-content:${productCode.value}:en-US:${manifest.value?.version ?? 'current'}`)
+const { data: content, error: contentError } = await useAsyncData(contentKey, () => publicProducts.content(productCode.value))
+if (!content.value) throw createError({ statusCode: contentError.value?.statusCode === 404 ? 404 : 503, statusMessage: 'Encounter unavailable' })
+const emptyPresentation: PublicProductContent['presentation'] = { indexable: true, highlights: [], suitableFor: [], unsuitableFor: [], included: [], excluded: [], faq: [] }
+const presentation = computed(() => content.value?.presentation || emptyPresentation)
+watch(contentError, error => { if (error) showError({ statusCode: error.statusCode === 404 ? 404 : 503, statusMessage: 'Encounter unavailable' }) })
+watch(content, value => {
+  if (!value || value.product.productCode !== productCode.value) return
+  activePhoto.value = ''
+  detail.value = mapCatalog(value)
+  openDays.value = new Set(detail.value.days[0] ? [detail.value.days[0].dayNo] : [])
+  booking.value = null
+  if (clientReady.value) void refreshBooking()
+}, { immediate: true })
 
-const shortDate = (value: string) => new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(`${value}T12:00:00`))
-const dateForCalendarDay = (day: number) => new Date(calendarYear.value, calendarMonth.value, day, 12)
+const serviceBlocks = computed(() => [
+  { title: 'Meeting point', text: presentation.value.meetingPoint },
+  { title: 'Ending point', text: presentation.value.endingPoint },
+  { title: 'Transport', text: presentation.value.transport },
+  { title: 'Accessibility', text: presentation.value.accessibility },
+  { title: 'Cancellation policy', text: presentation.value.cancellationPolicy }
+].filter(block => block.text?.trim()))
+const listBlocks = computed(() => [
+  { title: 'Highlights', items: presentation.value.highlights },
+  { title: 'Suitable for', items: presentation.value.suitableFor },
+  { title: 'Not suitable for', items: presentation.value.unsuitableFor },
+  { title: 'Included', items: presentation.value.included },
+  { title: 'Not included', items: presentation.value.excluded }
+].filter(block => block.items?.length))
+useLvyvSeo(() => {
+  const path = `/encounters/${encodeURIComponent(productCode.value)}`
+  const p = presentation.value
+  const title = p.seoTitle?.trim() || `${detail.value.title} | Lvyv`
+  const description = p.seoDescription?.trim() || content.value?.product.summary || ''
+  return {
+    title, description, path, lang: 'en', image: content.value?.shareImageUrl || detail.value.imageUrls[0],
+    imageAlt: p.shareImageAlt?.trim() || detail.value.title, noindex: !p.indexable, noindexFollow: true,
+    jsonLd: [organizationJsonLd(),
+      { ...webPageJsonLd(title, description, path), inLanguage: 'en-US', dateModified: content.value?.updatedAt || undefined,
+        ...(p.lastReviewedDate ? { lastReviewed: p.lastReviewedDate } : {}) },
+      breadcrumbJsonLd([{ name: 'Encounters', path: '/encounters' }, { name: detail.value.title, path }]),
+      { '@context': 'https://schema.org', '@type': 'TouristTrip', '@id': `${absoluteUrl(path)}#trip`,
+        name: detail.value.title, description: detail.value.summary, url: absoluteUrl(path),
+        image: detail.value.imageUrls, provider: { '@id': absoluteUrl('/#organization') },
+        itinerary: { '@type': 'ItemList', itemListElement: detail.value.days.map((day, index) => ({
+          '@type': 'ListItem', position: index + 1, name: `Day ${day.dayNo}: ${day.title}`, description: day.summary
+        })) }
+      }
+    ]
+  }
+})
+let bookingRequest = 0
+let promotionTimer: ReturnType<typeof setTimeout> | undefined
+const refreshBooking = async () => {
+  const request = ++bookingRequest
+  const requestedCode = productCode.value
+  bookingLoading.value = true; bookingError.value = ''; booking.value = null
+  detail.value.tiers = []; detail.value.lowestAdultSalePrice = 0
+  firstOrderPromotion.value = null
+  clearTimeout(promotionTimer)
+  try {
+    const result = await publicProducts.booking(requestedCode, adults.value, children.value)
+    if (request !== bookingRequest || requestedCode !== productCode.value) return false
+    booking.value = result
+    firstOrderPromotion.value = result.firstOrderPromotion
+    detail.value.tiers = result.tiers
+    detail.value.currency = result.currency
+    detail.value.lowestAdultSalePrice = result.tiers.length ? Math.min(...result.tiers.map(tier => Number(tier.adultSalePrice))) : 0
+    earliestDate.value = calculateEarliestDate(result.minimumAdvanceDays)
+    if (departureDate.value < earliestDate.value) {
+      departureDate.value = earliestDate.value
+      const date = new Date(`${departureDate.value}T12:00:00Z`)
+      calendarYear.value = date.getUTCFullYear(); calendarMonth.value = date.getUTCMonth()
+      bookingError.value = 'The earliest available departure date has changed. Please check your selection.'
+    }
+    if (result.promotionEndsAt) promotionTimer = setTimeout(() => { void refreshBooking() }, Math.min(2147483647, Math.max(1000, Date.parse(result.promotionEndsAt) - Date.now())))
+    return result.available
+  } catch {
+    if (request === bookingRequest) bookingError.value = 'Booking information is unavailable. Please try again.'
+    return false
+  } finally { if (request === bookingRequest) bookingLoading.value = false }
+}
+watch(productCode, () => {
+  bookingRequest++; clearTimeout(promotionTimer); booking.value = null; bookingLoading.value = true
+  firstOrderPromotion.value = null; activePhoto.value = ''
+})
+watch([adults, children], () => { if (clientReady.value) void refreshBooking() })
+
+const shortDate = (value: string) => new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${value}T12:00:00Z`))
+const dateForCalendarDay = (day: number) => new Date(Date.UTC(calendarYear.value, calendarMonth.value, day, 12))
 const dateKey = (date: Date) => date.toISOString().slice(0, 10)
 const isPastCalendarDay = (day: number) => dateKey(dateForCalendarDay(day)) < earliestDate.value
-const calendarAriaLabel = (day: number) => new Intl.DateTimeFormat('en-US', { dateStyle: 'long' }).format(dateForCalendarDay(day))
+const calendarAriaLabel = (day: number) => new Intl.DateTimeFormat('en-US', { dateStyle: 'long', timeZone: 'UTC' }).format(dateForCalendarDay(day))
 const calendarDayClass = (day: number) => {
   const key = dateKey(dateForCalendarDay(day))
   return {
@@ -460,12 +518,14 @@ const selectCalendarDay = (day: number) => {
 }
 
 const changeMonth = (offset: number) => {
-  const next = new Date(calendarYear.value, calendarMonth.value + offset, 1)
-  calendarYear.value = next.getFullYear()
-  calendarMonth.value = next.getMonth()
+  const next = new Date(Date.UTC(calendarYear.value, calendarMonth.value + offset, 1))
+  calendarYear.value = next.getUTCFullYear()
+  calendarMonth.value = next.getUTCMonth()
 }
 
-const toggleDay = (dayNo: number) => {
+const onDayToggle = (dayNo: number, event: Event) => {
+  const opened = (event.target as HTMLDetailsElement).open
+  if (openDays.value.has(dayNo) === opened) return
   const next = new Set(openDays.value)
   if (next.has(dayNo)) next.delete(dayNo)
   else next.add(dayNo)
@@ -551,6 +611,9 @@ const downloadItinerary = async () => {
   window.print()
 }
 const bookNow = async () => {
+  const requestedDate = departureDate.value
+  if (loading.value || detail.value.productCode !== productCode.value || bookingLoading.value || !await refreshBooking() || requestedDate !== departureDate.value) return
+
   const checkoutPath = `/checkout?${new URLSearchParams({
     product: detail.value.productCode,
     date: departureDate.value,
@@ -564,17 +627,34 @@ const bookNow = async () => {
 
 onMounted(async () => {
   void loadCities().catch(() => undefined)
-  await load()
+  const qa = Number(route.query.adultCount); const qc = Number(route.query.childCount)
+  adults.value = Number.isInteger(qa) && qa > 0 && qa <= 100 ? qa : 1
+  children.value = Number.isInteger(qc) && qc >= 0 && qc <= 100 ? qc : 0
+  earliestDate.value = calculateEarliestDate(detail.value.minimumAdvanceDays)
+  const queryDate = String(route.query.date || '')
+  departureDate.value = /^\d{4}-\d{2}-\d{2}$/.test(queryDate) && !Number.isNaN(Date.parse(queryDate)) && queryDate >= earliestDate.value ? queryDate : earliestDate.value
+  const date = new Date(`${departureDate.value}T12:00:00Z`)
+  calendarYear.value = date.getUTCFullYear(); calendarMonth.value = date.getUTCMonth()
+  clientReady.value = true
+  await refreshBooking()
   window.addEventListener('keydown', handlePhotoKeydown)
   window.addEventListener('afterprint', restoreDaysAfterPrint)
 })
 onBeforeUnmount(() => {
+  bookingRequest++; clearTimeout(promotionTimer)
   window.removeEventListener('keydown', handlePhotoKeydown)
   window.removeEventListener('afterprint', restoreDaysAfterPrint)
 })
 </script>
 
 <style scoped>
+.product-copy, .product-facts { margin: 24px 0; line-height: 1.7; white-space: pre-line; }
+.product-facts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.product-facts dt { font-weight: 600; } .product-facts dd { margin: 0; }
+.product-copy h2 { font-size: 22px; } .content-dates { font-size: 13px; }
+summary.day-item__heading { cursor: pointer; list-style: none; }
+summary.day-item__heading::-webkit-details-marker { display: none; }
+
 .journey-page {
   min-height: 100vh;
   padding: 80px 0 96px;

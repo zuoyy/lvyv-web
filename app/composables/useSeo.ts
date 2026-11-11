@@ -1,3 +1,5 @@
+import type { MaybeRefOrGetter } from 'vue'
+import { serializeJsonLd } from '~~/shared/utils/seoJson'
 type JsonLdValue = Record<string, unknown> | Array<Record<string, unknown>>
 
 interface SeoAlternate {
@@ -6,6 +8,8 @@ interface SeoAlternate {
 }
 
 interface LvyvSeoOptions {
+  lang?: string
+  imageAlt?: string
   title: string
   description: string
   path: string
@@ -30,47 +34,31 @@ export const absoluteUrl = (path = '/') => {
 
 export const stripHtml = (value = '') => value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
 
-export const useLvyvSeo = (options: LvyvSeoOptions) => {
-  const url = absoluteUrl(options.path)
-  const canonical = options.canonicalUrl ? absoluteUrl(options.canonicalUrl) : url
-  const image = absoluteUrl(options.image || '/images/common/logo.png')
-  const robots = options.noindex
-    ? options.noindexFollow ? 'noindex, follow' : 'noindex, nofollow'
-    : 'index, follow'
-
-  useSeoMeta({
-    title: options.title,
-    description: options.description,
-    ogTitle: options.title,
-    ogDescription: options.description,
-    ogSiteName: LVYV_SITE_NAME,
-    ogType: options.type || 'website',
-    ogUrl: canonical,
-    ogImage: image,
-    twitterCard: 'summary_large_image',
-    twitterTitle: options.title,
-    twitterDescription: options.description,
-    twitterImage: image,
-    robots
+export const useLvyvSeo = (source: MaybeRefOrGetter<LvyvSeoOptions>) => {
+  useHead(() => {
+    const options = toValue(source)
+    const canonical = absoluteUrl(options.canonicalUrl || options.path.split('?')[0]!)
+    const image = absoluteUrl(options.image || '/images/common/logo.png')
+    const robots = options.noindex ? options.noindexFollow ? 'noindex, follow' : 'noindex, nofollow' : 'index, follow'
+    return {
+      title: options.title,
+      htmlAttrs: options.lang ? { lang: options.lang } : {},
+      meta: [
+        { name: 'description', content: options.description },
+        { name: 'robots', content: robots },
+        ...Object.entries({ 'og:title': options.title, 'og:description': options.description,
+          'og:site_name': LVYV_SITE_NAME, 'og:type': options.type || 'website', 'og:url': canonical,
+          'og:image': image, 'og:image:alt': options.imageAlt || options.title }).map(([property, content]) => ({ property, content })),
+        ...Object.entries({ 'twitter:card': 'summary_large_image', 'twitter:title': options.title,
+          'twitter:description': options.description, 'twitter:image': image, 'twitter:image:alt': options.imageAlt || options.title
+        }).map(([name, content]) => ({ name, content }))
+      ],
+      link: [{ rel: 'canonical', href: canonical }, ...(options.alternates || []).map(item => ({
+        rel: 'alternate' as const, type: 'text/html', hreflang: item.hreflang, href: absoluteUrl(item.path)
+      }))],
+      script: options.jsonLd ? [{ key: 'lvyv-jsonld', type: 'application/ld+json', innerHTML: serializeJsonLd(options.jsonLd) }] : []
+    }
   })
-
-  useHead(() => ({
-    link: [
-      { rel: 'canonical', href: canonical },
-      ...(options.alternates || []).map(item => ({
-        rel: 'alternate' as const,
-        hreflang: item.hreflang,
-        href: absoluteUrl(item.path)
-      }))
-    ],
-    script: options.jsonLd
-      ? [{
-          key: `jsonld-${options.path}`,
-          type: 'application/ld+json',
-          innerHTML: JSON.stringify(options.jsonLd)
-        }]
-      : []
-  }))
 }
 
 export const useNoIndex = () => {

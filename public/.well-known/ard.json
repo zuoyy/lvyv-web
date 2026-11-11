@@ -1,0 +1,26 @@
+{
+  "entries": [
+    {
+      "identifier": "urn:air:www.lvyv.com:help:english",
+      "displayName": "Lvyv Help Center",
+      "description": "English travel guides for visiting China and using Lvyv services.",
+      "type": "text/html",
+      "url": "https://www.lvyv.com/en/faq/",
+      "representativeQueries": [
+        "What should I prepare before traveling to China?",
+        "How do Lvyv bookings and local experiences work?"
+      ]
+    },
+    {
+      "identifier": "urn:air:www.lvyv.com:help:chinese",
+      "displayName": "旅遇帮助中心",
+      "description": "中国旅行及旅遇服务的中文帮助文档。",
+      "type": "text/html",
+      "url": "https://www.lvyv.com/zh/faq/",
+      "representativeQueries": [
+        "去中国旅行前需要准备什么？",
+        "如何使用旅遇预订本地体验？"
+      ]
+    }
+  ]
+}

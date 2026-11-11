@@ -1,12 +1,19 @@
+const snapshotDir = import.meta.env.LVYV_PRODUCT_SNAPSHOT
+const productCodes: string[] = JSON.parse(import.meta.env.LVYV_PRODUCT_ROUTES || '[]')
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2026-07-18',
   devtools: { enabled: true },
+  features: {
+    // FAQ 壳层样式很小且直接决定首屏排版，内联后可从关键路径移除一个 CSS 请求。
+    inlineStyles: id => id?.includes('FaqDocumentShell') ?? false
+  },
 
   // 运行时配置，可以通过环境变量（如 NUXT_PUBLIC_API_BASE）覆盖
   runtimeConfig: {
     contentApiBase: import.meta.env.NUXT_CONTENT_API_BASE || 'http://127.0.0.1:8088/web-api',
     previewSecret: '',
+    productSnapshot: Boolean(snapshotDir),
     public: {
       apiBase: '/web-api'
     }
@@ -14,7 +21,10 @@ export default defineNuxtConfig({
 
   // 本地开发时直连 lvyv-server；生产静态站点仍由 Nginx 代理 /web-api。
   nitro: {
+    ...(snapshotDir ? { serverAssets: [{ baseName: 'product-content', dir: snapshotDir }] } : {}),
     routeRules: {
+      '/ai-catalog.json': { redirect: '/.well-known/ard.json' },
+      '/.well-known/ai-catalog.json': { redirect: '/.well-known/ard.json' },
       '/.well-known/apple-developer-merchantid-domain-association': { headers: { 'content-type': 'text/plain', 'x-content-type-options': 'nosniff' } },
       '/login': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'referrer-policy': 'no-referrer', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
       '/login/**': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'referrer-policy': 'no-referrer', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
@@ -34,7 +44,7 @@ export default defineNuxtConfig({
       '/r/**': { headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
       '/collect/**': { headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
       '/encounters': { headers: { 'cache-control': 'no-store, max-age=0' } },
-      '/encounters/**': { headers: { 'cache-control': 'no-store, max-age=0' } },
+      '/encounters/**': { headers: { 'cache-control': 'no-cache, max-age=0, s-maxage=30' } },
       '/checkout': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
       '/payment/**': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
       '/orders/**/pay': { headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
@@ -49,6 +59,7 @@ export default defineNuxtConfig({
       '/en/faq/**': { swr: 60 },
       '/zh/faq/**': { swr: 60 },
       '/sitemap.xml': { swr: 300 },
+      '/sitemaps/products.xml': { swr: false, cache: false, headers: { 'cache-control': 'no-cache, max-age=0, s-maxage=30' } },
       '/sitemaps/**': { swr: 300 }
       // robots.txt 按域名生成，仅使用 HTTP 缓存，避免 Nitro 按路径复用主站内容。
     },
@@ -61,7 +72,11 @@ export default defineNuxtConfig({
     },
     prerender: {
       // Compliance documents must be directly reachable through the static Nginx site.
+      failOnError: true,
+      concurrency: 4,
       routes: [
+        '/encounters', '/sitemaps/products.xml',
+        ...productCodes.map(code => `/encounters/${encodeURIComponent(code)}`),
         '/terms',
         '/intellectual-property-rights'
       ],
@@ -72,9 +87,6 @@ export default defineNuxtConfig({
         '/badges',
         '/trips',
         '/care', '/care/**', '/health/concierge', '/health/appointments/**',
-        '/encounters',
-        '/encounters/',
-        '/encounters/**',
         '/faq',
         '/faq/',
         '/faq/**',
@@ -97,7 +109,6 @@ export default defineNuxtConfig({
   // 全局 CSS 引入
   css: [
     '~/assets/css/fonts.css',
-    '~/assets/css/faq-markdown.css',
     '~/assets/css/style.css',
     '~/assets/css/design-overrides.css',
     '~/assets/css/health.css'
@@ -105,6 +116,7 @@ export default defineNuxtConfig({
 
   app: {
     head: {
+      htmlAttrs: { lang: 'en-US' },
       title: 'Lvyv 旅遇 - Meet China, Not Just Visit It',
       meta: [
         { charset: 'utf-8' },

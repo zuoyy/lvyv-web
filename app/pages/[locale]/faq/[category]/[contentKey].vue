@@ -34,8 +34,10 @@ if (!document.value || !entry || entry.categoryKey !== category) {
 
 const doc = document.value
 const path = faqArticlePath(localePath, entry)
-const title = doc.seo?.title || doc.title || 'Lvyv'
-const description = doc.seo?.description || doc.summary || ''
+const title = doc.seo?.title?.trim() || doc.title || 'Lvyv'
+const description = [doc.seo?.description, doc.summary, doc.renderedHtml, title]
+  .map(value => stripHtml(value || '').replace(/&nbsp;|&#160;/gi, ' ').trim())
+  .find(Boolean)!.slice(0, 160)
 const breadcrumbItems = [
   { name: locale === 'zh-CN' ? '首页' : 'Home', path: '/' },
   { name: locale === 'zh-CN' ? '帮助中心' : 'Help Center', path: `/${localePath}/faq/` },
@@ -64,6 +66,7 @@ const articleJsonLd = {
 }
 
 useLvyvSeo({
+  lang: locale,
   title,
   description,
   path,

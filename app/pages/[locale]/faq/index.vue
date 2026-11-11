@@ -23,13 +23,17 @@ const [{ data: landing }, { data: manifest }, { data: navigation }] = await Prom
   useAsyncData(`docs-nav-${locale}`, () => getNavigation(locale))
 ])
 if (!landing.value) throw createError({ statusCode: 404, statusMessage: 'FAQ landing page not configured' })
-const title = landing.value.seoTitle || landing.value.title
-const description = landing.value.seoDescription || stripHtml(landing.value.introHtml) || landing.value.title
+const title = landing.value.seoTitle?.trim() || landing.value.title
+const description = [landing.value.seoDescription, landing.value.introHtml, title,
+  locale === 'zh-CN' ? '浏览旅遇帮助文档，了解中国旅行与旅遇服务。' : 'Browse Lvyv help articles for travel in China and Lvyv services.']
+  .map(value => stripHtml(value || '').replace(/&nbsp;|&#160;/gi, ' ').trim())
+  .find(Boolean)!.slice(0, 160)
 const path = `/${localePath}/faq/`
 const localePaths: Record<string, string> = { 'en-US': 'en', 'zh-CN': 'zh' }
 const availableLocales = landing.value.availableLocales || []
 
 useLvyvSeo({
+  lang: locale,
   title,
   description,
   path,

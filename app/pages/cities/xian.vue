@@ -73,6 +73,7 @@
         </NuxtLink>
       </div>
     </section>
+  <RelatedEncounters city="xi_an,xian" />
   </main>
 </template>
 

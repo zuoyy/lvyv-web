@@ -1,0 +1,24 @@
+[Unit]
+Description=Lvyv product static publication worker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=lvyv-publisher
+Group=lvyv-publisher
+EnvironmentFile=/etc/lvyv/product-publication.env
+ExecStart=/opt/lvyv/product-publication-loop.sh
+Restart=on-failure
+RestartSec=10
+UMask=0027
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/lvyv-publication /srv/lvyv-web /run/lock/lvyv-site
+TimeoutStopSec=30
+KillMode=control-group
+
+[Install]
+WantedBy=multi-user.target

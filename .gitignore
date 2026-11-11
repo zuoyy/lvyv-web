@@ -4,6 +4,14 @@ dist
 node_modules
 .env
 
-web.conf
-deploy/
+deploy/*
+!deploy/product-publication-loop.sh
+!deploy/lvyv-product-publication.service
+!deploy/product-publication.env.example
+!deploy/deploy-web.sh
+!deploy/deploy-ssr.sh
+!deploy/PRODUCT-PUBLICATION.md
+!deploy/activate-product-source.sh
+!deploy/lvyv-web-ssr.service
+!deploy/lvyv-product-publication.tmpfiles.conf
 docs/
