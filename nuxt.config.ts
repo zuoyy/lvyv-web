@@ -5,8 +5,17 @@ export default defineNuxtConfig({
   compatibilityDate: '2026-07-18',
   devtools: { enabled: true },
   features: {
-    // FAQ 壳层样式很小且直接决定首屏排版，内联后可从关键路径移除一个 CSS 请求。
-    inlineStyles: id => id?.includes('FaqDocumentShell') ?? false
+    // SSR 首屏同时需要全局基础样式、导航和正文，避免等待多条样式请求后才能绘制。
+    inlineStyles: true
+  },
+  hooks: {
+    'build:manifest': (manifest) => {
+      // Nuxt 4.5 对没有 src 的共享组件 chunk 未移除 CSS 依赖；FAQ 的两个样式块
+      // 已由 SSRStylesPlugin 内联，保留该依赖会让 HTML 再次阻塞加载同一份 CSS。
+      for (const chunk of Object.values(manifest)) {
+        if (chunk.name === 'FaqDocumentShell') chunk.css = []
+      }
+    }
   },
 
   // 运行时配置，可以通过环境变量（如 NUXT_PUBLIC_API_BASE）覆盖

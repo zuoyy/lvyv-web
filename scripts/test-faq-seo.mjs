@@ -55,6 +55,16 @@ test('FAQ 初始 HTML 包含本地化语言、非空描述和固定时区日期�
         const response = await fetch(`${origin}/${locale}/faq/travel/${key}`)
         assert.equal(response.status, 200)
         const html = await response.text()
+        // 验证最终 HTML 而非仅检查 Nuxt 配置，防止样式已内联却仍保留阻塞请求。
+        assert.doesNotMatch(html, /<link\b[^>]*rel="stylesheet"[^>]*>/)
+        const styles = [...html.matchAll(/<style\b[^>]*>(.*?)<\/style>/gs)].map(match => match[1]).join('\n')
+        assert.match(styles, /box-sizing:border-box/)
+        assert.match(styles, /\.nav-links/)
+        assert.match(styles, /\.dropdown-menu/)
+        assert.match(styles, /\.help-center/)
+        assert.match(styles, /\.faq-markdown/)
+        assert.doesNotMatch(styles, /\.hero-cta-group|\.wish-bubble|\.explore-card/)
+        assert.match(html, /rel="preload"[^>]+as="font"[^>]+inter-latin-700-normal/)
         assert.match(html, new RegExp(`<html[^>]*lang="${locale === 'zh' ? 'zh-CN' : 'en-US'}"`))
         const description = html.match(/<meta name="description" content="([^"]+)"/)?.[1]
         const expected = key === 'seo' ? 'Editorial SEO description' : key === 'summary' ? 'Article summary'

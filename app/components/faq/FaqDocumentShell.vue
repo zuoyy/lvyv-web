@@ -60,6 +60,7 @@
 
               <div class="category-articles">
                 <NuxtLink
+                  prefetch-on="interaction"
                   v-for="article in category.articles"
                   :key="article.contentKey"
                   :to="faqArticlePath(localePath, article)"
@@ -79,6 +80,7 @@
 
           <div class="sidebar-support">
             <span class="support-label">{{ copy.needHelp }}</span>
+            <a href="mailto:hello@lvyv.com" class="support-email">hello@lvyv.com</a>
             <a href="mailto:hello@lvyv.com" class="support-link">
               {{ copy.contactSupport }}
               <FontAwesomeIcon :icon="faArrowUpRightFromSquare" aria-hidden="true" />
@@ -126,7 +128,7 @@
           <h2>{{ copy.browseArticles }}</h2>
           <div v-for="category in filteredCategories" :key="category.id" class="landing-category">
             <h3>{{ category.name }}</h3>
-            <ul><li v-for="article in category.articles" :key="article.contentKey"><NuxtLink :to="faqArticlePath(localePath, article)">{{ article.title }}</NuxtLink><p v-if="article.summary">{{ article.summary }}</p></li></ul>
+            <ul><li v-for="article in category.articles" :key="article.contentKey"><NuxtLink :to="faqArticlePath(localePath, article)" prefetch-on="interaction">{{ article.title }}</NuxtLink><p v-if="article.summary">{{ article.summary }}</p></li></ul>
           </div>
           <p v-if="searchQuery.trim() && filteredCategories.length === 0" class="empty-search">{{ copy.noResults }}</p>
         </section>
@@ -341,7 +343,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleShortcut))
 .help-search:focus-within { border-color: var(--help-accent); box-shadow: 0 0 0 3px rgba(16, 84, 70, 0.1); }
 .help-search input { background: transparent; border: 0; color: var(--help-ink); flex: 1; font: inherit; min-width: 0; outline: 0; }
 .help-search input::placeholder { color: #9aa7a1; }
-.help-search kbd { background: var(--help-soft); border: 1px solid var(--help-border); border-radius: 4px; color: #8b9791; font-size: 11px; padding: 2px 5px; }
+.help-search kbd { background: var(--help-soft); border: 1px solid var(--help-border); border-radius: 4px; color: #53615a; font-size: 11px; padding: 2px 5px; }
 .mobile-nav-toggle, .mobile-nav-close { background: transparent; border: 0; color: var(--help-ink); cursor: pointer; display: none; font-size: 18px; }
 .help-layout { display: grid; gap: 52px; grid-template-columns: 240px minmax(0, 1fr) 190px; padding-top: 36px; }
 .help-sidebar { align-self: start; position: sticky; top: 112px; }
@@ -363,6 +365,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleShortcut))
 .empty-search { color: var(--help-muted); font-size: 12px; line-height: 1.5; }
 .sidebar-support { background: var(--help-soft); border: 1px solid var(--help-border); border-radius: 8px; margin-top: 28px; padding: 14px; }
 .support-label { color: var(--help-muted); display: block; font-size: 11px; margin-bottom: 7px; }
+.support-email { color: var(--help-ink); display: block; font-size: 13px; margin-bottom: 8px; text-decoration: none; }
 .support-link { align-items: center; color: var(--help-accent); display: inline-flex; font-size: 12px; font-weight: 700; gap: 6px; text-decoration: none; }
 .help-article { min-width: 0; max-width: 760px; }
 .article-header { border-bottom: 1px solid var(--help-border); padding-bottom: 30px; }
@@ -371,7 +374,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleShortcut))
 .article-header h1 { color: var(--help-ink); font-family: var(--font-body); font-size: clamp(30px, 3vw, 44px); font-weight: 700; letter-spacing: 0; line-height: 1.2; margin: 0 0 14px; }
 .help-center :deep(h2), .help-center :deep(h3), .help-center :deep(h4), .help-center :deep(h5), .help-center :deep(h6) { font-family: var(--font-body); }
 .article-summary { color: var(--help-muted); font-size: 16px; line-height: 1.8; margin: 0; max-width: 680px; }
-.article-meta { align-items: center; color: #9aa7a1; display: flex; font-size: 11px; gap: 9px; margin-top: 18px; }
+.article-meta { align-items: center; color: #53615a; display: flex; font-size: 11px; gap: 9px; margin-top: 18px; }
 .meta-dot { background: #b8c2bd; border-radius: 50%; height: 3px; width: 3px; }
 .article-body { padding: 34px 0 10px; }
 .help-landing > h2 { font-family: var(--font-body); font-size: 22px; font-weight: 700; line-height: 1.4; margin: 24px 0; }
