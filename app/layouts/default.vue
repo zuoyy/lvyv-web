@@ -4,7 +4,7 @@
     <!-- Header / Navigation -->
     <header class="navbar" :class="{ 'scrolled': isScrolled }">
       <div class="nav-container">
-        <NuxtLink :prefetch="!isFaqPage" to="/" class="brand">
+        <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/')" class="brand">
           <span class="brand-logo wish-brand-logo" aria-label="Lvyv Logo">
             <img src="/images/wish/logo-main.svg" alt="" loading="eager" decoding="sync">
             <img src="/images/wish/logo-accent.svg" alt="" loading="eager" decoding="sync">
@@ -13,41 +13,36 @@
         </NuxtLink>
 
         <nav class="nav-links">
-          <NuxtLink :prefetch="!isFaqPage" to="/#hero" :class="{ active: currentPath === '/' && activeSection === 'hero' }">Home</NuxtLink>
-          <NuxtLink :prefetch="!isFaqPage" to="/wish" :class="{ active: currentPath.startsWith('/wish') }">Wish</NuxtLink>
+          <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/#hero')" :class="{ active: currentPath === '/' && activeSection === 'hero' }">Home</NuxtLink>
+          <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/wish')" :class="{ active: currentPath.startsWith('/wish') }">Wish</NuxtLink>
           <div class="nav-item-dropdown">
-            <NuxtLink :prefetch="!isFaqPage" to="/encounters" :class="{ active: currentPath.startsWith('/encounters') || currentPath.startsWith('/cities') }">Encounters</NuxtLink>
+            <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/encounters')" :class="{ active: currentPath.startsWith('/encounters') || currentPath.startsWith('/cities') }">Encounters</NuxtLink>
             <div class="dropdown-menu">
-              <NuxtLink :prefetch="!isFaqPage" to="/cities/xian" class="dropdown-item" :class="{ active: currentPath === '/cities/xian' }">
+              <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/cities/xian')" class="dropdown-item" :class="{ active: currentPath === '/cities/xian' }">
                 <span class="city-en">Xi'an</span>
                 <span class="city-zh">西安</span>
               </NuxtLink>
-              <NuxtLink :prefetch="!isFaqPage" to="/cities/chengdu" class="dropdown-item" :class="{ active: currentPath === '/cities/chengdu' }">
+              <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/cities/chengdu')" class="dropdown-item" :class="{ active: currentPath === '/cities/chengdu' }">
                 <span class="city-en">Chengdu</span>
                 <span class="city-zh">成都</span>
               </NuxtLink>
-              <NuxtLink :prefetch="!isFaqPage" to="/cities/chongqing" class="dropdown-item" :class="{ active: currentPath.startsWith('/cities/chongqin') }">
+              <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/cities/chongqing')" class="dropdown-item" :class="{ active: currentPath.startsWith('/cities/chongqin') }">
                 <span class="city-en">Chongqing</span>
                 <span class="city-zh">重庆</span>
               </NuxtLink>
             </div>
           </div>
-          <NuxtLink :prefetch="!isFaqPage" to="/health" class="nav-link-health" :class="{ active: currentPath.startsWith('/health') }">
+          <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/health')" class="nav-link-health" :class="{ active: currentPath.startsWith('/health') }">
             <span class="nav-health-badge" aria-hidden="true">
               <img src="/images/health/hot-badge.svg" alt="" width="30" height="16">
             </span>
             <span>Health</span>
           </NuxtLink>
-          <NuxtLink :prefetch="!isFaqPage" to="/about" :class="{ active: currentPath === '/about' }">About</NuxtLink>
-          <NuxtLink :prefetch="!isFaqPage" to="/en/faq/" :class="{ active: currentPath.includes('/faq') }">FAQ</NuxtLink>
+          <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/about')" :class="{ active: currentPath === '/about' }">About</NuxtLink>
+          <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/en/faq/')" :class="{ active: currentPath.includes('/faq') }">FAQ</NuxtLink>
         </nav>
 
         <div class="nav-actions">
-          <!-- Language Selector -->
-          <div class="lang-selector">
-            <AuthGlobeIcon :icon="faGlobe" class="lang-icon" aria-hidden="true" />
-            <span class="lang-text">EN</span>
-          </div>
           <div v-if="memberToken" ref="accountMenu" class="member-account">
             <button class="member-trigger" type="button" :aria-expanded="accountOpen" aria-haspopup="menu" @click="accountOpen = !accountOpen">
               <img v-if="member?.avatarUrl && !avatarFailed" :src="member.avatarUrl" alt="" class="member-avatar" @error="avatarFailed = true">
@@ -57,15 +52,15 @@
             </button>
             <Transition name="dropdown-fade">
               <div v-if="accountOpen" class="member-menu" role="menu">
-                <NuxtLink :prefetch="!isFaqPage" to="/profile" role="menuitem" @click="accountOpen = false">My Profile</NuxtLink>
+                <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/profile')" role="menuitem" @click="accountOpen = false">My Profile</NuxtLink>
                 <button type="button" role="menuitem" @click="logout">Log out</button>
               </div>
             </Transition>
           </div>
-          <a v-else href="/login/" class="nav-login">
+          <a v-else :href="navigationUrl('/login/')" class="nav-login">
             <span>Login</span>
           </a>
-          <NuxtLink :prefetch="!isFaqPage" :to="startWishPath" class="nav-start-planning">Start Your Wish</NuxtLink>
+          <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl(startWishPath)" class="nav-start-planning">Start Your Wish</NuxtLink>
 
           <!-- Mobile Nav Toggle Button -->
           <button
@@ -98,7 +93,7 @@
     <Transition name="slide-drawer">
       <div v-if="mobileMenuOpen" class="mobile-menu-drawer">
         <div class="mobile-drawer-header">
-          <NuxtLink :prefetch="!isFaqPage" to="/" class="brand" @click="mobileMenuOpen = false">
+          <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/')" class="brand" @click="mobileMenuOpen = false">
             <img src="/images/common/logo-header.svg" alt="Lvyv Logo" class="brand-logo">
           </NuxtLink>
           <button class="mobile-drawer-close" type="button" aria-label="Close menu" @click="mobileMenuOpen = false">
@@ -108,13 +103,13 @@
 
         <div class="mobile-drawer-body">
           <nav class="mobile-nav-links">
-            <NuxtLink :prefetch="!isFaqPage" to="/#hero" class="mobile-nav-item" :class="{ active: currentPath === '/' && activeSection === 'hero' }" @click="handleNavClick('/#hero')">Home</NuxtLink>
-            <NuxtLink :prefetch="!isFaqPage" to="/wish" class="mobile-nav-item" :class="{ active: currentPath === '/wish' }" @click="handleNavClick('/wish')">Wish</NuxtLink>
+            <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/#hero')" class="mobile-nav-item" :class="{ active: currentPath === '/' && activeSection === 'hero' }" @click="handleNavClick('/#hero')">Home</NuxtLink>
+            <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/wish')" class="mobile-nav-item" :class="{ active: currentPath === '/wish' }" @click="handleNavClick('/wish')">Wish</NuxtLink>
 
             <!-- Encounters with Submenu: Cities -->
             <div class="mobile-nav-item-accordion">
               <div class="mobile-accordion-header" :class="{ active: currentPath.startsWith('/encounters') || currentPath.startsWith('/cities') }">
-                <NuxtLink :prefetch="!isFaqPage" to="/encounters" class="mobile-accordion-link" @click="handleNavClick('/encounters')">Encounters</NuxtLink>
+                <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/encounters')" class="mobile-accordion-link" @click="handleNavClick('/encounters')">Encounters</NuxtLink>
                 <button
                   class="mobile-accordion-toggle"
                   type="button"
@@ -127,15 +122,15 @@
               </div>
               <Transition name="accordion">
                 <div v-if="mobileCitiesOpen" class="mobile-accordion-content">
-                  <NuxtLink :prefetch="!isFaqPage" to="/cities/xian" class="mobile-subnav-item" :class="{ active: currentPath === '/cities/xian' }" @click="handleNavClick('/cities/xian')">
+                  <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/cities/xian')" class="mobile-subnav-item" :class="{ active: currentPath === '/cities/xian' }" @click="handleNavClick('/cities/xian')">
                     <span class="city-en">Xi'an</span>
                     <span class="city-zh">西安</span>
                   </NuxtLink>
-                  <NuxtLink :prefetch="!isFaqPage" to="/cities/chengdu" class="mobile-subnav-item" :class="{ active: currentPath === '/cities/chengdu' }" @click="handleNavClick('/cities/chengdu')">
+                  <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/cities/chengdu')" class="mobile-subnav-item" :class="{ active: currentPath === '/cities/chengdu' }" @click="handleNavClick('/cities/chengdu')">
                     <span class="city-en">Chengdu</span>
                     <span class="city-zh">成都</span>
                   </NuxtLink>
-                  <NuxtLink :prefetch="!isFaqPage" to="/cities/chongqing" class="mobile-subnav-item" :class="{ active: currentPath.startsWith('/cities/chongqin') }" @click="handleNavClick('/cities/chongqing')">
+                  <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/cities/chongqing')" class="mobile-subnav-item" :class="{ active: currentPath.startsWith('/cities/chongqin') }" @click="handleNavClick('/cities/chongqing')">
                     <span class="city-en">Chongqing</span>
                     <span class="city-zh">重庆</span>
                   </NuxtLink>
@@ -143,14 +138,14 @@
               </Transition>
             </div>
 
-            <NuxtLink :prefetch="!isFaqPage" to="/health" class="mobile-nav-item mobile-nav-health" :class="{ active: currentPath.startsWith('/health') }" @click="handleNavClick('/health')">
+            <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/health')" class="mobile-nav-item mobile-nav-health" :class="{ active: currentPath.startsWith('/health') }" @click="handleNavClick('/health')">
               <span>Health</span>
               <span class="mobile-health-badge" aria-hidden="true">
                 <img src="/images/health/hot-badge.svg" alt="" width="30" height="16">
               </span>
             </NuxtLink>
-            <NuxtLink :prefetch="!isFaqPage" to="/about" class="mobile-nav-item" :class="{ active: currentPath === '/about' }" @click="handleNavClick('/about')">About</NuxtLink>
-            <NuxtLink :prefetch="!isFaqPage" to="/en/faq/" class="mobile-nav-item" :class="{ active: currentPath.includes('/faq') }" @click="handleNavClick('/en/faq/')">FAQ</NuxtLink>
+            <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/about')" class="mobile-nav-item" :class="{ active: currentPath === '/about' }" @click="handleNavClick('/about')">About</NuxtLink>
+            <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/en/faq/')" class="mobile-nav-item" :class="{ active: currentPath.includes('/faq') }" @click="handleNavClick('/en/faq/')">FAQ</NuxtLink>
           </nav>
         </div>
 
@@ -163,18 +158,18 @@
               <span class="mobile-user-name">{{ memberDisplayName }}</span>
             </div>
             <div class="mobile-user-actions">
-              <NuxtLink :prefetch="!isFaqPage" to="/profile" class="mobile-user-link" @click="mobileMenuOpen = false">My Profile</NuxtLink>
+              <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/profile')" class="mobile-user-link" @click="mobileMenuOpen = false">My Profile</NuxtLink>
               <button type="button" class="mobile-logout-btn" @click="logout">Log out</button>
             </div>
           </div>
           <div v-else class="mobile-drawer-auth">
-            <a href="/login/" class="mobile-drawer-login-btn" @click="mobileMenuOpen = false">
+            <a :href="navigationUrl('/login/')" class="mobile-drawer-login-btn" @click="mobileMenuOpen = false">
               <AuthGlobeIcon :icon="faUser" aria-hidden="true" />
               <span>Login / Sign Up</span>
             </a>
           </div>
 
-          <NuxtLink :prefetch="!isFaqPage" :to="startWishPath" class="mobile-start-planning-btn" @click="mobileMenuOpen = false">
+          <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl(startWishPath)" class="mobile-start-planning-btn" @click="mobileMenuOpen = false">
             Start Your Wish
           </NuxtLink>
         </div>
@@ -280,8 +275,9 @@
 <script setup>
 import { ref, watch, computed, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { FontAwesomeIcon as AuthGlobeIcon } from '@fortawesome/vue-fontawesome'
-import { faGlobe, faTimes, faChevronDown, faUser } from '@fortawesome/free-solid-svg-icons'
+import { faTimes, faChevronDown, faUser } from '@fortawesome/free-solid-svg-icons'
 import businessLicenseIconUrl from '~/assets/generated/common/yyzz-48.png'
+import { MAIN_SITE_ORIGIN } from '~~/shared/utils/luxurySite'
 
 const route = useRoute()
 const currentPath = computed(() => {
@@ -289,12 +285,15 @@ const currentPath = computed(() => {
   return path.length > 1 ? path.replace(/\/+$/, '') : path
 })
 const isHomePage = computed(() => currentPath.value === '/')
+const isActivityPage = computed(() => currentPath.value.startsWith('/activity/'))
+// 活动位于独立高奢域名，官网导航需回到主站，避免落入高奢域名的受限路由。
+const navigationUrl = path => isActivityPage.value ? `${MAIN_SITE_ORIGIN}${path}` : path
 // 阅读文档时不预取导航和页脚指向的整站资源，避免与正文首屏竞争带宽。
 const isFaqPage = computed(() => /^\/(?:en\/|zh\/)?faq(?:\/|$)/.test(currentPath.value))
 const homePromotions = useHomePromotions()
 const isWishExperience = computed(() => currentPath.value === '/wish' || currentPath.value === '/wish/my')
 const isEncountersExperience = computed(() => currentPath.value === '/encounters' || currentPath.value.startsWith('/encounters/'))
-const hidesFooter = computed(() => isWishExperience.value || currentPath.value === '/wish/create')
+const hidesFooter = computed(() => isActivityPage.value || isWishExperience.value || currentPath.value === '/wish/create')
 const activeSection = ref('hero')
 // Keep the first client render identical to SSR; sync scroll state after mount.
 const isScrolled = ref(false)
@@ -376,7 +375,7 @@ const tokenDisplayName = computed(() => {
 const memberDisplayName = computed(() => member.value?.nickname?.trim()
   || member.value?.email?.split('@')[0]
   || tokenDisplayName.value)
-const logout = async () => { accountOpen.value = false; await logoutMember(); await navigateTo('/') }
+const logout = async () => { accountOpen.value = false; await logoutMember(); await navigateTo(navigationUrl('/'), { external: isActivityPage.value }) }
 
 watch(() => member.value?.avatarUrl, () => { avatarFailed.value = false })
 watch(memberToken, async (value) => {
@@ -466,7 +465,6 @@ onBeforeUnmount(() => {
 
 .app-layout--wish .nav-links > a,
 .app-layout--wish .nav-item-dropdown > a,
-.app-layout--wish .lang-selector,
 .app-layout--wish .nav-login,
 .app-layout--wish .member-trigger {
   color: #fff;

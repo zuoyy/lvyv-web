@@ -16,9 +16,11 @@
     "test:luxury": "node --test scripts/test-luxury-site.mjs",
     "postinstall": "nuxt prepare",
     "test:products": "node --test scripts/test-products.mjs",
-    "test:products:generate": "node scripts/test-static-generation.mjs"
+    "test:products:generate": "node scripts/test-static-generation.mjs",
+    "test:share": "node --test scripts/test-activity-share.mjs"
   },
   "devDependencies": {
+    "@types/qrcode": "^1.5.6",
     "nuxt": "^4.5.0",
     "sass-embedded": "^1.100.0",
     "sharp": "^0.34.4",
@@ -39,6 +41,7 @@
     "@fortawesome/free-brands-svg-icons": "6.4.0",
     "@fortawesome/free-solid-svg-icons": "6.4.0",
     "@fortawesome/vue-fontawesome": "3.0.5",
-    "country-region-data": "^4.1.0"
+    "country-region-data": "^4.1.0",
+    "qrcode": "^1.5.4"
   }
 }

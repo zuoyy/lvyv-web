@@ -53,12 +53,16 @@ test('实际 SSR 构建：活动、错误状态、域名隔离及分享信息', 
     } else {
       res.end(JSON.stringify({ code: 200, data: {
         activityCode: code,
+        language: code === 'english' ? 'en-US' : code === 'japanese' ? 'ja-JP' : code === 'legacy' ? undefined : 'zh-CN',
         shareTitle: `Luxury ${code}`,
         shareDesc: 'Luxury activity fixture',
         shareImageUrl: '/images/common/logo.png',
         contentHtml: `<p>Activity body ${code}</p>`,
-        staffList: [],
-        recommendList: [{ activityCode: 'second', title: 'Second activity', shareTitle: 'Second activity', shareImageUrl: '' }],
+        staffList: [
+          { id: 1, name: 'Travel Advisor', wechatId: 'lvyv-advisor', whatsapp: '+1 202 555 0123', email: 'advisor@example.com', qrcodeUrl: '/images/common/logo.png' },
+          { id: 2, name: 'Second Advisor', wechatId: 'wechat-only', qrcodeUrl: '/images/common/logo.png' },
+        ],
+        recommendList: Array.from({ length: 10 }, (_, index) => ({ activityCode: index === 0 ? 'second' : `second-${index}`, title: 'Second activity', shareTitle: 'Second activity', shareImageUrl: '' })),
       } }))
     }
   })
@@ -108,14 +112,57 @@ test('实际 SSR 构建：活动、错误状态、域名隔离及分享信息', 
       assert.match(response.headers.get('cache-control'), /no-store/)
       const html = await response.text()
       assert.match(html, /Activity body published/)
+      assert.match(html, /<header[^>]*class="navbar/)
+      for (const path of ['/#hero', '/wish', '/encounters', '/cities/xian', '/cities/chengdu', '/cities/chongqing', '/health', '/about', '/en/faq/', '/login/', '/login/?redirect=%2Fwish%2Fcreate']) {
+        assert.ok(html.includes(`href="https://www.lvyv.com${path}"`), `Main-site navigation: ${path}`)
+      }
+      assert.match(html, /aria-label="Toggle Navigation"/)
+      assert.doesNotMatch(html, /<footer[^>]*class="footer"/)
       assert.match(html, /href="\/activity\/second"/)
       assert.match(html, /rel="canonical" href="https:\/\/luxury\.lvyv\.com\/activity\/published"/)
       assert.match(html, /property="og:url" content="https:\/\/luxury\.lvyv\.com\/activity\/published"/)
       assert.match(html, /property="og:image" content="https:\/\/luxury\.lvyv\.com\/images\/common\/logo.png"/)
       const css = html.match(/href="(\/_nuxt\/[^"?]+\.css)"/)
-      assert.ok(css, 'SSR HTML should reference its CSS assets')
-      assert.equal((await request(css[1])).status, 200)
+      if (css) assert.equal((await request(css[1])).status, 200)
+      else assert.match(html, /<style[^>]*>[\s\S]*?\.activity-page-shell/)
       assert.equal((await request('/activity/second')).status, 200)
+    })
+
+    await t.test('分享入口按活动语言渲染且不带推广参数', async () => {
+      for (const [code, label] of [['published', '分享'], ['english', 'Share'], ['japanese', 'Share'], ['legacy', '分享']]) {
+        const response = await request(`/activity/${code}?utm_source=share-test`)
+        const html = await response.text()
+        assert.equal(response.status, 200)
+        assert.equal((html.match(/class="activity-share-trigger"/g) || []).length, 1)
+        assert.match(html, /class="activity-share-dock"/)
+        assert.doesNotMatch(html, /class="activity-share-bottom"/)
+        assert.match(html, new RegExp(`class="activity-share-trigger"[^>]*>[\\s\\S]*?${label}\\s*</button>`))
+        assert.match(html, /property="og:type" content="website"/)
+        assert.match(html, /name="twitter:card" content="summary_large_image"/)
+        assert.ok(html.includes(`rel="canonical" href="https://luxury.lvyv.com/activity/${code}"`))
+      }
+    })
+
+    await t.test('客服和推荐从首次 SSR 按活动语言统一显示', async () => {
+      for (const [code, chinese] of [['published', true], ['english', false], ['japanese', false], ['legacy', true]]) {
+        const html = await (await request(`/activity/${code}`)).text()
+        assert.match(html, new RegExp(`<html[^>]*lang="${chinese ? 'zh-CN' : 'en'}"`))
+        for (const text of chinese
+          ? ['专属高奢旅行顾问', '微信号：', '更多精选行程', '左右滑动浏览', '特邀私享']
+          : ['Your Luxury Travel Advisor', 'WhatsApp:', '+1 202 555 0123', 'More Curated Journeys', 'Swipe to explore', 'Exclusive']) assert.ok(html.includes(text), `${code}: ${text}`)
+        assert.equal((html.match(/class="staff-email"/g) || []).length, 1)
+        assert.match(html, /href="mailto:advisor%40example.com"/)
+        assert.match(html, /class="staff-qrcode-container"[\s\S]*?class="staff-email"/)
+        const staffMarkup = html.match(/<section[^>]*class="activity-mid-section"[\s\S]*?<\/section>/)?.[0]
+        assert.ok(staffMarkup)
+        assert.equal((staffMarkup.match(/class="copy-wechat-btn"/g) || []).length, chinese ? 2 : 1)
+        if (chinese) assert.doesNotMatch(staffMarkup, /WhatsApp:|\+1 202 555 0123/)
+        else assert.doesNotMatch(staffMarkup, /WeChat ID:|lvyv-advisor|wechat-only/)
+        assert.doesNotMatch(html, /qrcode-scan-hint|Scan or press and hold in WeChat to connect|微信长按二维码添加/)
+        assert.match(html, new RegExp(`aria-label="${chinese ? '切换到第2组推荐' : 'Go to recommendation group 2'}"`))
+        assert.match(html, new RegExp(`class="copy-wechat-btn"[^>]*>\\s*${chinese ? '复制' : 'Copy'}\\s*</button>`))
+        if (!chinese) assert.doesNotMatch(html, /专属高奢旅行顾问|更多精选行程|微信长按二维码添加|特邀私享/)
+      }
     })
 
     await t.test('精选活动列表在主站开放，卡片详情指向高奢站点', async () => {
@@ -185,12 +232,15 @@ test('实际 SSR 构建：活动、错误状态、域名隔离及分享信息', 
         const html = await response.text()
         assert.match(html, /活动已下线或不存在/)
         assert.match(html, /noindex, nofollow/)
+        assert.doesNotMatch(html, /class="activity-share-trigger"/)
       })
     }
     await t.test('上游故障返回 503，不伪装成活动下线', async () => {
       const response = await request('/activity/failure')
       assert.equal(response.status, 503)
-      assert.match(await response.text(), /活动暂时无法加载/)
+      const html = await response.text()
+      assert.match(html, /活动暂时无法加载/)
+      assert.doesNotMatch(html, /class="activity-share-trigger"/)
     })
     await t.test('旧地址永久移除，不重定向', async () => {
       for (const host of ['www.lvyv.com', 'lvyv.com', 'luxury.lvyv.com']) {

@@ -1,5 +1,5 @@
 <template>
-  <div class="activity-page-shell">
+  <div class="activity-page-shell" :lang="pageLanguage">
     <!-- 微信分享抓取兜底隐藏图 -->
     <div v-if="activity?.shareImageUrl" class="wx-hidden-share">
       <img :src="activity.shareImageUrl" alt="share-preview" />
@@ -7,6 +7,11 @@
 
     <!-- 正常活动内容展示 -->
     <main v-if="activity && !error" class="activity-main-container">
+      <div class="activity-share-dock">
+        <button class="activity-share-trigger" type="button" aria-haspopup="dialog" :aria-expanded="sharePanel?.isOpen || false" aria-controls="activity-share-panel" @click="openShare">
+          <FontAwesomeIcon :icon="faShareNodes" aria-hidden="true" /> {{ shareLabels.share }}
+        </button>
+      </div>
       <!-- 顶部：活动富文本内容 -->
       <section class="activity-top-section">
         <article class="activity-rich-content" v-html="renderedContent" />
@@ -15,9 +20,9 @@
       <!-- 中部：当前活动选中的多个客服及其二维码 -->
       <section v-if="activity.staffList && activity.staffList.length > 0" class="activity-mid-section">
         <div class="staff-header">
-          <div class="staff-header-tag">EXCLUSIVE SERVICE</div>
-          <h2 class="staff-header-title">专属高奢旅行顾问</h2>
-          <p class="staff-header-subtitle">长按识别下方二维码，开启一对一私享定制规划</p>
+          <div class="staff-header-tag">{{ labels.serviceTag }}</div>
+          <h2 class="staff-header-title">{{ labels.serviceTitle }}</h2>
+          <p class="staff-header-subtitle">{{ labels.serviceSubtitle }}</p>
         </div>
 
         <div class="staff-cards-wrapper" :class="{ 'single-staff': activity.staffList.length === 1 }">
@@ -28,11 +33,11 @@
           >
             <div class="staff-info">
               <h3 class="staff-name">{{ staff.name }}</h3>
-              <div v-if="staff.wechatId" class="staff-wechat-row">
-                <span class="wechat-label">微信号：</span>
-                <span class="wechat-val">{{ staff.wechatId }}</span>
-                <button type="button" class="copy-wechat-btn" @click="copyWechat(staff.wechatId)">
-                  复制
+              <div v-if="staffContact(staff)" class="staff-wechat-row">
+                <span class="wechat-label">{{ labels.contactLabel }}</span>
+                <span class="wechat-val">{{ staffContact(staff) }}</span>
+                <button type="button" class="copy-wechat-btn" @click="copyContact(staffContact(staff))">
+                  {{ labels.copy }}
                 </button>
               </div>
             </div>
@@ -41,11 +46,14 @@
             <div class="staff-qrcode-container">
               <img
                 :src="staff.qrcodeUrl"
-                :alt="staff.name + '二维码'"
+                :alt="labels.qrAlt(staff.name)"
                 class="staff-qrcode-img"
               />
-              <div class="qrcode-scan-hint">微信长按二维码添加</div>
             </div>
+            <a v-if="staff.email?.trim()" class="staff-email" :href="`mailto:${encodeURIComponent(staff.email.trim())}`" :aria-label="`${labels.email}: ${staff.email.trim()}`">
+              <FontAwesomeIcon :icon="faEnvelope" aria-hidden="true" />
+              <span>{{ staff.email.trim() }}</span>
+            </a>
           </div>
         </div>
       </section>
@@ -54,12 +62,12 @@
       <section v-if="activity.recommendList && activity.recommendList.length > 0" class="activity-recommend-section">
         <div class="recommend-header">
           <div class="recommend-header-left">
-            <span class="recommend-tag">EXCLUSIVE RECOMMENDATION</span>
-            <h2 class="recommend-title">更多精选行程</h2>
-            <p class="recommend-subtitle">探索更多专属高奢私享活动与秘境旅程</p>
+            <span class="recommend-tag">{{ labels.recommendTag }}</span>
+            <h2 class="recommend-title">{{ labels.recommendTitle }}</h2>
+            <p class="recommend-subtitle">{{ labels.recommendSubtitle }}</p>
           </div>
           <div v-if="recommendPages.length > 1" class="recommend-header-nav">
-            <span class="swipe-hint">左右滑动浏览</span>
+            <span class="swipe-hint">{{ labels.swipeHint }}</span>
           </div>
         </div>
 
@@ -85,7 +93,7 @@
                     class="recommend-card-img"
                     loading="lazy"
                   />
-                  <span class="recommend-card-badge">特邀私享</span>
+                  <span class="recommend-card-badge">{{ labels.recommendBadge }}</span>
                 </div>
                 <div class="recommend-card-info">
                   <h3 class="recommend-card-title">{{ item.shareTitle || item.title }}</h3>
@@ -102,7 +110,7 @@
               type="button"
               class="indicator-dot"
               :class="{ active: currentGridPage === idx }"
-              :aria-label="`切换到第${idx + 1}组推荐`"
+              :aria-label="labels.recommendPage(idx + 1)"
               @click="scrollToPage(idx)"
             />
           </div>
@@ -120,10 +128,10 @@
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
         </div>
-        <h2 class="empty-title">{{ unavailable ? '活动已下线或不存在' : '活动暂时无法加载' }}</h2>
-        <p class="empty-desc">{{ unavailable ? '该运营活动已结束或链接无效，您可以返回官网探索更多精彩高奢旅程。' : '服务暂时不可用，请稍后刷新重试。' }}</p>
+        <h2 class="empty-title">{{ unavailable ? labels.unavailableTitle : labels.errorTitle }}</h2>
+        <p class="empty-desc">{{ unavailable ? labels.unavailableDescription : labels.errorDescription }}</p>
         <NuxtLink to="https://www.lvyv.com/" external class="empty-back-home">
-          前往官网首页
+          {{ labels.home }}
         </NuxtLink>
       </div>
     </div>
@@ -131,7 +139,17 @@
     <!-- 底部：官网左下角现有版权与备案信息 -->
     <BrandCopyrightFooter />
 
-    <!-- 微信号复制成功 Toast -->
+    <ActivitySharePanel
+      v-if="activity && !error"
+      ref="sharePanel"
+      :url="canonicalUrl"
+      :title="activity.shareTitle"
+      :description="activity.shareDesc"
+      :image-url="shareImageUrl"
+      :language="pageLanguage"
+    />
+
+    <!-- 联系方式复制反馈 -->
     <transition name="fade">
       <div v-if="toastMessage" class="activity-toast">
         {{ toastMessage }}
@@ -141,11 +159,16 @@
 </template>
 
 <script setup lang="ts">
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { faEnvelope, faShareNodes } from '@fortawesome/free-solid-svg-icons';
+import ActivitySharePanel from '~/components/activity/ActivitySharePanel.vue';
+import { activityShareLabels } from '~~/shared/utils/activityShare';
+import { activityPageLabels, isChineseActivityLanguage } from '~~/shared/utils/activityLocale';
 import BrandCopyrightFooter from '~/components/common/BrandCopyrightFooter.vue';
 import { LUXURY_ORIGIN } from '~~/shared/utils/luxurySite';
 
 definePageMeta({
-  layout: false,
+  layout: 'default',
   // 推荐活动使用相同路由组件，编码变化时重新初始化请求和轮播状态。
   key: route => String(route.params.code),
 });
@@ -156,6 +179,8 @@ interface PublicStaff {
   qrcodeUrl: string;
   avatarUrl?: string;
   wechatId?: string;
+  whatsapp?: string | null;
+  email?: string | null;
 }
 
 interface RecommendActivity {
@@ -167,6 +192,7 @@ interface RecommendActivity {
 
 interface ActivityPublicData {
   activityCode: string;
+  language?: string | null;
   shareTitle: string;
   shareDesc?: string;
   shareImageUrl: string;
@@ -213,6 +239,13 @@ if (import.meta.server && !activity.value) {
 const canonicalUrl = `${LUXURY_ORIGIN}/activity/${encodeURIComponent(activityCode)}`;
 const shareImageUrl = computed(() => new URL(activity.value?.shareImageUrl || '/images/common/logo.png', LUXURY_ORIGIN).href);
 
+const pageLanguage = computed(() => isChineseActivityLanguage(activity.value?.language) ? 'zh-CN' : 'en');
+const labels = computed(() => activityPageLabels(pageLanguage.value));
+const staffContact = (staff: PublicStaff) => (pageLanguage.value === 'zh-CN' ? staff.wechatId : staff.whatsapp)?.trim() || '';
+const shareLabels = computed(() => activityShareLabels(pageLanguage.value));
+const sharePanel = ref<InstanceType<typeof ActivitySharePanel> | null>(null);
+const openShare = (event: MouseEvent) => sharePanel.value?.open(event);
+
 // 九宫格推荐分页：每页最多 9 个，超出 9 个自动横向分页滑动
 const PAGE_SIZE = 9;
 const sliderRef = ref<HTMLElement | null>(null);
@@ -246,19 +279,22 @@ const scrollToPage = (idx: number) => {
 
 // 设置微信分享与页面元信息
 useSeoMeta({
-  title: () => activity.value?.shareTitle || 'Lvyv 高奢旅行',
-  description: () => activity.value?.shareDesc || 'Lvyv 专属高奢定制旅行',
-  ogTitle: () => activity.value?.shareTitle || 'Lvyv 高奢旅行',
-  ogDescription: () => activity.value?.shareDesc || 'Lvyv 专属高奢定制旅行',
+  title: () => activity.value?.shareTitle || labels.value.metaTitle,
+  description: () => activity.value?.shareDesc || labels.value.metaDescription,
+  ogTitle: () => activity.value?.shareTitle || labels.value.metaTitle,
+  ogDescription: () => activity.value?.shareDesc || labels.value.metaDescription,
   ogImage: () => shareImageUrl.value,
   ogUrl: canonicalUrl,
+  ogType: 'website',
+  twitterCard: 'summary_large_image',
   robots: () => activity.value ? 'index, follow' : 'noindex, nofollow',
-  twitterTitle: () => activity.value?.shareTitle || 'Lvyv 高奢旅行',
+  twitterTitle: () => activity.value?.shareTitle || labels.value.metaTitle,
   twitterDescription: () => activity.value?.shareDesc || '',
   twitterImage: () => shareImageUrl.value,
 });
 
 useHead({
+  htmlAttrs: { lang: pageLanguage },
   link: [{ rel: 'canonical', href: canonicalUrl }],
   meta: [
     { name: 'viewport', content: 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no' },
@@ -294,16 +330,16 @@ const renderedContent = computed(() => {
   return html;
 });
 
-// 复制微信号 Toast
+// 复制当前活动语言对应的联系方式，不使用其他渠道的号码兜底。
 const toastMessage = ref('');
 let toastTimer: any = null;
 
-const copyWechat = async (wechatId: string) => {
+const copyContact = async (contact: string) => {
   try {
-    await navigator.clipboard.writeText(wechatId);
-    showToast(`微信号【${wechatId}】已复制到剪贴板`);
+    await navigator.clipboard.writeText(contact);
+    showToast(labels.value.copiedContact);
   } catch {
-    showToast(`请长按微信号进行复制`);
+    showToast(labels.value.copyContactManually);
   }
 };
 
@@ -319,12 +355,39 @@ const showToast = (msg: string) => {
 <style scoped>
 .activity-page-shell {
   min-height: 100vh;
+  padding-top: 104px;
+  box-sizing: border-box;
   background-color: #f7f9f8;
   color: #1a2a24;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   display: flex;
   flex-direction: column;
 }
+
+.activity-share-dock {
+  position: fixed;
+  top: 104px;
+  left: calc(50% + 290px);
+  z-index: 900;
+}
+
+.activity-share-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 32px;
+  padding: 4px 13px;
+  border: 1px solid #cbdcd3;
+  border-radius: 18px;
+  background: #f1f6f3;
+  color: #105446;
+  font: 500 13px/1.4 Inter, sans-serif;
+  cursor: pointer;
+}
+
+.activity-share-trigger:hover { background: #e4eee8; }
+.activity-share-trigger:focus-visible { outline: 2px solid #105446; outline-offset: 3px; }
 
 .wx-hidden-share {
   position: absolute;
@@ -584,12 +647,21 @@ const showToast = (msg: string) => {
   border-radius: 4px;
 }
 
-.qrcode-scan-hint {
-  font-size: 11px;
-  color: #7b9187;
-  margin-top: 6px;
-  white-space: nowrap;
+.staff-email {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  max-width: 100%;
+  margin-top: 10px;
+  color: #1a5643;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  text-decoration: none;
 }
+
+.staff-email svg { flex-shrink: 0; width: 1em; height: 1em; }
+.staff-email span { min-width: 0; }
 
 /* 推荐板块样式 */
 .activity-recommend-section {
@@ -864,6 +936,29 @@ const showToast = (msg: string) => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+@media (max-width: 991px) {
+  .activity-page-shell {
+    padding-top: calc(var(--mobile-navbar-height, 60px) + 16px);
+  }
+  .activity-share-dock {
+    top: auto;
+    left: auto;
+    right: calc(16px + env(safe-area-inset-right, 0px));
+    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  }
+  .activity-share-trigger {
+    min-height: 44px;
+    padding: 8px 16px;
+    border-color: rgba(178, 201, 188, .65);
+    border-radius: 24px;
+    background: rgba(241, 246, 243, .72);
+    box-shadow: 0 4px 18px rgba(18, 48, 38, .12);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+  }
+  .activity-share-trigger:hover { background: rgba(228, 238, 232, .85); }
 }
 
 @media (max-width: 640px) {
