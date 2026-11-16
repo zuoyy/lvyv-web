@@ -15,23 +15,7 @@
         <nav class="nav-links">
           <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/#hero')" :class="{ active: currentPath === '/' && activeSection === 'hero' }">Home</NuxtLink>
           <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/wish')" :class="{ active: currentPath.startsWith('/wish') }">Wish</NuxtLink>
-          <div class="nav-item-dropdown">
-            <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/encounters')" :class="{ active: currentPath.startsWith('/encounters') || currentPath.startsWith('/cities') }">Encounters</NuxtLink>
-            <div class="dropdown-menu">
-              <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/cities/xian')" class="dropdown-item" :class="{ active: currentPath === '/cities/xian' }">
-                <span class="city-en">Xi'an</span>
-                <span class="city-zh">西安</span>
-              </NuxtLink>
-              <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/cities/chengdu')" class="dropdown-item" :class="{ active: currentPath === '/cities/chengdu' }">
-                <span class="city-en">Chengdu</span>
-                <span class="city-zh">成都</span>
-              </NuxtLink>
-              <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/cities/chongqing')" class="dropdown-item" :class="{ active: currentPath.startsWith('/cities/chongqin') }">
-                <span class="city-en">Chongqing</span>
-                <span class="city-zh">重庆</span>
-              </NuxtLink>
-            </div>
-          </div>
+          <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/encounters')" :class="{ active: currentPath.startsWith('/encounters') || currentPath.startsWith('/cities') }">Encounters</NuxtLink>
           <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/health')" class="nav-link-health" :class="{ active: currentPath.startsWith('/health') }">
             <span class="nav-health-badge" aria-hidden="true">
               <img src="/images/health/hot-badge.svg" alt="" width="30" height="16">
@@ -106,37 +90,7 @@
             <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/#hero')" class="mobile-nav-item" :class="{ active: currentPath === '/' && activeSection === 'hero' }" @click="handleNavClick('/#hero')">Home</NuxtLink>
             <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/wish')" class="mobile-nav-item" :class="{ active: currentPath === '/wish' }" @click="handleNavClick('/wish')">Wish</NuxtLink>
 
-            <!-- Encounters with Submenu: Cities -->
-            <div class="mobile-nav-item-accordion">
-              <div class="mobile-accordion-header" :class="{ active: currentPath.startsWith('/encounters') || currentPath.startsWith('/cities') }">
-                <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/encounters')" class="mobile-accordion-link" @click="handleNavClick('/encounters')">Encounters</NuxtLink>
-                <button
-                  class="mobile-accordion-toggle"
-                  type="button"
-                  :aria-expanded="mobileCitiesOpen"
-                  aria-label="Toggle Encounters Cities menu"
-                  @click.stop="mobileCitiesOpen = !mobileCitiesOpen"
-                >
-                  <AuthGlobeIcon :icon="faChevronDown" class="accordion-chevron" :class="{ 'rotated': mobileCitiesOpen }" aria-hidden="true" />
-                </button>
-              </div>
-              <Transition name="accordion">
-                <div v-if="mobileCitiesOpen" class="mobile-accordion-content">
-                  <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/cities/xian')" class="mobile-subnav-item" :class="{ active: currentPath === '/cities/xian' }" @click="handleNavClick('/cities/xian')">
-                    <span class="city-en">Xi'an</span>
-                    <span class="city-zh">西安</span>
-                  </NuxtLink>
-                  <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/cities/chengdu')" class="mobile-subnav-item" :class="{ active: currentPath === '/cities/chengdu' }" @click="handleNavClick('/cities/chengdu')">
-                    <span class="city-en">Chengdu</span>
-                    <span class="city-zh">成都</span>
-                  </NuxtLink>
-                  <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/cities/chongqing')" class="mobile-subnav-item" :class="{ active: currentPath.startsWith('/cities/chongqin') }" @click="handleNavClick('/cities/chongqing')">
-                    <span class="city-en">Chongqing</span>
-                    <span class="city-zh">重庆</span>
-                  </NuxtLink>
-                </div>
-              </Transition>
-            </div>
+            <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/encounters')" class="mobile-nav-item" :class="{ active: currentPath.startsWith('/encounters') || currentPath.startsWith('/cities') }" @click="handleNavClick('/encounters')">Encounters</NuxtLink>
 
             <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/health')" class="mobile-nav-item mobile-nav-health" :class="{ active: currentPath.startsWith('/health') }" @click="handleNavClick('/health')">
               <span>Health</span>
@@ -275,7 +229,7 @@
 <script setup>
 import { ref, watch, computed, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { FontAwesomeIcon as AuthGlobeIcon } from '@fortawesome/vue-fontawesome'
-import { faTimes, faChevronDown, faUser } from '@fortawesome/free-solid-svg-icons'
+import { faTimes, faUser } from '@fortawesome/free-solid-svg-icons'
 import businessLicenseIconUrl from '~/assets/generated/common/yyzz-48.png'
 import { MAIN_SITE_ORIGIN } from '~~/shared/utils/luxurySite'
 
@@ -306,7 +260,6 @@ const accountMenu = ref(null)
 const avatarFailed = ref(false)
 
 const mobileMenuOpen = ref(false)
-const mobileCitiesOpen = ref(false)
 
 const handleNavClick = async (toPath) => {
   mobileMenuOpen.value = false
@@ -464,16 +417,13 @@ onBeforeUnmount(() => {
 }
 
 .app-layout--wish .nav-links > a,
-.app-layout--wish .nav-item-dropdown > a,
 .app-layout--wish .nav-login,
 .app-layout--wish .member-trigger {
   color: #fff;
 }
 
 .app-layout--wish .nav-links > a:hover,
-.app-layout--wish .nav-links > a.active,
-.app-layout--wish .nav-item-dropdown > a:hover,
-.app-layout--wish .nav-item-dropdown > a.active {
+.app-layout--wish .nav-links > a.active {
   color: #fff;
 }
 

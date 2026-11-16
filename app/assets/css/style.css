@@ -1072,8 +1072,7 @@ h2 {
   gap: 8px;
 }
 
-.mobile-nav-item,
-.mobile-accordion-trigger {
+.mobile-nav-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1093,122 +1092,9 @@ h2 {
 }
 
 .mobile-nav-item:hover,
-.mobile-nav-item.active,
-.mobile-accordion-trigger:hover {
+.mobile-nav-item.active {
   background: #f0f7f5;
   color: #105446;
-}
-
-.mobile-accordion-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  border-radius: 12px;
-  background: transparent;
-  transition: all 0.2s ease;
-}
-
-.mobile-accordion-header:hover,
-.mobile-accordion-header.active {
-  background: #f0f7f5;
-}
-
-.mobile-accordion-link {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  font-family: 'Inter', 'PingFang SC', sans-serif;
-  font-size: 16px;
-  font-weight: 500;
-  color: #203d33;
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-.mobile-accordion-header:hover .mobile-accordion-link,
-.mobile-accordion-header.active .mobile-accordion-link {
-  color: #105446;
-}
-
-.mobile-accordion-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 12px 16px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  color: #64748b;
-  transition: color 0.2s ease;
-}
-
-.mobile-accordion-header:hover .mobile-accordion-toggle,
-.mobile-accordion-header.active .mobile-accordion-toggle {
-  color: #105446;
-}
-
-.accordion-chevron {
-  font-size: 14px;
-  transition: transform 0.25s ease;
-  color: #64748b;
-}
-
-.accordion-chevron.rotated {
-  transform: rotate(180deg);
-}
-
-/* Mobile Accordion Submenu */
-.mobile-accordion-content {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding-left: 12px;
-  margin-top: 4px;
-  margin-bottom: 6px;
-}
-
-.mobile-subnav-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 16px;
-  font-size: 14px;
-  color: #475569;
-  text-decoration: none;
-  border-radius: 10px;
-  transition: all 0.2s ease;
-}
-
-.mobile-subnav-item:hover,
-.mobile-subnav-item.active,
-.mobile-subnav-item.router-link-exact-active {
-  background: #e8f3f0;
-  color: #105446;
-}
-
-.mobile-subnav-item .city-zh {
-  font-size: 12px;
-  color: #94a3b8;
-}
-
-/* Accordion Vue Transition */
-.accordion-enter-active,
-.accordion-leave-active {
-  transition: all 0.25s ease-out;
-  max-height: 200px;
-  opacity: 1;
-  overflow: hidden;
-}
-
-.accordion-enter-from,
-.accordion-leave-to {
-  max-height: 0;
-  opacity: 0;
-  margin-top: 0;
-  margin-bottom: 0;
-  overflow: hidden;
 }
 
 /* Drawer Footer */
