@@ -48,10 +48,12 @@
                 </select>
                 <input v-else v-model.trim="contact.state" required maxlength="6" pattern="[A-Za-z0-9]{1,6}" autocomplete="address-level1">
               </label>
-              <label>City <input v-model.trim="contact.city" maxlength="100" autocomplete="address-level2"></label>
-              <label>Postal code <input v-model.trim="contact.zip" maxlength="20" autocomplete="postal-code"></label>
-              <label class="wide">Billing address <input v-model.trim="contact.address" maxlength="200" autocomplete="street-address"></label>
-              <label class="wide">Order note (optional) <textarea v-model.trim="note" maxlength="1000" rows="3" /></label>
+              <template v-if="!isSimCheckout">
+                <label>City <input v-model.trim="billingAddress.city" maxlength="100" autocomplete="address-level2"></label>
+                <label>Postal code <input v-model.trim="billingAddress.zip" maxlength="20" autocomplete="postal-code"></label>
+                <label class="wide">Billing address <input v-model.trim="billingAddress.address" maxlength="200" autocomplete="street-address"></label>
+                <label class="wide">Order note (optional) <textarea v-model.trim="note" maxlength="1000" rows="3" /></label>
+              </template>
             </div>
           </section>
 
@@ -116,7 +118,8 @@ watch([selection, quantity], ([sku, count]) => {
   amount.value = Math.round((sku?.price ?? 0) * 100) * count / 100
 }, { immediate: true })
 const countries = allCountries
-const contact = reactive({ firstName: '', lastName: '', email: '', phone: '', country: '', state: '', city: '', zip: '', address: '' })
+const contact = reactive({ firstName: '', lastName: '', email: '', phone: '', country: '', state: '' })
+const billingAddress = reactive({ city: '', zip: '', address: '' })
 const regions = computed(() => countries.find(country => country[1] === contact.country)?.[2] || [])
 watch(() => contact.country, () => { if (!regions.value.some(region => region[1] === contact.state)) contact.state = '' }, { flush: 'sync' })
 onMounted(async () => {
@@ -131,7 +134,14 @@ let requestId = ''
 let previousPayload = ''
 async function submit() {
   if (!selection.value || !quantity.value || !agreed.value || submitting.value) return
-  const request = { productCode: productCode.value, skuCode: skuCode.value, quantity: quantity.value, confirmedAmount: amount.value, contact: { ...contact }, note: note.value }
+  const request = {
+    productCode: productCode.value,
+    skuCode: skuCode.value,
+    quantity: quantity.value,
+    confirmedAmount: amount.value,
+    contact: isSimCheckout.value ? { ...contact } : { ...contact, ...billingAddress },
+    ...(isSimCheckout.value ? {} : { note: note.value })
+  }
   const payload = JSON.stringify(request)
   if (payload !== previousPayload) {
     requestId = crypto.randomUUID()
