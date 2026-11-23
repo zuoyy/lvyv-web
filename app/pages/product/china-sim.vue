@@ -138,6 +138,7 @@
             <div class="plan-head">
               <div class="plan-name">{{ plan.name }}</div>
               <div class="plan-price"><span class="cur">$</span>{{ priceNumber.format(plan.price) }}<span v-if="plan.validity" class="per">/ {{ plan.validity }}</span></div>
+              <div v-if="plan.featured" class="plan-promo-flag">New users −$3</div>
               <div v-if="plan.description" class="plan-for">{{ plan.description }}</div>
             </div>
             <div class="plan-spec">
@@ -148,6 +149,10 @@
                 <span class="ic" aria-hidden="true">✦</span><span><b>{{ spec.value }}</b> <span class="lab">{{ spec.label }}</span></span>
               </div>
               <div class="row"><span class="ic">✦</span><span><b>Auto-expiry</b> <span class="lab">no renewal, no deposit</span></span></div>
+            </div>
+            <div v-if="plan.featured" class="plan-promo-box">
+              <span class="promo-badge">First order</span>
+              <span class="promo-text">Sign up as a new user and take <b>$3 off</b> — pay <b>$21</b> for this plan.</span>
             </div>
             <div class="plan-foot"><NuxtLink class="plan-btn" :to="checkoutPath(productCode, plan.skuCode)">Choose {{ plan.shortName }} — {{ displayPrice(plan.price) }}</NuxtLink></div>
           </article>
@@ -544,6 +549,12 @@ onBeforeUnmount(() => revealObserver?.disconnect())
   .plan-card:hover{transform:translateY(-5px);box-shadow:0 18px 44px rgba(30,58,47,.12);}
   .plan-card.featured{border-color:var(--lime);box-shadow:0 8px 28px rgba(127,176,105,.16);}
   .plan-flag{position:absolute;top:0;right:0;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;padding:6px 14px;background:var(--lime);color:var(--green-deep);border-radius:0 14px 0 12px;}
+  .plan-promo-flag{display:inline-flex;align-items:center;gap:5px;font-size:9px;letter-spacing:.10em;text-transform:uppercase;font-weight:700;color:var(--coral);background:rgba(216,84,47,.10);border:1px solid rgba(216,84,47,.22);padding:3px 10px;border-radius:100px;margin-top:12px;margin-bottom:-4px;}
+  .plan-promo-flag::before{content:"✦";font-size:9px;}
+  .plan-promo-box{margin:0 20px 16px;background:linear-gradient(90deg,rgba(216,84,47,.08),rgba(216,84,47,.02));border:1px solid rgba(216,84,47,.18);border-radius:10px;padding:10px 14px;display:flex;gap:9px;align-items:flex-start;}
+  .promo-badge{background:var(--coral);color:var(--white);font-size:8px;letter-spacing:.10em;text-transform:uppercase;font-weight:700;padding:3px 8px;border-radius:100px;flex-shrink:0;margin-top:2px;}
+  .promo-text{font-size:11.5px;color:var(--muted);line-height:1.5;}
+  .promo-text b{color:var(--coral);font-weight:700;}
   .plan-head{padding:26px 22px 20px;border-bottom:1px solid var(--line-lt);}
   .plan-name{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:12px;}
   .plan-price{font-size:38px;font-weight:700;color:var(--green);letter-spacing:-.03em;line-height:1;display:flex;align-items:baseline;gap:3px;}
@@ -690,7 +701,7 @@ onBeforeUnmount(() => revealObserver?.disconnect())
     .license-seal{max-width:100%;flex-wrap:wrap;}
     .cost-card{min-width:0;}
     .plan-card{min-width:0;}
-    .plan-head,.plan-spec,.plan-foot{min-width:0;}
+    .plan-head,.plan-spec,.plan-promo-box,.plan-foot{min-width:0;}
   }
   @media(max-width:400px){
     .hero h1{font-size:31px;}
