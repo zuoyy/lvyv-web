@@ -36,7 +36,7 @@ const title = computed(() => loading.value ? 'Checking your payment' : loadError
 const failureMessage = computed(() => payment.value?.provider === 'OCEANPAYMENT' && payment.value.status === 'FAILED'
   ? cardPaymentFailureMessage(payment.value.failureCode, payment.value.failureMessage)
   : payment.value?.failureMessage)
-const message = computed(() => loadError.value ? 'Open My orders to check the latest status.' : payment.value?.status === 'SUCCEEDED' ? 'Your payment is confirmed. Check your order for delivery updates.' : payment.value?.status === 'REVIEW_REQUIRED' ? 'Our team is verifying this payment.' : terminalFailure.value ? (failureMessage.value || 'No charge has been confirmed. You can try another payment method.') : 'Waiting for payment confirmation.')
+const message = computed(() => loadError.value ? 'Open My orders to check the latest status.' : payment.value?.status === 'SUCCEEDED' ? 'You can find details and updates in My orders.' : payment.value?.status === 'REVIEW_REQUIRED' ? 'Our team is verifying this payment.' : terminalFailure.value ? (failureMessage.value || 'No charge has been confirmed. You can try another payment method.') : 'Waiting for payment confirmation.')
 async function load() {
   const no = typeof route.query.paymentNo === 'string' ? route.query.paymentNo : ''
   try {
