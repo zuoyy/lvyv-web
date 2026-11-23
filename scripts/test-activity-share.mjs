@@ -3,24 +3,24 @@ import test from 'node:test'
 import { activityShareUrl, activityShareLabels, activitySharePlatforms, activityPlatformUrl, copyActivityLink, shareActivityLink } from '../shared/utils/activityShare.ts'
 
 test('活动分享只使用正式域名、活动路径且去掉查询与锚点', () => {
-  assert.equal(activityShareUrl('https://luxury.lvyv.com/activity/act_one?utm_source=secret#part'), 'https://www.lvyv.com/activity/act_one')
-  assert.equal(activityShareUrl('http://localhost:3000/activity/act_two/?token=secret'), 'https://www.lvyv.com/activity/act_two')
+  assert.equal(activityShareUrl('https://lvyv.com/activity/act_one?utm_source=secret#part'), 'https://lvyv.com/activity/act_one')
+  assert.equal(activityShareUrl('http://localhost:3000/activity/act_two/?token=secret'), 'https://lvyv.com/activity/act_two')
   assert.throws(() => activityShareUrl('/login'))
 })
 
 test('平台分享编码中文与特殊字符，所有入口分享同一个干净地址', () => {
-  const data = { url: 'https://luxury.lvyv.com/activity/act_one?utm_source=test#part', title: '长白山 & Friends + 冰雪 #1?' }
+  const data = { url: 'https://lvyv.com/activity/act_one?utm_source=test#part', title: '长白山 & Friends + 冰雪 #1?' }
   for (const platform of activitySharePlatforms('zh-CN')) {
     const href = activityPlatformUrl(platform, data)
     if (platform === 'wechat' || platform === 'copy') { assert.equal(href, null); continue }
     const link = new URL(href)
     assert.equal(link.protocol, 'https:')
     const url = link.searchParams.get(platform === 'facebook' ? 'u' : platform === 'whatsapp' ? 'text' : 'url')
-    assert.ok(url.includes('https://www.lvyv.com/activity/act_one'))
+    assert.ok(url.includes('https://lvyv.com/activity/act_one'))
     assert.ok(!url.includes('utm_source') && !url.includes('#part'))
     if (platform === 'reddit') assert.equal(link.searchParams.get('title'), data.title)
     if (['telegram', 'x'].includes(platform)) assert.equal(link.searchParams.get('text'), data.title)
-    if (platform === 'whatsapp') assert.equal(url, `${data.title}\nhttps://www.lvyv.com/activity/act_one`)
+    if (platform === 'whatsapp') assert.equal(url, `${data.title}\nhttps://lvyv.com/activity/act_one`)
     if (platform === 'x') assert.equal(link.origin + link.pathname, 'https://x.com/intent/tweet')
     if (platform === 'reddit') assert.equal(link.origin + link.pathname, 'https://www.reddit.com/submit')
   }
@@ -41,10 +41,10 @@ test('活动语言决定文案和排序，保留 Reddit，移除微博和 QQ', (
 })
 
 test('剪贴板失败或不可用不报告成功，系统分享仅发送标题和链接，取消不当成失败', async () => {
-  const url = 'https://luxury.lvyv.com/activity/act_one?utm_source=test#part'
+  const url = 'https://lvyv.com/activity/act_one?utm_source=test#part'
   let copied
   assert.equal(await copyActivityLink(url, { writeText: async value => { copied = value } }), true)
-  assert.equal(copied, 'https://www.lvyv.com/activity/act_one')
+  assert.equal(copied, 'https://lvyv.com/activity/act_one')
   assert.equal(await copyActivityLink(url), false)
   assert.equal(await copyActivityLink(url, { writeText: async () => { throw new Error('Denied') } }), false)
   const data = { url, title: '分享标题' }

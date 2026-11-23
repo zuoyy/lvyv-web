@@ -1,11 +1,9 @@
-import { LUXURY_HOST, MAIN_SITE_ORIGIN, activityRedirect, luxuryPageError } from '../../shared/utils/luxurySite'
+import { LUXURY_HOST, MAIN_SITE_ORIGIN, luxuryPageError } from '../../shared/utils/luxurySite'
 
 export default defineEventHandler((event) => {
-  const { hostname, pathname, search } = getRequestURL(event)
+  const { hostname, pathname } = getRequestURL(event)
   // Nuxt 内部渲染错误页时保留原始状态，避免将旧入口的 410 覆盖为 404。
   if (pathname === '/__nuxt_error') return
-  const redirect = activityRedirect(hostname, pathname, search)
-  if (redirect) return sendRedirect(event, redirect, 301)
   // 静态资源和同源 API 不属于页面路由；资源缺失由各自处理器返回 404。
   if (/^\/(?:_nuxt\/|images\/|fonts\/|videos\/|web-api\/|favicon\.ico$|robots\.txt$)/.test(pathname)) return
 

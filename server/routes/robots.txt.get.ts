@@ -7,7 +7,6 @@ export default defineEventHandler((event) => {
     return [
       'User-agent: *',
       'Disallow: /',
-      'Allow: /activity/',
       ''
     ].join('\n')
   }

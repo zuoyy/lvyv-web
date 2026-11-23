@@ -1,4 +1,4 @@
-import { MAIN_SITE_ORIGIN } from './luxurySite.ts'
+import { ACTIVITY_ORIGIN } from './luxurySite.ts'
 import { isChineseActivityLanguage } from './activityLocale.ts'
 
 export interface ActivityShareData {
@@ -10,9 +10,9 @@ export interface ActivityShareData {
 export type ActivitySharePlatform = 'wechat' | 'whatsapp' | 'telegram' | 'facebook' | 'x' | 'linkedin' | 'reddit' | 'copy'
 
 export function activityShareUrl(url: string): string {
-  const pathname = new URL(url, MAIN_SITE_ORIGIN).pathname.replace(/\/+$/, '')
+  const pathname = new URL(url, ACTIVITY_ORIGIN).pathname.replace(/\/+$/, '')
   if (!/^\/activity\/[A-Za-z0-9_-]+$/.test(pathname)) throw new Error('Invalid activity URL')
-  return `${MAIN_SITE_ORIGIN}${pathname}`
+  return ACTIVITY_ORIGIN + pathname
 }
 
 export function activityShareLabels(language?: string | null) {

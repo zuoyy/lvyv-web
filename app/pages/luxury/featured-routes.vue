@@ -36,7 +36,7 @@
           v-for="activity in activities"
           :key="activity.activityCode"
           class="activity-card"
-          :to="activityPath(activity.activityCode)"
+          :to="activityLink(activity.activityCode)"
         >
           <div class="activity-card__image-wrap">
             <img
@@ -68,7 +68,7 @@
 </template>
 
 <script setup lang="ts">
-import { FEATURED_ROUTES_PATH, MAIN_SITE_ORIGIN, activityPath } from '~~/shared/utils/luxurySite'
+import { FEATURED_ROUTES_PATH, MAIN_SITE_ORIGIN, activityLink } from '~~/shared/utils/luxurySite'
 
 interface ActivityCard {
   activityCode: string

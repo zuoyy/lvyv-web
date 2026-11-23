@@ -24,7 +24,7 @@
           v-for="activity in featuredActivities"
           :key="activity.activityCode"
           class="featured-card"
-          :to="activityPath(activity.activityCode)"
+          :to="activityLink(activity.activityCode)"
         >
           <div class="featured-card__image-wrap">
             <img
@@ -102,7 +102,7 @@ import interRegularFont from '@fontsource/inter/files/inter-latin-400-normal.wof
 import interMediumFont from '@fontsource/inter/files/inter-latin-500-normal.woff2?url'
 import interSemiBoldFont from '@fontsource/inter/files/inter-latin-600-normal.woff2?url'
 import playfairRegularFont from '@fontsource/playfair-display/files/playfair-display-latin-400-normal.woff2?url'
-import { FEATURED_ROUTES_PATH, activityPath } from '~~/shared/utils/luxurySite'
+import { FEATURED_ROUTES_PATH, activityLink } from '~~/shared/utils/luxurySite'
 
 interface ActivityCard {
   activityCode: string

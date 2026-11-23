@@ -130,7 +130,7 @@
         </div>
         <h2 class="empty-title">{{ unavailable ? labels.unavailableTitle : labels.errorTitle }}</h2>
         <p class="empty-desc">{{ unavailable ? labels.unavailableDescription : labels.errorDescription }}</p>
-        <NuxtLink to="/" class="empty-back-home">
+        <NuxtLink :to="homeUrl" class="empty-back-home">
           {{ labels.home }}
         </NuxtLink>
       </div>
@@ -164,7 +164,7 @@ import ActivitySharePanel from '~/components/activity/ActivitySharePanel.vue';
 import { activityShareLabels } from '~~/shared/utils/activityShare';
 import { activityPageLabels, isChineseActivityLanguage } from '~~/shared/utils/activityLocale';
 import BrandCopyrightFooter from '~/components/common/BrandCopyrightFooter.vue';
-import { MAIN_SITE_ORIGIN, activityPath } from '~~/shared/utils/luxurySite';
+import { ACTIVITY_ORIGIN, MAIN_SITE_ORIGIN, activityPath } from '~~/shared/utils/luxurySite';
 
 definePageMeta({
   layout: 'default',
@@ -203,6 +203,7 @@ interface ActivityPublicData {
 const route = useRoute();
 const config = useRuntimeConfig();
 const activityCode = String(route.params.code || '');
+const homeUrl = import.meta.dev ? '/' : MAIN_SITE_ORIGIN + '/';
 
 const apiBase = String(
   import.meta.server ? config.contentApiBase : config.public.apiBase || '/web-api'
@@ -235,8 +236,8 @@ if (import.meta.server && !activity.value) {
   const event = useRequestEvent();
   if (event) setResponseStatus(event, unavailable.value ? 404 : 503);
 }
-const canonicalUrl = `${MAIN_SITE_ORIGIN}${activityPath(activityCode)}`;
-const shareImageUrl = computed(() => new URL(activity.value?.shareImageUrl || '/images/common/logo.png', MAIN_SITE_ORIGIN).href);
+const canonicalUrl = ACTIVITY_ORIGIN + activityPath(activityCode);
+const shareImageUrl = computed(() => new URL(activity.value?.shareImageUrl || '/images/common/logo.png', ACTIVITY_ORIGIN).href);
 
 const pageLanguage = computed(() => isChineseActivityLanguage(activity.value?.language) ? 'zh-CN' : 'en');
 const labels = computed(() => activityPageLabels(pageLanguage.value));
