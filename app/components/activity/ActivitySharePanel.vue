@@ -57,7 +57,7 @@
 
 <script setup lang="ts">
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faWeixin, faWeibo, faQq, faWhatsapp, faTelegram, faFacebookF, faLinkedinIn, faRedditAlien } from '@fortawesome/free-brands-svg-icons'
+import { faWeixin, faWhatsapp, faTelegram, faFacebookF, faLinkedinIn, faRedditAlien } from '@fortawesome/free-brands-svg-icons'
 import { faLink, faShareNodes } from '@fortawesome/free-solid-svg-icons'
 import { activityShareLabels, activitySharePlatforms, activityPlatformUrl, activityShareUrl, copyActivityLink, shareActivityLink, type ActivityShareData, type ActivitySharePlatform } from '~~/shared/utils/activityShare'
 
@@ -86,8 +86,6 @@ let generation = 0
 const platforms = computed(() => {
   const options = {
     wechat: { label: labels.value.wechat, icon: faWeixin, color: '#07a64b' },
-    weibo: { label: labels.value.weibo, icon: faWeibo, color: '#d52c2b' },
-    qq: { label: 'QQ', icon: faQq, color: '#1687ca' },
     whatsapp: { label: 'WhatsApp', icon: faWhatsapp, color: '#128c42' },
     telegram: { label: 'Telegram', icon: faTelegram, color: '#1684b7' },
     facebook: { label: 'Facebook', icon: faFacebookF, color: '#1877f2' },

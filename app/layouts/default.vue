@@ -4,7 +4,7 @@
     <!-- Header / Navigation -->
     <header class="navbar" :class="{ 'scrolled': isScrolled }">
       <div class="nav-container">
-        <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/')" class="brand">
+        <NuxtLink :prefetch="!isFaqPage" to="/" class="brand">
           <span class="brand-logo wish-brand-logo" aria-label="Lvyv Logo">
             <img src="/images/wish/logo-main.svg" alt="" loading="eager" decoding="sync">
             <img src="/images/wish/logo-accent.svg" alt="" loading="eager" decoding="sync">
@@ -13,17 +13,11 @@
         </NuxtLink>
 
         <nav class="nav-links">
-          <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/#hero')" :class="{ active: currentPath === '/' && activeSection === 'hero' }">Home</NuxtLink>
-          <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/wish')" :class="{ active: currentPath.startsWith('/wish') }">Wish</NuxtLink>
-          <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/encounters')" :class="{ active: currentPath.startsWith('/encounters') || currentPath.startsWith('/cities') }">Encounters</NuxtLink>
-          <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/health')" class="nav-link-health" :class="{ active: currentPath.startsWith('/health') }">
-            <span class="nav-health-badge" aria-hidden="true">
-              <img src="/images/health/hot-badge.svg" alt="" width="30" height="16">
-            </span>
-            <span>Health</span>
-          </NuxtLink>
-          <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/about')" :class="{ active: currentPath === '/about' }">About</NuxtLink>
-          <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/en/faq/')" :class="{ active: currentPath.includes('/faq') }">FAQ</NuxtLink>
+          <NuxtLink :prefetch="!isFaqPage" to="/#hero" :class="{ active: currentPath === '/' && activeSection === 'hero' }">Home</NuxtLink>
+          <NuxtLink :prefetch="!isFaqPage" to="/wish" :class="{ active: currentPath.startsWith('/wish') }">Wish</NuxtLink>
+          <NuxtLink :prefetch="!isFaqPage" to="/encounters" :class="{ active: currentPath.startsWith('/encounters') || currentPath.startsWith('/cities') }">Encounters</NuxtLink>
+          <NuxtLink :prefetch="!isFaqPage" to="/about" :class="{ active: currentPath === '/about' }">About</NuxtLink>
+          <NuxtLink :prefetch="!isFaqPage" to="/en/faq/" :class="{ active: currentPath.includes('/faq') }">FAQ</NuxtLink>
         </nav>
 
         <div class="nav-actions">
@@ -36,15 +30,15 @@
             </button>
             <Transition name="dropdown-fade">
               <div v-if="accountOpen" class="member-menu" role="menu">
-                <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/profile')" role="menuitem" @click="accountOpen = false">My Profile</NuxtLink>
+                <NuxtLink :prefetch="!isFaqPage" to="/profile" role="menuitem" @click="accountOpen = false">My Profile</NuxtLink>
                 <button type="button" role="menuitem" @click="logout">Log out</button>
               </div>
             </Transition>
           </div>
-          <a v-else :href="navigationUrl('/login/')" class="nav-login">
+          <a v-else href="/login/" class="nav-login">
             <span>Login</span>
           </a>
-          <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl(startWishPath)" class="nav-start-planning">Start Your Wish</NuxtLink>
+          <NuxtLink :prefetch="!isFaqPage" :to="startWishPath" class="nav-start-planning">Start Your Wish</NuxtLink>
 
           <!-- Mobile Nav Toggle Button -->
           <button
@@ -77,7 +71,7 @@
     <Transition name="slide-drawer">
       <div v-if="mobileMenuOpen" class="mobile-menu-drawer">
         <div class="mobile-drawer-header">
-          <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/')" class="brand" @click="mobileMenuOpen = false">
+          <NuxtLink :prefetch="!isFaqPage" to="/" class="brand" @click="mobileMenuOpen = false">
             <img src="/images/common/logo-header.svg" alt="Lvyv Logo" class="brand-logo">
           </NuxtLink>
           <button class="mobile-drawer-close" type="button" aria-label="Close menu" @click="mobileMenuOpen = false">
@@ -87,19 +81,13 @@
 
         <div class="mobile-drawer-body">
           <nav class="mobile-nav-links">
-            <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/#hero')" class="mobile-nav-item" :class="{ active: currentPath === '/' && activeSection === 'hero' }" @click="handleNavClick('/#hero')">Home</NuxtLink>
-            <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/wish')" class="mobile-nav-item" :class="{ active: currentPath === '/wish' }" @click="handleNavClick('/wish')">Wish</NuxtLink>
+            <NuxtLink :prefetch="!isFaqPage" to="/#hero" class="mobile-nav-item" :class="{ active: currentPath === '/' && activeSection === 'hero' }" @click="handleNavClick('/#hero')">Home</NuxtLink>
+            <NuxtLink :prefetch="!isFaqPage" to="/wish" class="mobile-nav-item" :class="{ active: currentPath === '/wish' }" @click="handleNavClick('/wish')">Wish</NuxtLink>
 
-            <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/encounters')" class="mobile-nav-item" :class="{ active: currentPath.startsWith('/encounters') || currentPath.startsWith('/cities') }" @click="handleNavClick('/encounters')">Encounters</NuxtLink>
+            <NuxtLink :prefetch="!isFaqPage" to="/encounters" class="mobile-nav-item" :class="{ active: currentPath.startsWith('/encounters') || currentPath.startsWith('/cities') }" @click="handleNavClick('/encounters')">Encounters</NuxtLink>
 
-            <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/health')" class="mobile-nav-item mobile-nav-health" :class="{ active: currentPath.startsWith('/health') }" @click="handleNavClick('/health')">
-              <span>Health</span>
-              <span class="mobile-health-badge" aria-hidden="true">
-                <img src="/images/health/hot-badge.svg" alt="" width="30" height="16">
-              </span>
-            </NuxtLink>
-            <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/about')" class="mobile-nav-item" :class="{ active: currentPath === '/about' }" @click="handleNavClick('/about')">About</NuxtLink>
-            <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/en/faq/')" class="mobile-nav-item" :class="{ active: currentPath.includes('/faq') }" @click="handleNavClick('/en/faq/')">FAQ</NuxtLink>
+            <NuxtLink :prefetch="!isFaqPage" to="/about" class="mobile-nav-item" :class="{ active: currentPath === '/about' }" @click="handleNavClick('/about')">About</NuxtLink>
+            <NuxtLink :prefetch="!isFaqPage" to="/en/faq/" class="mobile-nav-item" :class="{ active: currentPath.includes('/faq') }" @click="handleNavClick('/en/faq/')">FAQ</NuxtLink>
           </nav>
         </div>
 
@@ -112,18 +100,18 @@
               <span class="mobile-user-name">{{ memberDisplayName }}</span>
             </div>
             <div class="mobile-user-actions">
-              <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl('/profile')" class="mobile-user-link" @click="mobileMenuOpen = false">My Profile</NuxtLink>
+              <NuxtLink :prefetch="!isFaqPage" to="/profile" class="mobile-user-link" @click="mobileMenuOpen = false">My Profile</NuxtLink>
               <button type="button" class="mobile-logout-btn" @click="logout">Log out</button>
             </div>
           </div>
           <div v-else class="mobile-drawer-auth">
-            <a :href="navigationUrl('/login/')" class="mobile-drawer-login-btn" @click="mobileMenuOpen = false">
+            <a href="/login/" class="mobile-drawer-login-btn" @click="mobileMenuOpen = false">
               <AuthGlobeIcon :icon="faUser" aria-hidden="true" />
               <span>Login / Sign Up</span>
             </a>
           </div>
 
-          <NuxtLink :prefetch="!isFaqPage" :to="navigationUrl(startWishPath)" class="mobile-start-planning-btn" @click="mobileMenuOpen = false">
+          <NuxtLink :prefetch="!isFaqPage" :to="startWishPath" class="mobile-start-planning-btn" @click="mobileMenuOpen = false">
             Start Your Wish
           </NuxtLink>
         </div>
@@ -231,7 +219,6 @@ import { ref, watch, computed, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { FontAwesomeIcon as AuthGlobeIcon } from '@fortawesome/vue-fontawesome'
 import { faTimes, faUser } from '@fortawesome/free-solid-svg-icons'
 import businessLicenseIconUrl from '~/assets/generated/common/yyzz-48.png'
-import { MAIN_SITE_ORIGIN } from '~~/shared/utils/luxurySite'
 
 const route = useRoute()
 const currentPath = computed(() => {
@@ -240,8 +227,6 @@ const currentPath = computed(() => {
 })
 const isHomePage = computed(() => currentPath.value === '/')
 const isActivityPage = computed(() => currentPath.value.startsWith('/activity/'))
-// 活动位于独立高奢域名，官网导航需回到主站，避免落入高奢域名的受限路由。
-const navigationUrl = path => isActivityPage.value ? `${MAIN_SITE_ORIGIN}${path}` : path
 // 阅读文档时不预取导航和页脚指向的整站资源，避免与正文首屏竞争带宽。
 const isFaqPage = computed(() => /^\/(?:en\/|zh\/)?faq(?:\/|$)/.test(currentPath.value))
 const homePromotions = useHomePromotions()
@@ -328,7 +313,7 @@ const tokenDisplayName = computed(() => {
 const memberDisplayName = computed(() => member.value?.nickname?.trim()
   || member.value?.email?.split('@')[0]
   || tokenDisplayName.value)
-const logout = async () => { accountOpen.value = false; await logoutMember(); await navigateTo(navigationUrl('/'), { external: isActivityPage.value }) }
+const logout = async () => { accountOpen.value = false; await logoutMember(); await navigateTo('/') }
 
 watch(() => member.value?.avatarUrl, () => { avatarFailed.value = false })
 watch(memberToken, async (value) => {
@@ -463,53 +448,4 @@ onBeforeUnmount(() => {
   }
 }
 
-.nav-link-health {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
-
-.nav-health-badge {
-  position: absolute;
-  top: -16px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 30px;
-  height: 16px;
-  line-height: 0;
-  pointer-events: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.2s ease;
-}
-
-.nav-link-health:hover .nav-health-badge {
-  transform: translateX(-50%) translateY(-2px);
-}
-
-.nav-health-badge img {
-  width: 30px;
-  height: 16px;
-  display: block;
-}
-
-.mobile-nav-health {
-  display: flex !important;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.mobile-health-badge {
-  display: inline-flex;
-  align-items: center;
-  line-height: 0;
-  margin-left: 8px;
-}
-
-.mobile-health-badge img {
-  width: 30px;
-  height: 16px;
-  display: block;
-}
 </style>

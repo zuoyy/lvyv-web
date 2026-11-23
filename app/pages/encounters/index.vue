@@ -11,7 +11,7 @@
     <section class="routes-section featured-section" aria-labelledby="featured-title">
       <div class="section-heading">
         <h2 id="featured-title">Featured Routes</h2>
-        <NuxtLink class="section-link" :to="activityListUrl" external>See All</NuxtLink>
+        <NuxtLink class="section-link" :to="FEATURED_ROUTES_PATH">See All</NuxtLink>
       </div>
 
       <div v-if="featuredLoading" class="section-state" role="status">Loading featured routes...</div>
@@ -24,8 +24,7 @@
           v-for="activity in featuredActivities"
           :key="activity.activityCode"
           class="featured-card"
-          :to="activityUrl(activity.activityCode)"
-          external
+          :to="activityPath(activity.activityCode)"
         >
           <div class="featured-card__image-wrap">
             <img
@@ -103,7 +102,7 @@ import interRegularFont from '@fontsource/inter/files/inter-latin-400-normal.wof
 import interMediumFont from '@fontsource/inter/files/inter-latin-500-normal.woff2?url'
 import interSemiBoldFont from '@fontsource/inter/files/inter-latin-600-normal.woff2?url'
 import playfairRegularFont from '@fontsource/playfair-display/files/playfair-display-latin-400-normal.woff2?url'
-import { FEATURED_ROUTES_PATH, LUXURY_ORIGIN, MAIN_SITE_ORIGIN } from '~~/shared/utils/luxurySite'
+import { FEATURED_ROUTES_PATH, activityPath } from '~~/shared/utils/luxurySite'
 
 interface ActivityCard {
   activityCode: string
@@ -129,7 +128,6 @@ interface ApiResult<T> {
 const title = 'Encounters | Lvyv'
 const description = 'Find currently available handcrafted journeys across China.'
 const fallbackImage = '/images/common/logo.png'
-const activityListUrl = import.meta.dev ? FEATURED_ROUTES_PATH : `${MAIN_SITE_ORIGIN}${FEATURED_ROUTES_PATH}`
 useLvyvSeo({
   title,
   description,
@@ -239,10 +237,6 @@ const activityImage = (activity: ActivityCard) => {
   if (city.includes('beijing') || city.includes('北京')) return '/images/encounters/featured-beijing.webp'
   if (city.includes('xi') || city.includes('西安')) return '/images/encounters/featured-xian.webp'
   return '/images/encounters/hero-design.webp'
-}
-const activityUrl = (code: string) => {
-  const path = `/activity/${encodeURIComponent(code)}`
-  return import.meta.dev ? path : `${LUXURY_ORIGIN}${path}`
 }
 const useFallbackImage = (event: Event) => {
   const image = event.currentTarget as HTMLImageElement

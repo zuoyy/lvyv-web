@@ -36,8 +36,7 @@
           v-for="activity in activities"
           :key="activity.activityCode"
           class="activity-card"
-          :to="activityUrl(activity.activityCode)"
-          external
+          :to="activityPath(activity.activityCode)"
         >
           <div class="activity-card__image-wrap">
             <img
@@ -69,7 +68,7 @@
 </template>
 
 <script setup lang="ts">
-import { FEATURED_ROUTES_PATH, LUXURY_ORIGIN, MAIN_SITE_ORIGIN } from '~~/shared/utils/luxurySite'
+import { FEATURED_ROUTES_PATH, MAIN_SITE_ORIGIN, activityPath } from '~~/shared/utils/luxurySite'
 
 interface ActivityCard {
   activityCode: string
@@ -164,10 +163,6 @@ const cityLabel = (city = '') => {
   return names[normalized] || city.trim().replace(/\b\w/g, character => character.toUpperCase()) || 'China'
 }
 
-const activityUrl = (code: string) => {
-  const path = `/activity/${encodeURIComponent(code)}`
-  return import.meta.dev ? path : `${LUXURY_ORIGIN}${path}`
-}
 
 const changePage = async (nextPage: number) => {
   if (pending.value || nextPage === page.value || nextPage < 1 || nextPage > totalPages.value) return

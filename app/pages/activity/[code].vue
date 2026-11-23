@@ -83,7 +83,7 @@
               <NuxtLink
                 v-for="item in page"
                 :key="item.activityCode"
-                :to="`/activity/${encodeURIComponent(item.activityCode)}`"
+                :to="activityPath(item.activityCode)"
                 class="recommend-card"
               >
                 <div class="recommend-card-image-box">
@@ -130,7 +130,7 @@
         </div>
         <h2 class="empty-title">{{ unavailable ? labels.unavailableTitle : labels.errorTitle }}</h2>
         <p class="empty-desc">{{ unavailable ? labels.unavailableDescription : labels.errorDescription }}</p>
-        <NuxtLink to="https://www.lvyv.com/" external class="empty-back-home">
+        <NuxtLink to="/" class="empty-back-home">
           {{ labels.home }}
         </NuxtLink>
       </div>
@@ -144,8 +144,6 @@
       ref="sharePanel"
       :url="canonicalUrl"
       :title="activity.shareTitle"
-      :description="activity.shareDesc"
-      :image-url="shareImageUrl"
       :language="pageLanguage"
     />
 
@@ -161,11 +159,12 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faEnvelope, faShareNodes } from '@fortawesome/free-solid-svg-icons';
+import sanitizeHtml from 'sanitize-html';
 import ActivitySharePanel from '~/components/activity/ActivitySharePanel.vue';
 import { activityShareLabels } from '~~/shared/utils/activityShare';
 import { activityPageLabels, isChineseActivityLanguage } from '~~/shared/utils/activityLocale';
 import BrandCopyrightFooter from '~/components/common/BrandCopyrightFooter.vue';
-import { LUXURY_ORIGIN } from '~~/shared/utils/luxurySite';
+import { MAIN_SITE_ORIGIN, activityPath } from '~~/shared/utils/luxurySite';
 
 definePageMeta({
   layout: 'default',
@@ -236,8 +235,8 @@ if (import.meta.server && !activity.value) {
   const event = useRequestEvent();
   if (event) setResponseStatus(event, unavailable.value ? 404 : 503);
 }
-const canonicalUrl = `${LUXURY_ORIGIN}/activity/${encodeURIComponent(activityCode)}`;
-const shareImageUrl = computed(() => new URL(activity.value?.shareImageUrl || '/images/common/logo.png', LUXURY_ORIGIN).href);
+const canonicalUrl = `${MAIN_SITE_ORIGIN}${activityPath(activityCode)}`;
+const shareImageUrl = computed(() => new URL(activity.value?.shareImageUrl || '/images/common/logo.png', MAIN_SITE_ORIGIN).href);
 
 const pageLanguage = computed(() => isChineseActivityLanguage(activity.value?.language) ? 'zh-CN' : 'en');
 const labels = computed(() => activityPageLabels(pageLanguage.value));
@@ -324,10 +323,23 @@ const renderedContent = computed(() => {
     html = html
       .replace(/\n\n+/gim, '</p><p>')
       .replace(/\n/gim, '<br />');
-    return `<p>${html}</p>`;
+    html = `<p>${html}</p>`;
   }
 
-  return html;
+  // 活动正文和会员页面共用主站域名，清洗包括旧活动和 Markdown 转换生成的 HTML。
+  return sanitizeHtml(html, {
+    allowedTags: [...sanitizeHtml.defaults.allowedTags, 'img', 'picture', 'source', 'video'],
+    allowedAttributes: {
+      a: ['href', 'title', 'target', 'rel'],
+      img: ['src', 'alt', 'title', 'width', 'height', 'loading', 'decoding'],
+      source: ['src', 'srcset', 'type', 'media'],
+      video: ['src', 'poster', 'controls', 'width', 'height', 'preload'],
+      '*': ['align'],
+    },
+    transformTags: {
+      a: sanitizeHtml.simpleTransform('a', { rel: 'noopener noreferrer' }),
+    },
+  });
 });
 
 // 复制当前活动语言对应的联系方式，不使用其他渠道的号码兜底。

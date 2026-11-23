@@ -57,13 +57,6 @@ export default defineNuxtConfig({
       '/checkout': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
       '/payment/**': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
       '/orders/**/pay': { headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
-      '/care': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
-      '/care/**': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
-      '/health/concierge': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
-      '/health/appointments/**': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
-      // 医疗服务依赖实时后台数据，静态发布时不能把构建期空列表写入页面 payload。
-      '/health/services': { prerender: false },
-      '/health/services/**': { prerender: false },
       '/faq/**': { swr: 60 },
       '/en/faq/**': { swr: 60 },
       '/zh/faq/**': { swr: 60 },
@@ -95,7 +88,6 @@ export default defineNuxtConfig({
         '/referrals', '/referrals/**', '/register', '/register/**', '/auth/**',
         '/badges',
         '/trips',
-        '/care', '/care/**', '/health/concierge', '/health/appointments/**',
         '/faq',
         '/faq/',
         '/faq/**',
@@ -119,8 +111,7 @@ export default defineNuxtConfig({
   css: [
     '~/assets/css/fonts.css',
     '~/assets/css/style.css',
-    '~/assets/css/design-overrides.css',
-    '~/assets/css/health.css'
+    '~/assets/css/design-overrides.css'
   ],
 
   app: {

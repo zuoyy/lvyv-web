@@ -232,7 +232,6 @@ export interface BillingDetails {
   zip?: string
 }
 export interface PaymentView {
-  successPath?: string
   paymentNo: string
   provider: string
   channel: string
@@ -393,8 +392,8 @@ export const useTourCommerce = () => {
     requestRevision: (offerNo: string, requestContent: string) => auth.request<CustomOfferConfirmationView>(`/commerce/custom-offers/${encodeURIComponent(offerNo)}/request-revision`, { requestContent }),
     cancelOrder: (orderNo: string) => auth.request<OrderView>(`/commerce/orders/${encodeURIComponent(orderNo)}/cancel`),
     listPaymentChannels: (clientType = 'DESKTOP_WEB') => auth.request<PaymentChannelView[]>(`/commerce/payments/channels?clientType=${encodeURIComponent(clientType)}`, undefined, 'GET'),
-    createPayment: (orderNo: string, channel: PaymentChannel, clientType: 'DESKTOP_WEB' | 'MOBILE_WEB' | 'WECHAT_BROWSER', billing?: BillingDetails) =>
-      auth.request<PaymentView>(`/commerce/orders/${encodeURIComponent(orderNo)}/payments`, { channel, clientType, billing }),
+    createPayment: (orderNo: string, channel: PaymentChannel, clientType: 'DESKTOP_WEB' | 'MOBILE_WEB' | 'WECHAT_BROWSER') =>
+      auth.request<PaymentView>(`/commerce/orders/${encodeURIComponent(orderNo)}/payments`, { channel, clientType }),
     currentOrderPayment: (orderNo: string) => auth.request<PaymentView | null>(`/commerce/orders/${encodeURIComponent(orderNo)}/payments/current`, undefined, 'GET'),
     getPaymentOptions: (orderNo: string, clientType = 'DESKTOP_WEB') =>
       auth.request<PaymentOptionsView>(`/commerce/orders/${encodeURIComponent(orderNo)}/payments/options?clientType=${encodeURIComponent(clientType)}`, undefined, 'GET'),

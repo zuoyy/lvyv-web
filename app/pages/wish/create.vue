@@ -312,7 +312,7 @@ interface CalendarDay {
   label: string
 }
 
-type InterestGroupKey = 'travel-interests' | 'travel-style' | 'health-care'
+type InterestGroupKey = 'travel-interests' | 'travel-style'
 
 interface WishInterestOption {
   code: string
@@ -341,7 +341,6 @@ const steps = [
 const interestGroups: Array<{ key: InterestGroupKey; label: string }> = [
   { key: 'travel-interests', label: 'Travel Interests' },
   { key: 'travel-style', label: 'Travel Style' },
-  { key: 'health-care', label: 'Health & Care' },
 ]
 
 const activeInterestGroup = ref<InterestGroupKey>(
@@ -362,16 +361,6 @@ const interestOptions = ref<WishInterestOption[]>([
   { code: 'senior_friendly', label: 'Senior-Friendly', icon: 'interest-design/senior-friendly', group: 'travel-style', defaultSelected: false },
   { code: 'solo_friendly', label: 'Solo-Friendly', icon: 'interest-design/solo-friendly', group: 'travel-style', defaultSelected: false },
   { code: 'couple_friendly', label: 'Couple-Friendly', icon: 'interest-design/couple-friendly', group: 'travel-style', defaultSelected: false },
-  { code: 'health_checkup', label: 'Health Checkup', icon: 'interest-design/health-checkup', group: 'health-care', defaultSelected: false },
-  { code: 'executive_checkup', label: 'Executive Checkup', icon: 'interest-design/executive-checkup', group: 'health-care', defaultSelected: false },
-  { code: 'dental_care', label: 'Dental Care', icon: 'interest-design/dental-care', group: 'health-care', defaultSelected: false },
-  { code: 'specialist_consultation', label: 'Specialist Consultation', icon: 'interest-design/specialist-consultation', group: 'health-care', defaultSelected: false },
-  { code: 'eye_vision', label: 'Eye & Vision', icon: 'interest-design/eye-vision', group: 'health-care', defaultSelected: false },
-  { code: 'medical_imaging', label: 'Medical Imaging', icon: 'interest-design/medical-imaging', group: 'health-care', defaultSelected: false },
-  { code: 'rehabilitation', label: 'Rehabilitation', icon: 'interest-design/rehabilitation', group: 'health-care', defaultSelected: false },
-  { code: 'physical_therapy', label: 'Physical Therapy', icon: 'interest-design/physical-therapy', group: 'health-care', defaultSelected: false },
-  { code: 'womens_health', label: "Women's Health", icon: 'interest-design/womens-health', group: 'health-care', defaultSelected: false },
-  { code: 'health_concierge', label: 'Health Concierge', icon: 'interest-design/health-concierge', group: 'health-care', defaultSelected: false },
 ])
 const budgetOptions = ref<Array<{ code: string; label: string; price: string; icon: string; features: string[]; defaultSelected: boolean }>>([])
 const journeyOptions = ref<Array<{ code: string; title: string; subtitle: string; image: string; alt: string; story: string; defaultSelected: boolean }>>([])

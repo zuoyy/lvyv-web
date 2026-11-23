@@ -8,10 +8,6 @@ export default defineEventHandler((event) => {
       'User-agent: *',
       'Disallow: /',
       'Allow: /activity/',
-      'Allow: /_nuxt/',
-      'Allow: /images/',
-      'Allow: /fonts/',
-      'Allow: /videos/',
       ''
     ].join('\n')
   }

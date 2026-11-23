@@ -4,7 +4,7 @@ import { once } from 'node:events'
 import { createServer, request as httpRequest } from 'node:http'
 import { setTimeout as delay } from 'node:timers/promises'
 import test from 'node:test'
-import { luxuryPageError } from '../shared/utils/luxurySite.ts'
+import { activityRedirect, luxuryPageError } from '../shared/utils/luxurySite.ts'
 
 test('活动入口策略覆盖生产域名、本地开发和停用入口', () => {
   assert.equal(luxuryPageError('www.lvyv.com', '/luxury/featured-routes'), undefined)
@@ -18,14 +18,16 @@ test('活动入口策略覆盖生产域名、本地开发和停用入口', () =>
   assert.equal(luxuryPageError('luxury.lvyv.com', '/activity'), undefined)
   assert.equal(luxuryPageError('www.lvyv.com', '/activity'), 410)
   assert.equal(luxuryPageError('luxury.lvyv.com', '/activity/act_123'), undefined)
-  assert.equal(luxuryPageError('www.lvyv.com', '/activity/act_123'), 410)
+  assert.equal(luxuryPageError('www.lvyv.com', '/activity/act_123'), undefined)
   assert.equal(luxuryPageError('localhost', '/activity/act_123'), 410)
   assert.equal(luxuryPageError('localhost', '/activity/act_123', true), undefined)
-  assert.equal(luxuryPageError('www.lvyv.com', '/activity/act_123', true), 410)
+  assert.equal(luxuryPageError('www.lvyv.com', '/activity/act_123', true), undefined)
   assert.equal(luxuryPageError('luxury.lvyv.com', '/luxury/activity/act_123'), 410)
   assert.equal(luxuryPageError('luxury.lvyv.com', '/activity/act_123/extra'), 404)
   assert.equal(luxuryPageError('luxury.lvyv.com', '/login'), 404)
   assert.equal(luxuryPageError('www.lvyv.com', '/encounters'), undefined)
+  assert.equal(activityRedirect('luxury.lvyv.com', '/activity/act_123/', '?utm_source=test'), 'https://www.lvyv.com/activity/act_123?utm_source=test')
+  assert.equal(activityRedirect('www.lvyv.com', '/activity/act_123', ''), undefined)
 })
 
 test('实际 SSR 构建：活动、错误状态、域名隔离及分享信息', { timeout: 60_000 }, async (t) => {
@@ -57,7 +59,7 @@ test('实际 SSR 构建：活动、错误状态、域名隔离及分享信息', 
         shareTitle: `Luxury ${code}`,
         shareDesc: 'Luxury activity fixture',
         shareImageUrl: '/images/common/logo.png',
-        contentHtml: `<p>Activity body ${code}</p>`,
+        contentHtml: `<p>Activity body ${code}</p>${code === 'published' ? '<img src="/images/common/logo.png" alt="Activity fixture" onerror="blocked-handler"><script>blocked-script</script><a href="javascript:blocked-link">Unsafe link</a>' : ''}`,
         staffList: [
           { id: 1, name: 'Travel Advisor', wechatId: 'lvyv-advisor', whatsapp: '+1 202 555 0123', email: 'advisor@example.com', qrcodeUrl: '/images/common/logo.png' },
           { id: 2, name: 'Second Advisor', wechatId: 'wechat-only', qrcodeUrl: '/images/common/logo.png' },
@@ -83,7 +85,7 @@ test('实际 SSR 构建：活动、错误状态、域名隔离及分享信息', 
   runtime.stdout.on('data', chunk => { output += chunk })
   runtime.stderr.on('data', chunk => { output += chunk })
   // Node fetch 会忽略自定义 Host，使用 HTTP 客户端模拟 Nginx 真实回源头。
-  const request = (path, host = 'luxury.lvyv.com') => new Promise((resolve, reject) => {
+  const request = (path, host = 'www.lvyv.com') => new Promise((resolve, reject) => {
     const req = httpRequest({ hostname: '127.0.0.1', port, path, headers: { Host: host }, timeout: 15_000 }, res => {
       const chunks = []
       res.on('data', chunk => chunks.push(chunk))
@@ -112,16 +114,20 @@ test('实际 SSR 构建：活动、错误状态、域名隔离及分享信息', 
       assert.match(response.headers.get('cache-control'), /no-store/)
       const html = await response.text()
       assert.match(html, /Activity body published/)
+      const body = html.match(/<article\b[^>]*class="activity-rich-content"[^>]*>([\s\S]*?)<\/article>/)?.[1]
+      assert.match(body, /alt="Activity fixture"/)
+      assert.doesNotMatch(body, /blocked-handler|blocked-script|javascript:/)
       assert.match(html, /<header[^>]*class="navbar/)
-      for (const path of ['/#hero', '/wish', '/encounters', '/cities/xian', '/cities/chengdu', '/cities/chongqing', '/health', '/about', '/en/faq/', '/login/', '/login/?redirect=%2Fwish%2Fcreate']) {
-        assert.ok(html.includes(`href="https://www.lvyv.com${path}"`), `Main-site navigation: ${path}`)
+      assert.doesNotMatch(html, /href="(?:https:\/\/www\.lvyv\.com)?\/health(?:\/|")/)
+      for (const path of ['/#hero', '/wish', '/encounters', '/about', '/en/faq/', '/login/', '/login/?redirect=%2Fwish%2Fcreate']) {
+        assert.ok(html.includes(`href="${path}"`), `Main-site navigation: ${path}`)
       }
       assert.match(html, /aria-label="Toggle Navigation"/)
       assert.doesNotMatch(html, /<footer[^>]*class="footer"/)
       assert.match(html, /href="\/activity\/second"/)
-      assert.match(html, /rel="canonical" href="https:\/\/luxury\.lvyv\.com\/activity\/published"/)
-      assert.match(html, /property="og:url" content="https:\/\/luxury\.lvyv\.com\/activity\/published"/)
-      assert.match(html, /property="og:image" content="https:\/\/luxury\.lvyv\.com\/images\/common\/logo.png"/)
+      assert.match(html, /rel="canonical" href="https:\/\/www\.lvyv\.com\/activity\/published"/)
+      assert.match(html, /property="og:url" content="https:\/\/www\.lvyv\.com\/activity\/published"/)
+      assert.match(html, /property="og:image" content="https:\/\/www\.lvyv\.com\/images\/common\/logo.png"/)
       const css = html.match(/href="(\/_nuxt\/[^"?]+\.css)"/)
       if (css) assert.equal((await request(css[1])).status, 200)
       else assert.match(html, /<style[^>]*>[\s\S]*?\.activity-page-shell/)
@@ -139,7 +145,7 @@ test('实际 SSR 构建：活动、错误状态、域名隔离及分享信息', 
         assert.match(html, new RegExp(`class="activity-share-trigger"[^>]*>[\\s\\S]*?${label}\\s*</button>`))
         assert.match(html, /property="og:type" content="website"/)
         assert.match(html, /name="twitter:card" content="summary_large_image"/)
-        assert.ok(html.includes(`rel="canonical" href="https://luxury.lvyv.com/activity/${code}"`))
+        assert.ok(html.includes(`rel="canonical" href="https://www.lvyv.com/activity/${code}"`))
       }
     })
 
@@ -165,7 +171,7 @@ test('实际 SSR 构建：活动、错误状态、域名隔离及分享信息', 
       }
     })
 
-    await t.test('精选活动列表在主站开放，卡片详情指向高奢站点', async () => {
+    await t.test('精选活动列表的卡片链接指向主站详情', async () => {
       const response = await request('/luxury/featured-routes', 'www.lvyv.com')
       assert.equal(response.status, 200)
       assert.match(response.headers.get('cache-control'), /no-store/)
@@ -173,8 +179,8 @@ test('实际 SSR 构建：活动、错误状态、域名隔离及分享信息', 
       assert.match(html, /Featured Routes/)
       assert.doesNotMatch(html, /Featured Activities|All Activities/)
       assert.match(html, /Private list activity/)
-      assert.match(html, /href="https:\/\/luxury\.lvyv\.com\/activity\/featured-list-item"/)
-      const activityLink = html.match(/<a\b[^>]*href="https:\/\/luxury\.lvyv\.com\/activity\/featured-list-item"[^>]*>/)?.[0]
+      assert.match(html, /href="\/activity\/featured-list-item"/)
+      const activityLink = html.match(/<a\b[^>]*href="\/activity\/featured-list-item"[^>]*>/)?.[0]
       assert.ok(activityLink)
       assert.doesNotMatch(activityLink, /target="_blank"/)
       assert.match(html, /rel="canonical" href="https:\/\/www\.lvyv\.com\/luxury\/featured-routes"/)
@@ -184,14 +190,14 @@ test('实际 SSR 构建：活动、错误状态、域名隔离及分享信息', 
     })
 
     await t.test('精选列表分页和旧活动列表入口保留查询参数', async () => {
-      const redirect = await request('/activity?page=2')
+      const redirect = await request('/activity?page=2', 'luxury.lvyv.com')
       assert.equal(redirect.status, 301)
       assert.equal(redirect.headers.get('location'), 'https://www.lvyv.com/luxury/featured-routes?page=2')
       const response = await request('/luxury/featured-routes?page=2', 'www.lvyv.com')
       assert.equal(response.status, 200)
       const html = await response.text()
-      assert.match(html, /https:\/\/luxury\.lvyv\.com\/activity\/second-page-item/)
-      assert.doesNotMatch(html, /https:\/\/luxury\.lvyv\.com\/activity\/featured-list-item/)
+      assert.match(html, /\/activity\/second-page-item/)
+      assert.doesNotMatch(html, /\/activity\/featured-list-item/)
       assert.match(html, /rel="canonical" href="https:\/\/www\.lvyv\.com\/luxury\/featured-routes\?page=2"/)
       assert.equal((await request('/activity', 'www.lvyv.com')).status, 410)
     })
@@ -200,10 +206,7 @@ test('实际 SSR 构建：活动、错误状态、域名隔离及分享信息', 
       const response = await request('/encounters', 'www.lvyv.com')
       assert.equal(response.status, 200)
       const html = await response.text()
-      assert.match(html, /href="https:\/\/www\.lvyv\.com\/luxury\/featured-routes"/)
-      const activityLink = html.match(/<a\b[^>]*href="https:\/\/luxury\.lvyv\.com\/activity\/featured-list-item"[^>]*>/)?.[0]
-      assert.ok(activityLink)
-      assert.doesNotMatch(activityLink, /target="_blank"/)
+      assert.match(html, /href="\/luxury\/featured-routes"/)
     })
 
     await t.test('官网首屏提前加载标题和卡片使用的字体', async () => {
@@ -248,15 +251,22 @@ test('实际 SSR 构建：活动、错误状态、域名隔离及分享信息', 
         assert.equal(response.status, 410, host)
         assert.equal(response.headers.get('location'), null)
       }
-      for (const host of ['www.lvyv.com', 'lvyv.com', 'localhost']) {
+      for (const host of ['lvyv.com', 'localhost']) {
         assert.equal((await request('/activity/published', host)).status, 410, host)
       }
     })
-    await t.test('高奢站点不展示主站业务页面或多层伪活动路径', async () => {
-      for (const path of ['/login', '/encounters', '/activity/published/extra', '/luxury/featured-routes', '/featured-routes/extra']) {
-        assert.equal((await request(path)).status, 404, path)
+    await t.test('旧活动链接携带推广参数跳转到主站', async () => {
+      const redirect = await request('/activity/published/?utm_source=test', 'luxury.lvyv.com')
+      assert.equal(redirect.status, 301)
+      assert.equal(redirect.headers.get('location'), 'https://www.lvyv.com/activity/published?utm_source=test')
+      assert.equal((await request('/activity/published/extra')).status, 404)
+    })
+    await t.test('旧域名不提供主站业务页面', async () => {
+      // 预渲染的官网页面由 Nginx 的域名规则隔离，此处只验证 SSR 路由。
+      for (const path of ['/login', '/activity/published/extra', '/luxury/featured-routes', '/featured-routes/extra']) {
+        assert.equal((await request(path, 'luxury.lvyv.com')).status, 404, path)
       }
-      const root = await request('/')
+      const root = await request('/', 'luxury.lvyv.com')
       assert.equal(root.status, 302)
       assert.equal(root.headers.get('location'), 'https://www.lvyv.com/')
     })
