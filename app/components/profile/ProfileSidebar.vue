@@ -32,12 +32,6 @@
             <span>My Wishes</span>
           </NuxtLink>
         </li>
-        <li :class="{ active: activeTab === 'trips' }">
-          <NuxtLink to="/trips" class="nav-link" @click="emit('close')">
-            <span class="nav-icon icon-trips" aria-hidden="true" />
-            <span>My Trips</span>
-          </NuxtLink>
-        </li>
         <li :class="{ active: activeTab === 'orders' }">
           <NuxtLink to="/orders" class="nav-link" @click="emit('close')">
             <span class="nav-icon icon-orders" aria-hidden="true" />
@@ -256,11 +250,6 @@ const handleTabChange = (tab: string) => {
 .icon-wishes {
   mask-image: url('/images/profile/icon-wishes.svg');
   -webkit-mask-image: url('/images/profile/icon-wishes.svg');
-}
-
-.icon-trips {
-  mask-image: url('/images/profile/icon-trips.svg');
-  -webkit-mask-image: url('/images/profile/icon-trips.svg');
 }
 
 .icon-orders {

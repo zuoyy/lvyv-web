@@ -243,7 +243,6 @@
             <ul class="trust-list">
               <li><b>China Unicom</b> — one of China's three national carriers, on the mainland 4G / 5G network</li>
               <li><b>No throttling</b> — your data runs on the same network and same speeds as domestic users</li>
-              <li><b>No service blocking</b> — nothing is filtered that a local user could reach</li>
               <li><b>Auto-expiry</b> — plans close themselves on the validity date, so there's no surprise renewal</li>
               <li><b>Transparent overage</b> — $0.14 / 600MB / day, $0.02 / minute, $0.01 / SMS, printed plainly</li>
             </ul>
@@ -274,16 +273,16 @@
         </div>
         <div class="faq-list rv">
           <div class="faq-item" :class="{ open: openFaq === 0 }">
-            <button type="button" class="faq-q" :aria-expanded="openFaq === 0" @click="openFaq = openFaq === 0 ? null : 0">Is this really cheaper than roaming?<span class="ico">+</span></button>
-            <div class="faq-a"><div class="inner">Yes, by a very large margin. International roaming runs up to $1.39 per MB — that's $1,422 for a single gigabyte. <template v-if="popularPlan && pricePerGb">This card puts {{ popularPlan.data }} on the same network for {{ displayPrice(popularPlan.price) }} (about {{ pricePerGb }} per GB).</template> Installation and activation are free.</div></div>
+            <button type="button" class="faq-q" :aria-expanded="openFaq === 0" @click="openFaq = openFaq === 0 ? null : 0">Is this SIM card cheaper than international roaming?<span class="ico">+</span></button>
+            <div class="faq-a"><div class="inner">In most cases, yes. Our prepaid plans offer a more predictable way to stay connected in China, helping you avoid potentially high international roaming charges. Installation and activation are included at no extra cost.</div></div>
           </div>
           <div class="faq-item" :class="{ open: openFaq === 1 }">
-            <button type="button" class="faq-q" :aria-expanded="openFaq === 1" @click="openFaq = openFaq === 1 ? null : 1">How do I get my SIM?<span class="ico">+</span></button>
-            <div class="faq-a"><div class="inner">We meet you in person — at the airport arrivals hall or your hotel lobby. We bring the card, help you install it, and activate it with your passport on the spot. The whole process takes about three minutes.</div></div>
+            <button type="button" class="faq-q" :aria-expanded="openFaq === 1" @click="openFaq = openFaq === 1 ? null : 1">Where can I collect my SIM card?<span class="ico">+</span></button>
+            <div class="faq-a"><div class="inner">We offer in-person SIM delivery at selected airport arrival halls and hotel locations. Our team will meet you, help install your SIM card, and guide you through the activation process.</div></div>
           </div>
           <div class="faq-item" :class="{ open: openFaq === 2 }">
-            <button type="button" class="faq-q" :aria-expanded="openFaq === 2" @click="openFaq = openFaq === 2 ? null : 2">Does it work in my phone?<span class="ico">+</span></button>
-            <div class="faq-a"><div class="inner">Yes. It's a physical SIM card (nano-SIM with punch-out micro/standard adapters) that works in any unlocked phone — iPhone, Android, anything with a SIM slot. Activation requires an NFC-enabled Android phone for passport verification; we bring a backup device if needed.</div></div>
+            <button type="button" class="faq-q" :aria-expanded="openFaq === 2" @click="openFaq = openFaq === 2 ? null : 2">Will this SIM card work with my phone?<span class="ico">+</span></button>
+            <div class="faq-a"><div class="inner">Our physical SIM cards are compatible with most unlocked smartphones that support the required network bands and have a physical SIM slot. Both nano-SIM and standard SIM adapters are included.<br><br>Please note that passport verification requires an NFC-enabled Android device. If you don't have one, please contact our team before ordering to check available alternatives.</div></div>
           </div>
         </div>
       </div>

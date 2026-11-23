@@ -370,7 +370,6 @@ onBeforeUnmount(() => {
 
 .nav-china-sim {
   position: relative;
-  top: 6px;
   display: inline-flex;
   justify-content: center;
   align-items: center;
@@ -413,11 +412,10 @@ onBeforeUnmount(() => {
 
 .nav-china-sim__hot {
   position: absolute;
-  bottom: calc(100% + 4px);
-  left: 50%;
+  top: -10px;
+  right: 4px;
   width: 34px;
   height: 20px;
-  transform: translateX(-50%);
   pointer-events: none;
 }
 
@@ -537,12 +535,8 @@ onBeforeUnmount(() => {
     height: 9.56px;
   }
 
-  .nav-china-sim {
-    top: 2px;
-  }
-
   .nav-china-sim__hot {
-    bottom: calc(100% - 2px);
+    top: -8px;
     width: 27.2px;
     height: 16px;
   }
