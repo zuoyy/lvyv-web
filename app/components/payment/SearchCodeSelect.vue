@@ -1,9 +1,9 @@
 <template>
-  <div ref="root" class="code-select" :class="{ disabled }">
-    <input type="hidden" :value="modelValue">
+  <div ref="root" class="code-select" :class="{ disabled }" @focusout="handleFocusOut">
     <div class="code-input-wrap">
       <input
         :id="inputId"
+        ref="input"
         v-model="query"
         type="text"
         role="combobox"
@@ -13,9 +13,10 @@
         spellcheck="false"
         :placeholder="placeholder"
         :disabled="disabled"
-        :required="required && !modelValue"
+        :required="required"
         :aria-expanded="open"
-        :aria-controls="`${inputId}-listbox`"
+        :aria-controls="open ? `${inputId}-listbox` : undefined"
+        :aria-activedescendant="open && activeOption ? `${inputId}-${activeOption.code}` : undefined"
         @click="toggleList"
         @input="open = true"
         @keydown="handleKeydown"
@@ -29,6 +30,7 @@
         :key="option.code"
         type="button"
         role="option"
+        tabindex="-1"
         :aria-selected="option.code === modelValue"
         :class="{ active: activeIndex === index, selected: option.code === modelValue }"
         @click="selectOption(option)"
@@ -55,11 +57,13 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 const root = ref<HTMLElement>()
+const input = ref<HTMLInputElement>()
 const open = ref(false)
 const query = ref('')
 const activeIndex = ref(-1)
 
 const selectedOption = computed(() => props.options.find((option) => option.code === props.modelValue))
+const selectedLabel = computed(() => selectedOption.value ? `${selectedOption.value.name} (${selectedOption.value.code})` : '')
 const normalizedQuery = computed(() => query.value.trim().toLocaleLowerCase('en'))
 const matchingOptions = computed(() => {
   if (!normalizedQuery.value) return props.options
@@ -68,13 +72,18 @@ const matchingOptions = computed(() => {
 })
 const activeOption = computed(() => matchingOptions.value[activeIndex.value])
 
-const syncQuery = () => { query.value = selectedOption.value ? `${selectedOption.value.name} (${selectedOption.value.code})` : '' }
-watch(() => props.modelValue, syncQuery, { immediate: true })
+const syncQuery = () => { query.value = selectedLabel.value }
+watch(selectedLabel, syncQuery, { immediate: true })
 watch(matchingOptions, () => { activeIndex.value = matchingOptions.value.length ? 0 : -1 })
+watchEffect(() => {
+  const needsSelection = props.required && query.value !== '' && query.value !== selectedLabel.value
+  input.value?.setCustomValidity(needsSelection ? 'Select an option from the list.' : '')
+})
 
 const openList = () => {
   if (props.disabled) return
   open.value = true
+  if (query.value === selectedLabel.value) query.value = ''
   activeIndex.value = Math.max(matchingOptions.value.findIndex((option) => option.code === props.modelValue), 0)
 }
 const toggleList = () => { open.value ? closeList() : openList() }
@@ -89,9 +98,13 @@ const handleKeydown = (event: KeyboardEvent) => {
     event.preventDefault(); if (!open.value) openList(); else activeIndex.value = Math.min(activeIndex.value + 1, matchingOptions.value.length - 1)
   } else if (event.key === 'ArrowUp') {
     event.preventDefault(); activeIndex.value = Math.max(activeIndex.value - 1, 0)
-  } else if (event.key === 'Enter' && open.value && activeOption.value) {
-    event.preventDefault(); selectOption(activeOption.value)
+  } else if (event.key === 'Enter' && open.value) {
+    event.preventDefault()
+    if (activeOption.value) selectOption(activeOption.value)
   } else if (event.key === 'Escape') closeList()
+}
+const handleFocusOut = (event: FocusEvent) => {
+  if (!root.value?.contains(event.relatedTarget as Node | null)) closeList()
 }
 const handleDocumentClick = (event: MouseEvent) => { if (root.value && !root.value.contains(event.target as Node)) closeList() }
 onMounted(() => document.addEventListener('click', handleDocumentClick))

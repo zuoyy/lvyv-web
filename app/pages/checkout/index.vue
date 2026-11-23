@@ -33,14 +33,46 @@
               <label>Last name <input v-model.trim="contact.lastName" autocomplete="family-name" required maxlength="80"></label>
               <label class="contact-line">Email <input v-model.trim="contact.email" type="email" autocomplete="email" required maxlength="254"></label>
               <label class="contact-line">Phone <input v-model.trim="contact.phone" type="tel" autocomplete="tel" required maxlength="40"></label>
-              <label>
+              <div v-if="isSimCheckout" class="location-field">
+                <label for="checkout-country">Country</label>
+                <SearchCodeSelect
+                  v-model="contact.country"
+                  input-id="checkout-country"
+                  placeholder="Search country"
+                  :options="countryOptions"
+                  required
+                />
+              </div>
+              <label v-else>
                 Country
                 <select v-model="contact.country" autocomplete="country" required>
                   <option value="">Select country</option>
                   <option v-for="country in countries" :key="country[1]" :value="country[1]">{{ country[0] }}</option>
                 </select>
               </label>
-              <label>
+              <div v-if="isSimCheckout" class="location-field">
+                <label for="checkout-state">State or province</label>
+                <SearchCodeSelect
+                  v-if="stateOptions.length || !contact.country"
+                  v-model="contact.state"
+                  input-id="checkout-state"
+                  placeholder="Search state or province"
+                  :options="stateOptions"
+                  :disabled="!contact.country"
+                  required
+                />
+                <input
+                  v-else
+                  id="checkout-state"
+                  v-model.trim="contact.state"
+                  placeholder="Enter state or province code"
+                  autocomplete="address-level1"
+                  maxlength="6"
+                  pattern="[A-Za-z0-9]{1,6}"
+                  required
+                >
+              </div>
+              <label v-else>
                 State or province
                 <select v-if="regions.length" v-model="contact.state" autocomplete="address-level1" required>
                   <option value="">Select state or province</option>
@@ -70,7 +102,24 @@
           </aside>
 
           <section class="checkout-terms">
-            <label class="consent">
+            <label v-if="isSimCheckout" class="agreement-label">
+              <input v-model="agreed" type="checkbox" required class="agreement-native-checkbox">
+              <span class="agreement-circle" aria-hidden="true">
+                <FontAwesomeIcon :icon="faCheck" />
+              </span>
+              <span class="agreement-content">
+                <span class="agreement-terms">
+                  I have read and agree to Lvyv's <NuxtLink to="/terms" target="_blank">Terms of Use</NuxtLink>, <NuxtLink to="/terms" target="_blank">Privacy Statement</NuxtLink>, <NuxtLink to="/terms" target="_blank">Booking Notices</NuxtLink>, <NuxtLink to="/terms" target="_blank">Terms and Conditions</NuxtLink>, and <NuxtLink to="/terms" target="_blank">Travel Declaration for Seniors/Pregnant Women</NuxtLink>.
+                </span>
+                <span class="agreement-note">
+                  We securely save your traveler and contact details to make future bookings easier. You can review, update, or delete them at any time.
+                </span>
+                <span class="agreement-note">
+                  Your booking will be confirmed once payment is complete.
+                </span>
+              </span>
+            </label>
+            <label v-else class="consent">
               <input v-model="agreed" type="checkbox" required>
               <span>I agree to the <NuxtLink to="/terms">terms and conditions</NuxtLink>.</span>
             </label>
@@ -93,9 +142,10 @@
 </template>
 <script setup lang="ts">
 import { allCountries } from 'country-region-data'
-import { faPenToSquare } from '@fortawesome/free-solid-svg-icons'
+import { faCheck, faPenToSquare } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import CheckoutHeader from '~/components/checkout/CheckoutHeader.vue'
+import SearchCodeSelect from '~/components/payment/SearchCodeSelect.vue'
 
 definePageMeta({ middleware: 'member-auth', layout: false })
 useSeoMeta({ title: 'Checkout', robots: 'noindex, nofollow' })
@@ -118,13 +168,35 @@ watch([selection, quantity], ([sku, count]) => {
   amount.value = Math.round((sku?.price ?? 0) * 100) * count / 100
 }, { immediate: true })
 const countries = allCountries
+const countryOptions = countries.map(([name, code]) => ({ name, code }))
 const contact = reactive({ firstName: '', lastName: '', email: '', phone: '', country: '', state: '' })
 const billingAddress = reactive({ city: '', zip: '', address: '' })
 const regions = computed(() => countries.find(country => country[1] === contact.country)?.[2] || [])
-watch(() => contact.country, () => { if (!regions.value.some(region => region[1] === contact.state)) contact.state = '' }, { flush: 'sync' })
+const stateCodePattern = /^[A-Za-z0-9]{1,6}$/
+const shortRegionCode = (code: string, country: string) => {
+  const normalized = code.toUpperCase()
+  return normalized.startsWith(`${country}-`) ? normalized.slice(country.length + 1) : normalized
+}
+const stateOptions = computed(() => regions.value
+  .map(([name, code]) => ({ name, code: shortRegionCode(code, contact.country) }))
+  .filter(({ code }) => stateCodePattern.test(code))
+  .sort((a, b) => a.name.localeCompare(b.name, 'en')))
+watch(() => contact.country, () => {
+  if (isSimCheckout.value || !regions.value.some(([, code]) => code === contact.state)) contact.state = ''
+}, { flush: 'sync' })
 onMounted(async () => {
   const member = await auth.loadMember().catch(() => null)
-  if (member) Object.assign(contact, { firstName: member.firstName || '', lastName: member.lastName || '', email: member.email, phone: member.mobile || '', country: member.country || '', state: member.stateProvince || '' })
+  if (!member) return
+  const country = member.country || ''
+  const region = member.stateProvince || ''
+  Object.assign(contact, {
+    firstName: member.firstName || '',
+    lastName: member.lastName || '',
+    email: member.email,
+    phone: member.mobile || '',
+    country: isSimCheckout.value ? country.toUpperCase() : country,
+    state: isSimCheckout.value ? shortRegionCode(region, country.toUpperCase()) : region
+  })
 })
 const note = ref('')
 const agreed = ref(false)
@@ -277,6 +349,7 @@ button:disabled { opacity: .6; }
 
 .sim-checkout .billing-grid label { gap: 8px; font-size: 14px; font-weight: 600; }
 .sim-checkout .billing-grid .contact-line { grid-column: 1 / -1; }
+.location-field { display: grid; gap: 8px; min-width: 0; }
 
 .sim-checkout .billing-grid :is(input, select, textarea) {
   min-height: 48px;
@@ -290,6 +363,25 @@ button:disabled { opacity: .6; }
 .sim-checkout .billing-grid :is(input, select, textarea):focus {
   border-color: #1a382b;
   outline: 2px solid rgba(26, 56, 43, 0.18);
+}
+
+.sim-checkout .billing-grid :deep(.code-input-wrap input) {
+  min-height: 48px;
+  padding: 0 42px 0 16px;
+  border-color: #e0e3e1;
+  border-radius: 10px;
+  font-size: 15px;
+}
+
+.sim-checkout .billing-grid :deep(.code-input-wrap input:focus) {
+  border-color: #1a382b;
+  outline: 2px solid rgba(26, 56, 43, 0.18);
+}
+
+.sim-checkout .billing-grid :deep(.code-menu) {
+  border-color: #e0e3e1;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
 }
 
 .sim-checkout .checkout-summary {
@@ -320,9 +412,52 @@ button:disabled { opacity: .6; }
 
 .total-line strong { font-size: 22px; }
 .sim-checkout .checkout-terms { grid-column: 1; }
-.sim-checkout .consent { align-items: flex-start; gap: 12px; margin: 0 0 24px; font-size: 14px; }
-.sim-checkout .consent input { width: 18px; height: 18px; margin: 1px 0 0; accent-color: #1a382b; }
-.sim-checkout .consent a { color: #2563eb; text-decoration: underline; }
+.agreement-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 28px;
+  cursor: pointer;
+}
+
+.agreement-native-checkbox {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  margin: 2px 0 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.agreement-circle {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  margin-top: 2px;
+  border: 1.8px solid #d0d5dd;
+  border-radius: 50%;
+  background: #fff;
+  color: #fff;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.agreement-circle svg {
+  width: 12px;
+  height: 12px;
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.agreement-native-checkbox:focus-visible + .agreement-circle { outline: 2px solid #1a382b; outline-offset: 2px; }
+.agreement-native-checkbox:checked + .agreement-circle { background: #8cd33c; border-color: #8cd33c; }
+.agreement-native-checkbox:checked + .agreement-circle svg { opacity: 1; transform: scale(1); }
+.agreement-content { display: grid; gap: 10px; }
+.agreement-terms { color: #344054; font-size: 13px; line-height: 1.5; }
+.agreement-terms a { color: #2563eb; text-decoration: underline; text-underline-offset: 2px; }
+.agreement-note { color: #667085; font-size: 12.5px; line-height: 1.5; }
 .sim-checkout .checkout-error { color: #b42318; }
 
 .sim-checkout button[type='submit'] {
