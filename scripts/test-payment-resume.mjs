@@ -267,6 +267,19 @@ test('返回未提交的钱包占位时显示信用卡表单，不自动切换�
   assert.deepEqual(page.calls.map(([name]) => name), ['init'])
 })
 
+test('重新打开已支付订单的付款地址时进入独立结果页', async () => {
+  for (const [existing, query] of [
+    [{ paymentNo: 'PAY_TEST', status: 'SUCCEEDED' }, { paymentNo: 'PAY_TEST' }],
+    [{ paymentNo: 'PAY_OTHER', status: 'FAILED' }, { orderNo: 'ORD_TEST' }],
+    [null, { orderNo: 'ORD_TEST' }],
+  ]) {
+    const page = setup({ status: 'PAID', existing })
+    await page.open()
+    assert.deepEqual(structuredClone(page.redirects), [{ path: '/payment/result', query }])
+    assert.deepEqual(page.calls, [])
+  }
+})
+
 test('已提交或待审核的原支付不自动创建第二笔支付', async () => {
   for (const status of ['PENDING', 'UNKNOWN', 'REVIEW_REQUIRED']) {
     const page = setup({ expired: true, existing: { paymentNo: 'PAY_TEST', channel: 'CREDIT_CARD', status } })

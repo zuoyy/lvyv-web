@@ -857,7 +857,10 @@ async function load() {
     order.value = loadedOrder
     now.value = Date.now()
     if (loadedOrder.status === 'PAID') {
-      await navigateTo({ path: '/orders', query: { order: loadedOrder.orderNo } })
+      const query = existing?.status === 'SUCCEEDED'
+        ? { paymentNo: existing.paymentNo }
+        : { orderNo: loadedOrder.orderNo }
+      await navigateTo({ path: '/payment/result', query }, { replace: true })
       return
     }
     if (loadedOrder.status !== 'PENDING_PAYMENT') return

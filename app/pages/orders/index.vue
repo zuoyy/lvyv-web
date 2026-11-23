@@ -50,6 +50,7 @@
   </AccountPageShell>
 </template>
 <script setup lang="ts">
+import AccountPageShell from '~/components/profile/AccountPageShell.vue'
 import type { StoreOrder } from '~/composables/useCommerce'
 const { ready, initializeAccount } = useAccountPage('/orders')
 const commerce = useCommerce()
