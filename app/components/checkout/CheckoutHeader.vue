@@ -10,12 +10,6 @@
       </NuxtLink>
 
       <div class="nav-actions">
-        <!-- Language Selector -->
-        <div class="lang-selector">
-          <FontAwesomeIcon :icon="faGlobe" class="lang-icon" aria-hidden="true" />
-          <span class="lang-text">EN</span>
-        </div>
-
         <!-- Member Account Status -->
         <div v-if="memberToken" ref="accountMenu" class="member-account">
           <button class="member-trigger" type="button" :aria-expanded="accountOpen" aria-haspopup="menu" @click="accountOpen = !accountOpen">
@@ -119,7 +113,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faGlobe, faUser, faTimes } from '@fortawesome/free-solid-svg-icons'
+import { faUser, faTimes } from '@fortawesome/free-solid-svg-icons'
 
 const { token: memberToken, member, loadMember, clearSession, logout: logoutMember } = useMemberAuth()
 
@@ -252,13 +246,11 @@ onBeforeUnmount(() => {
   height: 10.83px;
 }
 
-.lang-selector,
 .nav-login,
 .member-trigger {
   color: #ffffff !important;
 }
 
-.lang-selector:hover,
 .nav-login:hover {
   color: rgba(255, 255, 255, 0.85) !important;
 }
