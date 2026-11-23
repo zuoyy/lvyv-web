@@ -143,59 +143,41 @@
         </header>
 
         <div class="encounter-deck">
-          <NuxtLink
-            to="/wish?city=beijing"
-            class="encounter-card encounter-card--beijing"
-            aria-label="Explore BEIJING"
-          >
-            <picture>
-              <source type="image/webp" srcset="/images/home/encounter-beijing-582.webp">
-              <img
-                src="/images/home/encounter-beijing-582.png"
-                alt="BEIJING 北京"
-                width="278"
-                height="389"
-                loading="lazy"
-                decoding="async"
-              >
-            </picture>
-          </NuxtLink>
+          <picture class="encounter-card encounter-card--beijing">
+            <source type="image/webp" srcset="/images/home/encounter-beijing-582.webp">
+            <img
+              src="/images/home/encounter-beijing-582.png"
+              alt="BEIJING 北京"
+              width="278"
+              height="389"
+              loading="lazy"
+              decoding="async"
+            >
+          </picture>
 
-          <NuxtLink
-            to="/cities/chengdu"
-            class="encounter-card encounter-card--chengdu"
-            aria-label="Explore CHENGDU"
-          >
-            <picture>
-              <source type="image/webp" srcset="/images/home/encounter-chengdu-582.webp">
-              <img
-                src="/images/home/encounter-chengdu-582.png"
-                alt="CHENGDU 成都"
-                width="278"
-                height="389"
-                loading="lazy"
-                decoding="async"
-              >
-            </picture>
-          </NuxtLink>
+          <picture class="encounter-card encounter-card--chengdu">
+            <source type="image/webp" srcset="/images/home/encounter-chengdu-582.webp">
+            <img
+              src="/images/home/encounter-chengdu-582.png"
+              alt="CHENGDU 成都"
+              width="278"
+              height="389"
+              loading="lazy"
+              decoding="async"
+            >
+          </picture>
 
-          <NuxtLink
-            to="/cities/xian"
-            class="encounter-card encounter-card--xian"
-            aria-label="Explore XI'AN"
-          >
-            <picture>
-              <source type="image/webp" srcset="/images/home/encounter-xian-582.webp">
-              <img
-                src="/images/home/encounter-xian-582.png"
-                alt="XI'AN 西安"
-                width="278"
-                height="389"
-                loading="lazy"
-                decoding="async"
-              >
-            </picture>
-          </NuxtLink>
+          <picture class="encounter-card encounter-card--xian">
+            <source type="image/webp" srcset="/images/home/encounter-xian-582.webp">
+            <img
+              src="/images/home/encounter-xian-582.png"
+              alt="XI'AN 西安"
+              width="278"
+              height="389"
+              loading="lazy"
+              decoding="async"
+            >
+          </picture>
         </div>
       </div>
     </section>
@@ -1264,9 +1246,7 @@ onUnmounted(() => {
   width: 278px;
   height: 389px;
   border-radius: 20px;
-  text-decoration: none;
-  /* 炫酷贝塞尔弹性发牌曲线 */
-  transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+  transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: transform, opacity;
 }
 
@@ -1276,9 +1256,7 @@ onUnmounted(() => {
   height: 100%;
   object-fit: contain;
   border-radius: 20px;
-  pointer-events: none;
   filter: drop-shadow(0 10px 25px rgba(0, 0, 0, 0.12));
-  transition: filter 0.4s ease, transform 0.4s ease;
 }
 
 /* 初始叠牌状态: 3张牌聚在中央偏下 */
@@ -1302,11 +1280,6 @@ onUnmounted(() => {
   transition-delay: 0.1s;
 }
 
-.encounter-card--beijing:hover {
-  z-index: 10;
-  transform: rotate(-12.89deg) translateY(-14px) scale(1.04);
-}
-
 /* 2. CHENGDU 卡片原图 (Figma Node #582:3685) */
 .encounter-card--chengdu {
   z-index: 2;
@@ -1320,11 +1293,6 @@ onUnmounted(() => {
   transition-delay: 0.25s;
 }
 
-.encounter-card--chengdu:hover {
-  z-index: 10;
-  transform: translateY(-14px) scale(1.04);
-}
-
 /* 3. XI'AN 卡片原图 (Figma Node #582:3692) */
 .encounter-card--xian {
   z-index: 3;
@@ -1336,15 +1304,6 @@ onUnmounted(() => {
 
 .curated-section.is-in-view .encounter-card--xian {
   transition-delay: 0.4s;
-}
-
-.encounter-card--xian:hover {
-  z-index: 10;
-  transform: rotate(10.87deg) translateY(-14px) scale(1.04);
-}
-
-.encounter-card:hover img {
-  filter: drop-shadow(0 24px 40px rgba(0, 0, 0, 0.24));
 }
 
 .home-wish-section {

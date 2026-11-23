@@ -39,7 +39,7 @@
           <div class="trip-card__meta">
             <span class="trip-card__no">{{ trip.itineraryNo }}</span>
             <span class="trip-card__divider" aria-hidden="true" />
-            <span class="trip-card__time">Order Time: {{ formatTripDate(trip.createTime) }}</span>
+            <span class="trip-card__time">Created: {{ formatTripDate(trip.createTime) }}</span>
           </div>
           <span class="trip-card__status" :class="tripStatusClass(trip.status)">{{ trip.statusName }}</span>
         </div>
@@ -83,30 +83,11 @@
           <button v-if="canDeleteTrip(trip)" type="button" class="btn-trip-delete" @click="handleDeleteTrip(trip)">Delete</button>
           <!-- 查看行程：单纯就是查看行程 -->
           <button type="button" class="btn-trip-plan" @click="openPlan(trip)">View Plan</button>
-          <!-- 独立报价按钮：查看当前报价与历史方案 -->
-          <button
-            v-if="trip.offerCount"
-            type="button"
-            :class="trip.pendingOffer ? 'btn-trip-offer-primary' : 'btn-trip-offer-secondary'"
-            @click="handleOfferClick(trip)"
-          >
-            {{ trip.pendingOffer ? 'Review Offer' : `Offers (${trip.offerCount})` }}
-          </button>
-          <!-- 待支付订单快捷入口 -->
-          <button
-            v-if="trip.status === 'WAITING_PAYMENT' && trip.orderNo"
-            type="button"
-            class="btn-trip-pay"
-            @click="navigateTo(`/orders/${encodeURIComponent(trip.orderNo)}/pay`)"
-          >
-            Pay Order
-          </button>
         </div>
       </article>
     </div>
 
     <!-- 查看行程弹窗：单纯纯粹展示行程规划与景点路线 -->
-    <div v-if="offersError" class="content-state error-state"><span>{{ offersError }}</span><button type="button" @click="fetchSummaries(trips, listRequest)">Retry offers</button></div>
     <AccountPagination :page="currentPage" :size="10" :total="total" :loading="loading" @change="changePage" />
     <Teleport to="body">
       <div v-if="selectedTrip" class="modal-backdrop" @click.self="closePlan">
@@ -143,379 +124,19 @@
         </section>
       </div>
     </Teleport>
-
-    <!-- 独立弹窗：方案报价与历史记录（Offers & History） -->
-    <Teleport to="body">
-      <div v-if="selectedOfferTrip" class="modal-backdrop" @click.self="closeHistory">
-        <section class="trip-modal offer-history-modal" role="dialog" aria-modal="true" aria-labelledby="offer-history-title">
-          <header>
-            <div>
-              <p>Quotations & History · {{ selectedOfferTrip.sourceLabel }}</p>
-              <h2 id="offer-history-title">{{ selectedOfferTrip.title }}</h2>
-            </div>
-            <button type="button" aria-label="Close" @click="closeHistory">×</button>
-          </header>
-
-          <div v-if="historyLoading" class="content-state" role="status">Loading offers...</div>
-          <div v-else-if="historyError" class="content-state error-state"><span>{{ historyError }}</span><button type="button" @click="openOffers(selectedOfferTrip, historyPage)">Try again</button></div>
-          <div v-else-if="!selectedOfferTrip.offers.length" class="content-state">No offers yet.</div>
-          <div v-else class="offer-modal-body">
-            <p class="offer-modal-subtitle">
-              Below are all quotation proposals and historical adjustments prepared by your travel designer for this trip.
-            </p>
-
-            <div class="offer-timeline">
-              <article
-                v-for="(offer, idx) in selectedOfferTrip.offers"
-                :key="offer.id || offer.offerNo"
-                class="offer-history-card"
-                :class="{ 'offer-history-card--active': offer.status === 'SENT' }"
-              >
-                <div class="offer-history-card__top">
-                  <div class="offer-history-card__meta">
-                    <span class="offer-status-badge" :class="`offer-status-badge--${offer.status.toLowerCase()}`">
-                      {{ formatOfferStatus(offer.status) }}
-                    </span>
-                    <strong class="offer-no-code">{{ offer.offerNo }}</strong>
-                    <span v-if="idx === 0 && offer.status === 'SENT'" class="offer-latest-pill">Latest</span>
-                  </div>
-                  <time class="offer-create-time">{{ formatDateTime(offer.createTime) }}</time>
-                </div>
-
-                <div v-if="offer.tiers?.length" class="offer-history-card__tiers">
-                  <div class="tier-label">Tiered Pricing</div>
-                  <div class="tier-list">
-                    <div v-for="tier in offer.tiers" :key="tier.id" class="tier-item">
-                      <span class="tier-pax">{{ tier.minTravelerCount }}{{ tier.maxTravelerCount == null ? '+' : `-${tier.maxTravelerCount}` }} travelers:</span>
-                      <span class="tier-price">Adult <strong>{{ offer.currency }} {{ Number(tier.adultSalePrice).toFixed(2) }}</strong></span>
-                      <span class="tier-price-sep">·</span>
-                      <span class="tier-price">Child <strong>{{ offer.currency }} {{ Number(tier.childSalePrice).toFixed(2) }}</strong></span>
-                    </div>
-                  </div>
-                </div>
-
-                <div v-if="offer.validUntil" class="offer-validity-info">
-                  <span>Validity: until {{ formatDateTime(offer.validUntil) }}</span>
-                </div>
-
-                <div v-if="offer.status === 'SENT' || offer.status !== 'ACCEPTED'" class="offer-history-card__action">
-                  <button
-                    v-if="offer.status === 'SENT'"
-                    type="button"
-                    class="btn-offer-review-main"
-                    @click="openConfirmOffer(selectedOfferTrip, offer)"
-                  >
-                    Review & Confirm Offer
-                  </button>
-                  <button
-                    v-else-if="offer.status !== 'ACCEPTED'"
-                    type="button"
-                    class="btn-offer-view-snapshot"
-                    @click="openOfferSnapshot(offer)"
-                  >
-                    View Proposal Snapshot
-                  </button>
-                </div>
-              </article>
-            </div>
-          </div>
-
-          <footer>
-            <AccountPagination :page="historyPage" :size="10" :total="historyTotal" :loading="historyLoading" @change="openOffers(selectedOfferTrip, $event)" />
-            <button type="button" class="btn-trip-close-modal" @click="closeHistory">Close</button>
-          </footer>
-        </section>
-      </div>
-    </Teleport>
-
-    <!-- 原地轻量查看：方案与报价快照弹窗（无需跳页） -->
-    <Teleport to="body">
-      <div v-if="snapshotOffer" class="modal-backdrop" style="z-index: 1600;" @click.self="closeSnapshot">
-        <section class="trip-modal snapshot-modal" role="dialog" aria-modal="true" aria-labelledby="snapshot-modal-title">
-          <header>
-            <div>
-              <p>Proposal Snapshot · {{ snapshotOffer.offerNo }}</p>
-              <h2 id="snapshot-modal-title">{{ snapshotDetail?.itinerary?.content?.content?.title || snapshotOffer.offerNo }}</h2>
-            </div>
-            <button type="button" aria-label="Close" @click="closeSnapshot">×</button>
-          </header>
-
-          <div v-if="snapshotLoading" class="snapshot-loading">
-            <span class="state-spinner" />
-            <span>Loading quotation snapshot...</span>
-          </div>
-          <div v-else-if="snapshotError" class="snapshot-error">
-            <span>{{ snapshotError }}</span>
-          </div>
-          <div v-else class="snapshot-modal-body">
-            <!-- 状态与版本条 -->
-            <div class="snapshot-status-bar">
-              <span class="offer-status-badge" :class="`offer-status-badge--${snapshotOffer.status.toLowerCase()}`">
-                {{ formatOfferStatus(snapshotOffer.status) }}
-              </span>
-              <span v-if="snapshotDetail?.itinerary?.versionNo" class="snapshot-version-tag">
-                Version V{{ snapshotDetail.itinerary.versionNo }}
-              </span>
-              <span v-if="snapshotOffer.validUntil" class="snapshot-validity-text">
-                Valid until {{ formatDateTime(snapshotOffer.validUntil) }}
-              </span>
-            </div>
-
-            <!-- 定制师留言 -->
-            <div v-if="snapshotDetail?.itinerary?.content?.content?.designerMessage" class="snapshot-message-box">
-              <div class="snapshot-message-label">Designer's Note</div>
-              <p>{{ snapshotDetail.itinerary.content.content.designerMessage }}</p>
-            </div>
-
-            <!-- 价格阶梯快照 -->
-            <div class="snapshot-section">
-              <h3 class="snapshot-section-title">Price Tiers & Quotation</h3>
-              <div class="snapshot-tiers-table">
-                <div class="snapshot-tier-header">
-                  <span>Travelers Group</span>
-                  <span>Adult Unit Price</span>
-                  <span>Child Unit Price</span>
-                </div>
-                <div v-for="tier in (snapshotOffer.tiers || [])" :key="tier.id" class="snapshot-tier-row">
-                  <span>{{ tier.minTravelerCount }}{{ tier.maxTravelerCount == null ? '+' : ` - ${tier.maxTravelerCount}` }} travelers</span>
-                  <strong>{{ snapshotOffer.currency }} {{ Number(tier.adultSalePrice).toFixed(2) }}</strong>
-                  <strong>{{ snapshotOffer.currency }} {{ Number(tier.childSalePrice).toFixed(2) }}</strong>
-                </div>
-              </div>
-            </div>
-
-            <!-- 历史版本完整详细行程规划展示 -->
-            <div v-if="snapshotDetail?.itinerary?.content?.days?.length" class="snapshot-section">
-              <h3 class="snapshot-section-title">Historical Itinerary Plan ({{ snapshotDetail.itinerary.content.days.length }} Days)</h3>
-              <div class="snapshot-day-list">
-                <section v-for="day in snapshotDetail.itinerary.content.days" :key="day.id" class="snapshot-day-section">
-                  <div class="snapshot-day-number">Day {{ day.dayNo }}</div>
-                  <div class="snapshot-day-content">
-                    <h4>{{ day.title }}</h4>
-                    <p v-if="day.summary" class="snapshot-day-summary">{{ day.summary }}</p>
-                    <ol v-if="getSnapshotDayItems(day.id).length" class="snapshot-item-list">
-                      <li v-for="item in getSnapshotDayItems(day.id)" :key="item.id">
-                        <span class="snapshot-item-type">{{ item.projectType || 'Experience' }}</span>
-                        <strong>{{ item.title }}</strong>
-                        <p v-if="item.address" class="snapshot-item-addr">{{ item.address }}</p>
-                        <dl v-if="item.tagGroups?.length" class="item-tag-groups">
-                          <div v-for="group in item.tagGroups" :key="group.code">
-                            <dt>{{ group.label }}</dt>
-                            <dd>{{ group.tags.map(tag => tag.label).join(' · ') }}</dd>
-                          </div>
-                        </dl>
-                      </li>
-                    </ol>
-                  </div>
-                </section>
-              </div>
-            </div>
-          </div>
-
-          <footer>
-            <button type="button" class="btn-trip-close-modal" @click="closeSnapshot">Close</button>
-          </footer>
-        </section>
-      </div>
-    </Teleport>
-
-    <!-- 待确认报价方案弹窗：直接在当前行程页完成人数核对、积分抵扣与确认成单（无需跳页） -->
-    <Teleport to="body">
-      <div v-if="confirmModalOffer && confirmModalTrip" class="modal-backdrop" style="z-index: 1550;" @click.self="closeConfirmOffer">
-        <section class="trip-modal confirm-offer-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title">
-          <header>
-            <div>
-              <p>Quotation & Booking Details · {{ confirmModalOffer.offerNo }}</p>
-              <h2 id="confirm-modal-title">{{ confirmation?.itinerary?.content?.content?.title || confirmModalTrip.title }}</h2>
-            </div>
-            <button type="button" aria-label="Close" @click="closeConfirmOffer">×</button>
-          </header>
-
-          <div v-if="confirmLoading" class="content-state" role="status">
-            <span class="state-spinner" />
-            <span>Loading quotation details...</span>
-          </div>
-          <div v-else-if="confirmError" class="content-state error-state">
-            <span>{{ confirmError }}</span>
-            <button type="button" @click="openConfirmOffer(confirmModalTrip, confirmModalOffer)">Try again</button>
-          </div>
-          <div v-else-if="confirmation" class="confirm-offer-body">
-            <!-- 左侧：参数与人数配置 -->
-            <div class="confirm-left-panel">
-              <!-- 行程简况与日期 -->
-              <div class="confirm-summary-box">
-                <div class="confirm-date-row">
-                  <span class="trip-spec-icon icon-calendar" aria-hidden="true" />
-                  <span>Departure: <strong>{{ formatDate(confirmation.itinerary.startDate) }} - {{ formatDate(confirmation.itinerary.endDate) }}</strong></span>
-                </div>
-                <p v-if="confirmation.itinerary.content?.content?.summary" class="confirm-summary-text">
-                  {{ confirmation.itinerary.content.content.summary }}
-                </p>
-              </div>
-
-              <!-- 定制师留言 -->
-              <div v-if="confirmation.itinerary.content?.content?.designerMessage" class="confirm-designer-note">
-                <div class="confirm-note-label">Designer's Note</div>
-                <p>{{ confirmation.itinerary.content.content.designerMessage }}</p>
-              </div>
-
-              <!-- 阶梯价格说明 -->
-              <div class="confirm-tier-summary">
-                <div class="confirm-section-label">Pricing Tiers</div>
-                <div class="confirm-tier-pills">
-                  <div v-for="tier in (confirmModalOffer.tiers || [])" :key="tier.id" class="confirm-tier-pill">
-                    <span class="tier-range">{{ tier.minTravelerCount }}{{ tier.maxTravelerCount == null ? '+' : `-${tier.maxTravelerCount}` }} travelers:</span>
-                    <span class="tier-val">Adult <strong>{{ confirmModalOffer.currency }} {{ Number(tier.adultSalePrice).toFixed(0) }}</strong> / Child <strong>{{ confirmModalOffer.currency }} {{ Number(tier.childSalePrice).toFixed(0) }}</strong></span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 出行人数配置 -->
-              <div class="confirm-travelers-form">
-                <div class="confirm-section-label">Select Travelers</div>
-                <div class="travelers-input-grid">
-                  <div class="traveler-field">
-                    <label for="modal-adult-count">Adults (Age 12+)</label>
-                    <div class="counter-input-wrap">
-                      <button type="button" class="btn-counter" :disabled="adultCount <= 1 || confirmSubmitting" @click="adultCount = Math.max(1, adultCount - 1)">-</button>
-                      <input id="modal-adult-count" v-model.number="adultCount" type="number" min="1" step="1" inputmode="numeric" :disabled="confirmSubmitting">
-                      <button type="button" class="btn-counter" :disabled="confirmSubmitting" @click="adultCount = adultCount + 1">+</button>
-                    </div>
-                  </div>
-                  <div class="traveler-field">
-                    <label for="modal-child-count">Children (Under 12)</label>
-                    <div class="counter-input-wrap">
-                      <button type="button" class="btn-counter" :disabled="childCount <= 0 || confirmSubmitting" @click="childCount = Math.max(0, childCount - 1)">-</button>
-                      <input id="modal-child-count" v-model.number="childCount" type="number" min="0" step="1" inputmode="numeric" :disabled="confirmSubmitting">
-                      <button type="button" class="btn-counter" :disabled="confirmSubmitting" @click="childCount = childCount + 1">+</button>
-                    </div>
-                  </div>
-                </div>
-                <div v-if="travelerValidationMessage || quoteError" class="traveler-error-text">
-                  {{ travelerValidationMessage || quoteError }}
-                </div>
-              </div>
-
-              <!-- 积分抵扣 -->
-              <div v-if="availablePoints > 0" class="confirm-points-form">
-                <div class="confirm-section-label">Points Redemption</div>
-                <div class="points-field-row">
-                  <input id="modal-offer-points" v-model.number="requestedPoints" class="points-input" type="number" min="0" :max="availablePoints" step="1" placeholder="0">
-                  <button type="button" class="btn-use-all-points" @click="requestedPoints = availablePoints">
-                    Use all {{ availablePoints }} pts
-                  </button>
-                </div>
-                <span class="points-tip">Available: {{ availablePoints }} points ({{ pointsPerUsd }} pts = $1.00 USD)</span>
-              </div>
-            </div>
-
-            <!-- 右侧：账单明细卡片与提交区 -->
-            <div class="confirm-right-panel">
-              <div class="confirm-bill-card">
-                <h3 class="bill-card-title">Quotation Summary</h3>
-                <div v-if="quoteLoading" class="bill-loading">Calculating pricing...</div>
-                <div v-else-if="quote" class="bill-breakdown">
-                  <div class="bill-row">
-                    <span>Adults ({{ quote.adultCount }} × {{ formatMoney(quote.adultSaleUnitPrice) }})</span>
-                    <strong>{{ formatMoney(quote.adultSubtotal) }}</strong>
-                  </div>
-                  <div v-if="quote.childCount" class="bill-row">
-                    <span>Children ({{ quote.childCount }} × {{ formatMoney(quote.childSaleUnitPrice) }})</span>
-                    <strong>{{ formatMoney(quote.childSubtotal) }}</strong>
-                  </div>
-                  <div class="bill-row">
-                    <span>List subtotal</span>
-                    <span>{{ formatMoney(quote.listSubtotal) }}</span>
-                  </div>
-                  <div v-if="Number(quote.discountAmount) > 0" class="bill-row discount-row">
-                    <span>Tier discount</span>
-                    <span>-{{ formatMoney(quote.discountAmount) }}</span>
-                  </div>
-                  <div v-if="Number(quote.redemption?.pointsAmount || 0) > 0" class="bill-row discount-row">
-                    <span>Points ({{ quote.redemption?.usablePoints }} pts)</span>
-                    <span>-{{ formatMoney(quote.redemption?.pointsAmount || 0) }}</span>
-                  </div>
-                  <div class="bill-divider" />
-                  <div class="bill-row total-row">
-                    <span>Total to Pay</span>
-                    <span class="total-amount">{{ formatMoney(quote.totalAmount) }}</span>
-                  </div>
-                </div>
-
-                <div v-if="confirmModalOffer.validUntil" class="bill-validity">
-                  <span>Validity: until <strong>{{ formatDateTime(confirmModalOffer.validUntil) }}</strong></span>
-                </div>
-
-                <div class="bill-actions">
-                  <button
-                    type="button"
-                    class="btn-confirm-submit"
-                    :disabled="confirmSubmitting || quoteLoading || !travelerCountsValid || !quote"
-                    @click="submitConfirmOffer"
-                  >
-                    {{ confirmSubmitting ? 'Creating order...' : 'Confirm Offer & View in Orders' }}
-                  </button>
-                  <button
-                    v-if="confirmation.canRequestRevision"
-                    type="button"
-                    class="btn-confirm-revision"
-                    @click="revisionOpen = !revisionOpen"
-                  >
-                    {{ revisionOpen ? 'Cancel Revision' : 'Request a Revision' }}
-                  </button>
-                </div>
-
-                <!-- 申请调整需求面板 -->
-                <div v-if="revisionOpen" class="revision-drawer">
-                  <label for="modal-revision-input">Describe needed adjustments:</label>
-                  <textarea
-                    id="modal-revision-input"
-                    v-model="revisionContent"
-                    rows="4"
-                    placeholder="E.g., Adjust day 3 hotel, add 1 more museum..."
-                  />
-                  <div class="revision-drawer-actions">
-                    <button
-                      type="button"
-                      class="btn-send-revision"
-                      :disabled="revisionSubmitting || !revisionContent.trim()"
-                      @click="submitRevision"
-                    >
-                      {{ revisionSubmitting ? 'Sending...' : 'Submit Request' }}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <footer>
-            <button type="button" class="btn-trip-close-modal" @click="closeConfirmOffer">Close</button>
-          </footer>
-        </section>
-      </div>
-    </Teleport>
   </AccountPageShell>
 </template>
 
 <script setup lang="ts">
-import AccountPageShell from '~/components/profile/AccountPageShell.vue'
-import AccountPagination from '~/components/profile/AccountPagination.vue'
-import type { ItinerarySummary, ItineraryInstance, CustomOfferView } from '~/composables/useTourCommerce'
-
-useNoIndex()
-
+import type { ItinerarySummary, ItineraryInstance } from '~/composables/useTourCommerce'
 interface TripItemDetail { id: number; projectTypeLabel?: string; title: string; address?: string; tagGroups: import('~/composables/useTourCommerce').ItineraryTagGroupView[] }
 interface TripDay { id: number; dayNo: number; title: string; summary?: string; items: TripItemDetail[] }
 interface Trip {
-  id: number; dayCount: number; offerCount: number
-  itineraryNo: string; itineraryType: 'STANDARD_PURCHASE' | 'CUSTOM_SERVICE'; sourceType: 'STANDARD_PRODUCT' | 'WISH' | 'MANUAL'; wishId?: number; wishNo?: string; orderNo?: string; status: string; statusName: string; versionNo: number; travelerCount?: number; startDate?: string; endDate?: string
+  id: number; dayCount: number;
+  itineraryNo: string; itineraryType: 'STANDARD_PURCHASE' | 'CUSTOM_SERVICE'; sourceType: 'STANDARD_PRODUCT' | 'WISH' | 'MANUAL'; wishId?: number; wishNo?: string;  status: string; statusName: string; versionNo: number; travelerCount?: number; startDate?: string; endDate?: string
   itineraryTypeLabel: string; sourceLabel: string; title: string; cityLabel: string; imageUrls: string[]; dateText?: string
   summary?: string; designerMessage?: string; days: TripDay[]; createTime?: string
   customItineraryId?: number
-  offers: import('~/composables/useTourCommerce').CustomOfferView[]
-  latestOffer?: import('~/composables/useTourCommerce').CustomOfferView
-  pendingOffer?: import('~/composables/useTourCommerce').CustomOfferView
 }
 
 const { auth, ready, initializeAccount } = useAccountPage('/trips')
@@ -528,214 +149,11 @@ const currentPage = ref(1)
 const total = ref(0)
 const planLoading = ref(false)
 const planError = ref('')
-const historyLoading = ref(false)
-const historyError = ref('')
-const historyPage = ref(1)
-const historyTotal = ref(0)
-const offersError = ref('')
 let listRequest = 0
 let planRequest = 0
 let historyRequest = 0
 let snapshotRequest = 0
 const selectedTrip = ref<Trip | null>(null)
-const selectedOfferTrip = ref<Trip | null>(null)
-const snapshotOffer = ref<import('~/composables/useTourCommerce').CustomOfferView | null>(null)
-const snapshotDetail = ref<import('~/composables/useTourCommerce').CustomOfferConfirmationView | null>(null)
-const snapshotLoading = ref(false)
-const snapshotError = ref('')
-
-// 待确认报价方案弹窗状态与方法
-const confirmModalTrip = ref<Trip | null>(null)
-const confirmModalOffer = ref<import('~/composables/useTourCommerce').CustomOfferView | null>(null)
-const confirmation = ref<import('~/composables/useTourCommerce').CustomOfferConfirmationView | null>(null)
-const confirmLoading = ref(false)
-const confirmSubmitting = ref(false)
-const confirmError = ref('')
-const adultCount = ref(1)
-const childCount = ref(0)
-const requestedPoints = ref(0)
-const availablePoints = ref(0)
-const pointsPerUsd = ref(100)
-const maxTravelerCount = 2_147_483_647
-
-const quote = ref<import('~/composables/useTourCommerce').CustomOfferQuote | null>(null)
-const quoteLoading = ref(false)
-const quoteError = ref('')
-let quoteRequest = 0
-let quoteTimer: ReturnType<typeof setTimeout> | undefined
-
-const revisionOpen = ref(false)
-const revisionContent = ref('')
-const revisionSubmitting = ref(false)
-
-const travelerCountsValid = computed(() =>
-  Number.isInteger(adultCount.value) && adultCount.value >= 1
-  && Number.isInteger(childCount.value) && childCount.value >= 0
-  && adultCount.value <= maxTravelerCount - childCount.value
-)
-const travelerValidationMessage = computed(() =>
-  travelerCountsValid.value ? '' : 'Enter whole numbers: at least 1 adult and 0 or more children.'
-)
-
-const formatMoney = (amount: string | number) => `${confirmModalOffer.value?.currency || 'USD'} ${Number(amount).toFixed(2)}`
-const formatDate = (value?: string) => {
-  if (!value) return 'Not set'
-  const [yearText, monthText, dayText] = value.split('-')
-  if (!yearText || !monthText || !dayText) return value
-  const year = Number(yearText)
-  const month = Number(monthText)
-  const day = Number(dayText)
-  if (![year, month, day].every(Number.isInteger)) return value
-  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(year, month - 1, day))
-}
-
-const refreshQuote = async () => {
-  const offerNo = confirmModalOffer.value?.offerNo
-  if (!offerNo) return
-  const request = ++quoteRequest
-  quote.value = null
-  quoteError.value = ''
-  if (!travelerCountsValid.value) {
-    quoteLoading.value = false
-    return
-  }
-  quoteLoading.value = true
-  try {
-    const result = await commerce.previewOffer(offerNo, adultCount.value, childCount.value, requestedPoints.value)
-    if (request === quoteRequest) quote.value = result
-  } catch (caught) {
-    if (request === quoteRequest) quoteError.value = caught instanceof Error ? caught.message : 'This traveler count is not available for the offer.'
-  } finally {
-    if (request === quoteRequest) quoteLoading.value = false
-  }
-}
-
-const openConfirmOffer = async (trip: Trip, offer: import('~/composables/useTourCommerce').CustomOfferView) => {
-  confirmModalTrip.value = trip
-  confirmModalOffer.value = offer
-  confirmLoading.value = true
-  confirmError.value = ''
-  revisionOpen.value = false
-  revisionContent.value = ''
-  quote.value = null
-  try {
-    const [result, account, config] = await Promise.all([
-      commerce.getOffer(offer.offerNo),
-      commerce.getPointsAccount(),
-      commerce.getPointsRedemptionConfig()
-    ])
-    confirmation.value = result
-    availablePoints.value = account.availablePoints || 0
-    pointsPerUsd.value = config.pointsPerUsd || 100
-    requestedPoints.value = 0
-
-    const adults = Number(result.itinerary?.adultCount || trip.travelerCount || 1)
-    const children = Number(result.itinerary?.childCount || 0)
-    adultCount.value = adults >= 1 ? adults : 1
-    childCount.value = children >= 0 ? children : 0
-
-    await refreshQuote()
-  } catch (err) {
-    confirmError.value = err instanceof Error ? err.message : 'Could not load quotation details.'
-  } finally {
-    confirmLoading.value = false
-  }
-}
-
-const closeConfirmOffer = () => {
-  ++quoteRequest
-  if (quoteTimer) clearTimeout(quoteTimer)
-  confirmModalTrip.value = null
-  confirmModalOffer.value = null
-  confirmation.value = null
-  revisionOpen.value = false
-}
-
-const submitConfirmOffer = async () => {
-  if (confirmSubmitting.value || !confirmModalOffer.value) return
-  if (!travelerCountsValid.value || !quote.value) {
-    quoteError.value = travelerValidationMessage.value || 'Please select valid traveler counts.'
-    return
-  }
-  confirmSubmitting.value = true
-  confirmError.value = ''
-  try {
-    await commerce.confirmOffer(
-      confirmModalOffer.value.offerNo,
-      adultCount.value,
-      childCount.value,
-      requestedPoints.value
-    )
-    closeConfirmOffer()
-    await navigateTo('/orders')
-  } catch (caught) {
-    confirmError.value = caught instanceof Error ? caught.message : 'Could not confirm this offer.'
-  } finally {
-    confirmSubmitting.value = false
-  }
-}
-
-const submitRevision = async () => {
-  if (revisionSubmitting.value || !confirmModalOffer.value || !revisionContent.value.trim()) return
-  revisionSubmitting.value = true
-  confirmError.value = ''
-  try {
-    await commerce.requestRevision(confirmModalOffer.value.offerNo, revisionContent.value.trim())
-    revisionOpen.value = false
-    closeConfirmOffer()
-    await fetchTrips()
-  } catch (caught) {
-    confirmError.value = caught instanceof Error ? caught.message : 'Could not send revision request.'
-  } finally {
-    revisionSubmitting.value = false
-  }
-}
-
-const handleOfferClick = (trip: Trip) => {
-  if (trip.pendingOffer) {
-    openConfirmOffer(trip, trip.pendingOffer)
-  } else {
-    openOffers(trip)
-  }
-}
-
-watch([adultCount, childCount, requestedPoints], () => {
-  if (confirmModalOffer.value && !confirmLoading.value) {
-    ++quoteRequest
-    quote.value = null
-    quoteLoading.value = true
-    if (quoteTimer) clearTimeout(quoteTimer)
-    quoteTimer = setTimeout(() => void refreshQuote(), 250)
-  }
-})
-
-onBeforeUnmount(() => {
-  if (quoteTimer) clearTimeout(quoteTimer)
-})
-
-const openOfferSnapshot = async (offer: import('~/composables/useTourCommerce').CustomOfferView) => {
-  const request = ++snapshotRequest
-  snapshotOffer.value = offer
-  snapshotDetail.value = null
-  snapshotLoading.value = true
-  snapshotError.value = ''
-  try {
-    const result = await commerce.getOffer(offer.offerNo)
-    if (request === snapshotRequest) snapshotDetail.value = result
-  } catch (err) {
-    if (request === snapshotRequest) snapshotError.value = err instanceof Error ? err.message : 'Failed to load offer snapshot.'
-  } finally {
-    if (request === snapshotRequest) snapshotLoading.value = false
-  }
-}
-
-const getSnapshotDayItems = (dayId: number) => {
-  const items = snapshotDetail.value?.itinerary?.content?.items || []
-  return items.filter(item => item.dayId === dayId).map(item => ({
-    ...item,
-    tagGroups: parseTagGroups(item.tagGroups)
-  }))
-}
 
 const activeFilter = ref<'all' | 'ready' | 'revision' | 'closed'>('all')
 const filters = [{ value: 'all' as const, label: 'All' }, { value: 'ready' as const, label: 'Ready' }, { value: 'revision' as const, label: 'In revision' }, { value: 'closed' as const, label: 'Past' }]
@@ -754,6 +172,10 @@ const parseTagGroups = (value: string | import('~/composables/useTourCommerce').
   }))
 }
 
+const tripStatusClass = (status: string) => ['WAITING_CONFIRMATION', 'UPCOMING'].includes(status) ? 'ready'
+  : ['FINISHED', 'CLOSED', 'CANCELLED'].includes(status) ? 'past'
+    : ['REVISION_REQUIRED', 'REVISING'].includes(status) ? 'revision' : 'working'
+
 const filteredTrips = computed(() => trips.value)
 
 const formatTripDate = (dateStr?: string) => {
@@ -766,28 +188,6 @@ const formatTripDate = (dateStr?: string) => {
   } catch {
     return dateStr
   }
-}
-
-const formatDateTime = (dateStr?: string) => {
-  if (!dateStr) return '-'
-  try {
-    const d = new Date(dateStr)
-    if (isNaN(d.getTime())) return dateStr
-    return d.toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-  } catch {
-    return dateStr
-  }
-}
-
-const formatOfferStatus = (status: string) => {
-  const map: Record<string, string> = {
-    SENT: 'Awaiting confirmation',
-    ACCEPTED: 'Accepted & Ordered',
-    REVISION_REQUESTED: 'Revision requested',
-    EXPIRED: 'Expired',
-    CANCELLED: 'Cancelled'
-  }
-  return map[status] || status
 }
 
 const canDeleteTrip = (trip: Trip) => ['CANCELLED', 'CLOSED', 'FINISHED'].includes(trip.status)
@@ -806,8 +206,7 @@ const toTrip = (instance: ItineraryInstance | ItinerarySummary): Trip => {
   return {
     id: instance.id, itineraryNo: instance.itineraryNo, itineraryType: instance.itineraryType,
     sourceType: instance.sourceType, customItineraryId: instance.customItineraryId,
-    wishId: instance.wishId, wishNo: instance.wishNo, orderNo: instance.orderNo,
-    offers: [], offerCount: 0, dayCount: summary.dayCount ?? days.length,
+    wishId: instance.wishId, wishNo: instance.wishNo, dayCount: summary.dayCount ?? days.length,
     status: instance.status, statusName: instance.statusName, versionNo: instance.versionNo || 1,
     itineraryTypeLabel: instance.itineraryType === 'STANDARD_PURCHASE' ? 'Featured journey' : 'Custom itinerary',
     sourceLabel: instance.sourceType === 'STANDARD_PRODUCT' ? 'Featured journey purchase'
@@ -821,23 +220,6 @@ const toTrip = (instance: ItineraryInstance | ItinerarySummary): Trip => {
       items: items.filter(item => item.dayId === day.id).map(item => ({ ...item, projectTypeLabel: item.projectType, tagGroups: parseTagGroups(item.tagGroups) })) }))
   }
 }
-const fetchSummaries = async (rows: Trip[], request: number) => {
-  offersError.value = ''
-  try {
-    const result = await commerce.offerSummaries(rows.map(t => t.id))
-    if (request !== listRequest) return
-    const map = new Map(result.map(r => [r.itineraryId, r]))
-    rows.forEach(trip => {
-      const summary = map.get(trip.id)
-      trip.offerCount = summary?.offerCount || 0
-      trip.latestOffer = summary?.latestOffer
-      trip.pendingOffer = summary?.pendingOffer
-      if (trip.status === 'WAITING_CONFIRMATION' && trip.pendingOffer) trip.statusName = 'Offer ready'
-    })
-  } catch (caught) {
-    if (request === listRequest) offersError.value = caught instanceof Error ? caught.message : 'Could not load offer summaries.'
-  }
-}
 const fetchTrips = async () => {
   const request = ++listRequest
   loading.value = true
@@ -848,7 +230,6 @@ const fetchTrips = async () => {
     trips.value = result.list.map(toTrip)
     total.value = result.total
     loading.value = false
-    await fetchSummaries(trips.value, request)
   } catch (caught) {
     if (request === listRequest) loadError.value = caught instanceof Error ? caught.message : 'Request failed.'
   } finally { if (request === listRequest) loading.value = false }
@@ -868,59 +249,18 @@ const openPlan = async (trip: Trip) => {
     if (request === planRequest) planError.value = caught instanceof Error ? caught.message : 'Could not load this plan.'
   } finally { if (request === planRequest) planLoading.value = false }
 }
-const closeHistory = () => { ++historyRequest; selectedOfferTrip.value = null; closeSnapshot() }
-const openOffers = async (trip: Trip, page = 1) => {
-  const request = ++historyRequest
-  selectedOfferTrip.value = { ...trip, offers: [] }
-  historyPage.value = page
-  historyLoading.value = true
-  historyError.value = ''
-  try {
-    const result = await commerce.offerHistory(trip.id, page)
-    if (request !== historyRequest || !selectedOfferTrip.value) return
-    selectedOfferTrip.value.offers = result.list
-    historyTotal.value = result.total
-  } catch (caught) {
-    if (request === historyRequest) historyError.value = caught instanceof Error ? caught.message : 'Could not load offers.'
-  } finally { if (request === historyRequest) historyLoading.value = false }
-}
-const closeSnapshot = () => { ++snapshotRequest; snapshotOffer.value = null; snapshotDetail.value = null }
-const openDeepLink = async (no: string) => {
-  const request = ++planRequest
-  planLoading.value = true
-  try {
-    const result = await commerce.getItinerary(no)
-    if (request !== planRequest) return
-    const trip = toTrip(result)
-    selectedTrip.value = trip
-    planLoading.value = false
-    const summaries = await commerce.offerSummaries([trip.id])
-    if (request !== planRequest) return
-    if (summaries[0]?.pendingOffer) { selectedTrip.value = null; await openOffers(trip) }
-  } catch (caught) { if (request === planRequest) loadError.value = caught instanceof Error ? caught.message : 'Could not open itinerary.' }
-  finally { if (request === planRequest) planLoading.value = false }
-}
-
-const tripStatusClass = (status: string) => ['WAITING_CONFIRMATION', 'WAITING_PAYMENT', 'UPCOMING'].includes(status) ? 'ready'
-  : ['FINISHED', 'CLOSED', 'CANCELLED'].includes(status) ? 'past'
-    : ['REVISION_REQUIRED', 'REVISING'].includes(status) ? 'revision' : 'working'
 
 onMounted(async () => {
-  if (!auth.token.value) { await initializeAccount(); return }
-  const no = typeof route.query.itineraryNo === 'string' ? route.query.itineraryNo : ''
-  const offerNo = typeof route.query.offerNo === 'string' ? route.query.offerNo : ''
-  await Promise.all([initializeAccount(), fetchTrips(), ...(no ? [openDeepLink(no)] : [])])
-  if (offerNo) {
-    const matchedTrip = trips.value.find(t => t.pendingOffer?.offerNo === offerNo)
-    if (matchedTrip && matchedTrip.pendingOffer) {
-      await openConfirmOffer(matchedTrip, matchedTrip.pendingOffer)
-    }
+  await initializeAccount()
+  if (!ready.value) return
+  await fetchTrips()
+  const requested = typeof route.query.itineraryNo === 'string' ? route.query.itineraryNo : ''
+  if (requested) {
+    try { await openPlan(toTrip(await commerce.getItinerary(requested))) }
+    catch { loadError.value = 'Could not load the requested itinerary.' }
   }
 })
-onBeforeUnmount(() => { ++listRequest; closePlan(); closeHistory() })
-watch(auth.token, () => { ++listRequest; trips.value = []; closePlan(); closeHistory() })
 </script>
-
 <style scoped>
 .trip-toolbar {
   width: 100%;

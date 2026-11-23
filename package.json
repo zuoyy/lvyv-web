@@ -9,14 +9,12 @@
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
-    "generate": "node scripts/generate-products.mjs",
+    "generate": "nuxt generate",
     "optimize:images": "node scripts/optimize-images.mjs",
     "preview": "nuxt preview",
     "typecheck": "nuxt typecheck",
     "test:luxury": "node --test scripts/test-luxury-site.mjs",
     "postinstall": "nuxt prepare",
-    "test:products": "node --test scripts/test-products.mjs",
-    "test:products:generate": "node scripts/test-static-generation.mjs",
     "test:share": "node --test scripts/test-activity-share.mjs"
   },
   "devDependencies": {

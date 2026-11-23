@@ -197,11 +197,15 @@ test('实际 SSR 构建：活动、错误状态、域名隔离及分享信息', 
       assert.match(html, /rel="canonical" href="https:\/\/www\.lvyv\.com\/luxury\/featured-routes\?page=2"/)
     })
 
-    await t.test('官网 See All 使用 Featured Routes 地址', async () => {
+    await t.test('官网 Encounters 保留顶部横幅，横幅下仅展示 Featured Routes', async () => {
       const response = await request('/encounters', 'www.lvyv.com')
       assert.equal(response.status, 200)
       const html = await response.text()
-      assert.match(html, /href="\/luxury\/featured-routes"/)
+      const main = html.match(/<main\b[^>]*class="encounters-page"[^>]*>([\s\S]*?)<\/main>/)?.[1] || ''
+      assert.equal([...main.matchAll(/<section\b/g)].length, 2)
+      assert.match(main, /<h1\b[^>]*>Find Your Encounter<\/h1>[\s\S]*<h2\b[^>]*>Featured Routes<\/h2>/)
+      assert.match(main, /href="\/luxury\/featured-routes"/)
+      assert.doesNotMatch(main, /Popular Routes|Featured products/)
     })
 
     await t.test('官网首屏提前加载标题和卡片使用的字体', async () => {

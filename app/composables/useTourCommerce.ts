@@ -1,27 +1,3 @@
-export interface FirstOrderPromotion {
-  id: number; name: string; discountPercent: number; maxDiscountAmount: number; totalQuota: number;
-  availableQuota: number; endTime: string; status: string; allProducts: boolean; catalogProductIds: number[]
-}
-export interface FirstOrderBenefit {
-  status: string; campaignId?: number; name?: string; discountAmount: string | number;
-  discountPercent?: number; maxDiscountAmount?: number; totalQuota?: number; availableQuota?: number;
-  endTime?: string; reservedOrderNo?: string; applied: boolean
-}
-export interface Entitlement {
-  id: number
-  orderItemId: number
-  memberId: number
-  entitlementType: 'STANDARD_ITINERARY' | 'CUSTOM_ITINERARY'
-  standardItineraryVersionId?: number
-  customItineraryVersionId?: number
-  adultCount: number
-  childCount: number
-  startDate?: string
-  endDate?: string
-  status: string
-  grantedTime: string
-}
-
 export interface ContentView {
   content: {
     id: number
@@ -67,74 +43,6 @@ export interface ItineraryTagGroupView {
   tags: Array<{ sourceTagId?: number; code: string; label: string; sort: number }>
 }
 
-export interface StandardItineraryView {
-  product: { id: number; itineraryCode: string; currentVersionId?: number }
-  version: { id: number; versionNo: number; status: string; publishedTime?: string }
-  content: ContentView
-}
-
-export interface CatalogProductView {
-  firstOrderPromotion?: FirstOrderPromotion | null
-  product: { id: number; productCode: string; name: string; summary?: string; cityCode: string; travelType?: string; guaranteedDeparture?: boolean; shoppingPolicy?: string; adultAgeLabel?: string; childAgeLabel?: string; minimumAdvanceDays?: number; priceNote?: string; standardItineraryVersionId: number; status: string }
-  themes: string[]
-  serviceLanguages: string[]
-  price?: { currency: string; tiers: Array<{ minTravelerCount: number; maxTravelerCount?: number | null; adultListPrice: string | number; adultSalePrice: string | number; childListPrice: string | number; childSalePrice: string | number }> }
-  pricing: { adultListUnitPrice: string | number; adultSaleUnitPrice: string | number; childListUnitPrice: string | number; childSaleUnitPrice: string | number; promotionCampaign?: { endTime: string; name: string; campaignNo?: string } }
-  itinerary: {
-    standardItineraryId: number
-    itineraryCode: string
-    standardItineraryStatus: string
-    currentPublishedVersionId?: number
-    versionId: number
-    versionNo: number
-    contentId: number
-    versionStatus: string
-    title: string
-    cityCode: string
-    imageUrls: string[]
-    dateText?: string
-    designerMessage?: string
-    summary?: string
-    deliveryNote?: string
-    days: Array<{ id: number; dayNo: number; title: string; summary?: string; sort: number; items: Array<Record<string, unknown> & { tagGroups?: ItineraryTagGroupView[] }> }>
-  }
-}
-
-// The encounter detail page and checkout request the same catalog payload in
-// the normal booking flow. Reuse it briefly so navigation does not fetch and
-// parse the large itinerary response twice.
-const catalogProductCache = new Map<string, { value: CatalogProductView; expiresAt: number }>()
-const catalogProductRequests = new Map<string, Promise<CatalogProductView>>()
-const CATALOG_CACHE_TTL_MS = 2 * 60 * 1000
-
-export interface CatalogProductListView {
-  firstOrderPromotion?: FirstOrderPromotion | null
-  id: number
-  productCode: string
-  name: string
-  summary?: string
-  travelType?: string
-  themes: string[]
-  serviceLanguages: string[]
-  guaranteedDeparture: boolean
-  shoppingPolicy?: string
-  priceNote?: string
-  standardItineraryVersionId: number
-  itineraryCode: string
-  itineraryVersionId: number
-  itineraryTitle: string
-  cityCode: string
-  imageUrls: string[]
-  dateText?: string
-  dayCount: number
-  currency: string
-  lowestAdultListPrice: string | number
-  lowestAdultSalePrice: string | number
-  pricingMode?: string
-  tiers?: Array<{ minTravelerCount: number; maxTravelerCount?: number | null; adultSalePrice: string | number; childSalePrice: string | number }>
-  promoted: boolean
-}
-
 export interface ItineraryInstance {
   id: number
   itineraryNo: string
@@ -169,41 +77,8 @@ export interface ItineraryInstance {
   content?: ContentView
 }
 
-export interface OrderSnapshot {
-  title: string
-  productCode?: string
-  productVersionNo?: number
-  adultCount?: number
-  childCount?: number
-  currency: string
-  adultListUnitPrice: string | number
-  adultUnitPrice: string | number
-  childListUnitPrice: string | number
-  childUnitPrice: string | number
-  promotionCampaignNo?: string
-  promotionCampaignName?: string
-  couponNo?: string
-  couponDiscountAmount?: string | number
-  contentSummary?: string
-}
-
-export interface OrderView {
-  order: { firstOrderDiscountAmount?: string | number; firstOrderBenefitName?: string; id: number; orderNo: string; status: string; currency: string; sourceType: string; subtotal: string | number; promotionDiscountAmount: string | number; couponDiscountAmount: string | number; discountAmount: string | number; pointsAmount: string | number; pointsPerUsdSnapshot?: number; pointsTransactionNo?: string; pointsRefundTransactionNo?: string; taxAmount: string | number; manualAdjustmentAmount: string | number; totalAmount: string | number; expireTime?: string; createTime?: string }
-  items: Array<{ item: { id: number; itemType: string; adultCount: number; childCount: number; adultListUnitPrice: string | number; adultUnitPrice: string | number; childListUnitPrice: string | number; childUnitPrice: string | number; promotionDiscountAmount?: string | number; taxAmount?: string | number; startDate?: string; endDate?: string; customItineraryId?: number; customItineraryVersionId?: number; itineraryInstanceId?: number }; snapshot?: OrderSnapshot; itineraryNo?: string; coverUrl?: string }>
-  entitlements: Entitlement[]
-  coupon?: { couponNo: string; discountType: string; discountValue: string | number; discountAmount: string | number; status: string }
-  activeOnlinePayment: boolean
-  originalPayableAmount: string | number
-}
-
 export interface AccountPage<T> { list: T[]; total: number; page: number; size: number }
 export type ItinerarySummary = Omit<ItineraryInstance, 'content'> & { summary?: string; dateText?: string; dayCount: number }
-export interface OrderSummary {
-  order: Pick<OrderView['order'], 'id' | 'orderNo' | 'status' | 'currency' | 'sourceType' | 'subtotal' | 'promotionDiscountAmount' | 'firstOrderDiscountAmount' | 'firstOrderBenefitName' | 'couponDiscountAmount' | 'pointsAmount' | 'manualAdjustmentAmount' | 'totalAmount' | 'createTime' | 'expireTime'>
-  items: Array<{ item: Pick<OrderView['items'][number]['item'], 'adultCount' | 'childCount' | 'adultUnitPrice' | 'startDate' | 'endDate'>; snapshot?: Pick<OrderSnapshot, 'title' | 'productCode' | 'currency' | 'contentSummary'>; itineraryNo?: string; coverUrl?: string }>
-  activeOnlinePayment: boolean
-}
-export interface OfferSummary { itineraryId: number; offerCount: number; latestOffer?: CustomOfferView; pendingOffer?: CustomOfferView }
 
 export type PaymentChannel = 'GOOGLE_PAY' | 'APPLE_PAY' | 'CREDIT_CARD' | 'WECHAT_PAY' | 'ALIPAY'
 export type PaymentStatus = 'CREATED' | 'PENDING' | 'UNKNOWN' | 'SUCCEEDED' | 'FAILED' | 'EXPIRED' | 'REVIEW_REQUIRED'
@@ -232,6 +107,7 @@ export interface BillingDetails {
   zip?: string
 }
 export interface PaymentView {
+  orderNo?: string
   paymentNo: string
   provider: string
   channel: string
@@ -251,146 +127,11 @@ export interface PaymentView {
   session?: { sdkUrl: string; sdkType: 'CREDIT_CARD' | 'GOOGLE_PAY' | 'APPLE_PAY'; sandbox: boolean; fields: Record<string, string>; initConfig: Record<string, unknown>; threeDsUrl?: string | null }
 }
 
-export interface MemberCouponView {
-  eligibilityStatus?: string
-  coupon: { id: number; couponNo: string; status: string; validFrom: string; validTo: string | null }
-  template: { eligibilityType?: 'ALL' | 'FIRST_ORDER'; name: string; discountType: string; discountValue: string | number; maxDiscountAmount?: string | number; minimumOrderAmount: string | number; currency: string }
-}
-
-export interface OrderPricingQuote {
-  firstOrder?: FirstOrderBenefit
-  confirmationToken?: string
-  paymentDeadline?: string
-  coupon?: { coupon: { id: number }; template: { eligibilityType?: string; name: string } }
-
-  productId: number
-  adultCount: number
-  childCount: number
-  travelerCount: number
-  currency: string
-  adultListUnitPrice: string | number
-  adultSaleUnitPrice: string | number
-  childListUnitPrice: string | number
-  childSaleUnitPrice: string | number
-  adultSubtotal: string | number
-  childSubtotal: string | number
-  listSubtotal: string | number
-  promotionDiscountAmount: string | number
-  saleSubtotal: string | number
-  couponDiscountAmount: string | number
-  discountAmount: string | number
-  pointsAmount: string | number
-  taxAmount: string | number
-  totalAmount: string | number
-  redemption?: PointsRedemptionQuote
-}
-export interface PointsRedemptionConfig { id: number; pointsPerUsd: number; version: number; updateTime?: string }
-export interface PointsEarnRule { ruleCode: 'PAYMENT_SUCCESS' | 'ITINERARY_COMPLETED'; points: number }
-export interface PointsRedemptionQuote { availablePoints: number; requestedPoints: number; usablePoints: number; pointsAmount: string | number; payableBeforePoints: string | number; payableAfterPoints: string | number; pointsPerUsd: number; configVersion: number }
-
-export interface CustomOfferView {
-  id: number
-  offerNo: string
-  memberId: number
-  customItineraryId: number
-  customItineraryVersionId?: number
-  serviceCode: string
-  status: 'SENT' | 'ACCEPTED' | 'REVISION_REQUESTED' | 'EXPIRED' | 'CANCELLED' | string
-  currency: string
-  tiers: Array<{ id?: number; minTravelerCount: number; maxTravelerCount?: number | null; adultListPrice: string | number; adultSalePrice: string | number; childListPrice: string | number; childSalePrice: string | number }>
-  validUntil?: string
-  offerSnapshotJson?: string
-  acceptedOrderId?: number
-  createTime?: string
-}
-
-export interface CustomOfferQuote {
-  selectedTier: CustomOfferView['tiers'][number]
-  adultCount: number
-  childCount: number
-  travelerCount: number
-  currency: string
-  adultListUnitPrice: string | number
-  adultSaleUnitPrice: string | number
-  childListUnitPrice: string | number
-  childSaleUnitPrice: string | number
-  adultSubtotal: string | number
-  childSubtotal: string | number
-  listSubtotal: string | number
-  discountAmount: string | number
-  totalAmount: string | number
-  redemption?: PointsRedemptionQuote
-}
-
-export interface TourConfirmationView {
-  customItineraryId: number
-  itineraryNo: string
-  sourceType: 'WISH' | 'MANUAL'
-  customItineraryVersionId: number
-  versionNo: number
-  wishId?: number
-  wishNo?: string
-  memberId: number
-  wishStatus?: string
-  customItineraryStatus: string
-  versionStatus: string
-  content?: { content?: ContentView['content']; days?: ContentView['days']; items?: ContentView['items'] }
-  startDate?: string
-  endDate?: string
-  adultCount?: number
-  childCount?: number
-  travelerCount?: number
-}
-
-export interface CustomOfferConfirmationView { offer: CustomOfferView; itinerary: TourConfirmationView; canConfirm: boolean; canRequestRevision: boolean }
-
 export const useTourCommerce = () => {
   const auth = useMemberAuth()
-
-  const getCatalogProduct = (productCode: string) => {
-    const key = productCode.trim()
-    const cached = catalogProductCache.get(key)
-    if (cached && cached.expiresAt > Date.now()) return Promise.resolve(cached.value)
-
-    const pending = catalogProductRequests.get(key)
-    if (pending) return pending
-
-    const request = auth.publicRequest<CatalogProductView>(`/commerce/catalog/products/${encodeURIComponent(key)}`, 'GET', 8000)
-      .then((value) => {
-        catalogProductCache.set(key, { value, expiresAt: Date.now() + CATALOG_CACHE_TTL_MS })
-        return value
-      })
-      .finally(() => {
-        catalogProductRequests.delete(key)
-      })
-    catalogProductRequests.set(key, request)
-    return request
-  }
-
   return {
-    listItineraries: () => auth.request<ItineraryInstance[]>('/tour/itineraries', undefined, 'GET'),
     getItinerary: (itineraryNo: string) => auth.request<ItineraryInstance>(`/tour/itineraries/${encodeURIComponent(itineraryNo)}`, undefined, 'GET'),
-    listCatalogProducts: (cityCode?: string) => auth.publicRequest<CatalogProductListView[]>(`/commerce/catalog/products${cityCode ? `?cityCode=${encodeURIComponent(cityCode)}` : ''}`, 'GET', 8000),
-    getCatalogProduct,
-    listCoupons: () => auth.request<MemberCouponView[]>('/commerce/coupons?status=AVAILABLE', undefined, 'GET'),
-    redeemCoupon: (redeemCode: string) => auth.request<MemberCouponView>('/commerce/coupons/redeem', { redeemCode }),
-    getPointsAccount: () => auth.request<{ availablePoints: number }>('/points/account', undefined, 'GET'),
-    getPointsRedemptionConfig: () => auth.request<PointsRedemptionConfig>('/points/redemption-config', undefined, 'GET'),
-    getPointsEarnRules: () => auth.publicRequest<PointsEarnRule[]>('/points/earn-rules', 'GET', 8000),
-    previewStandardOrder: (productCode: string, adultCount: number, childCount: number, startDate: string, memberCouponId?: number, requestedPoints = 0) => auth.request<OrderPricingQuote>('/commerce/orders/standard/preview', { productCode, adultCount, childCount, currency: 'USD', startDate, memberCouponId, requestedPoints }),
-    createStandardOrder: (productCode: string, adultCount: number, childCount: number, startDate: string, memberCouponId: number | undefined, requestedPoints: number, contact: BillingDetails, confirmationToken?: string, requestId?: string) => auth.request<OrderView>('/commerce/orders/standard', { productCode, adultCount, childCount, currency: 'USD', startDate, memberCouponId, requestedPoints, contact, confirmationToken, requestId }),
     pageItineraries: (page = 1, filter = 'all') => auth.request<AccountPage<ItinerarySummary>>(`/tour/itineraries/page?page=${page}&size=10&filter=${encodeURIComponent(filter)}`, undefined, 'GET'),
-    pageOrders: (page = 1, filter = 'ALL') => auth.request<AccountPage<OrderSummary> & { statusCounts: Record<string, number> }>(`/commerce/orders/page?page=${page}&size=10&filter=${encodeURIComponent(filter)}`, undefined, 'GET'),
-    offerSummaries: (ids: number[]) => ids.length ? auth.request<OfferSummary[]>(`/commerce/custom-offers/summaries?itineraryIds=${ids.join(',')}`, undefined, 'GET') : Promise.resolve([]),
-    offerHistory: (id: number, page = 1) => auth.request<AccountPage<CustomOfferView>>(`/commerce/custom-offers/page?itineraryId=${id}&page=${page}&size=10`, undefined, 'GET'),
-    listOrders: () => auth.request<OrderView[]>('/commerce/orders', undefined, 'GET'),
-    listCustomOffers: () => auth.request<CustomOfferView[]>('/commerce/custom-offers', undefined, 'GET'),
-    getOrder: (orderNo: string) => auth.request<OrderView>(`/commerce/orders/${encodeURIComponent(orderNo)}`, undefined, 'GET'),
-    getOffer: (offerNo: string) => auth.request<CustomOfferConfirmationView>(`/commerce/custom-offers/${encodeURIComponent(offerNo)}`, undefined, 'GET'),
-    previewOffer: (offerNo: string, adultCount: number, childCount: number, requestedPoints = 0) => auth.request<CustomOfferQuote>(`/commerce/custom-offers/${encodeURIComponent(offerNo)}/quote?adultCount=${adultCount}&childCount=${childCount}&requestedPoints=${requestedPoints}`, undefined, 'GET'),
-    confirmOffer: (offerNo: string, adultCount: number, childCount: number, requestedPoints = 0) => auth.request<OrderView>(`/commerce/custom-offers/${encodeURIComponent(offerNo)}/confirm`, { adultCount, childCount, requestedPoints }),
-    requestRevision: (offerNo: string, requestContent: string) => auth.request<CustomOfferConfirmationView>(`/commerce/custom-offers/${encodeURIComponent(offerNo)}/request-revision`, { requestContent }),
-    cancelOrder: (orderNo: string) => auth.request<OrderView>(`/commerce/orders/${encodeURIComponent(orderNo)}/cancel`),
     listPaymentChannels: (clientType = 'DESKTOP_WEB') => auth.request<PaymentChannelView[]>(`/commerce/payments/channels?clientType=${encodeURIComponent(clientType)}`, undefined, 'GET'),
     createPayment: (orderNo: string, channel: PaymentChannel, clientType: 'DESKTOP_WEB' | 'MOBILE_WEB' | 'WECHAT_BROWSER') =>
       auth.request<PaymentView>(`/commerce/orders/${encodeURIComponent(orderNo)}/payments`, { channel, clientType }),

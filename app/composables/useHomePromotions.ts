@@ -23,6 +23,9 @@ export interface HomePopup {
 
 export interface HomePromotions { announcement?: HomeAnnouncement; popup?: HomePopup }
 
+export const chinaSimPath = '/product/china-sim'
+export const chinaSimCampaignUrl = 'https://www.lvyv.com/r/1bab8e5f82'
+
 const isSafeUrl = (value?: string) => {
   if (!value) return false
   if (value.startsWith('/') && !value.startsWith('//')) return true
@@ -32,6 +35,7 @@ const isSafeUrl = (value?: string) => {
 export function useHomePromotions() {
   const data = useState<HomePromotions | null>('home-promotions', () => null)
   const loaded = useState('home-promotions-loaded', () => false)
+  const announcement = computed(() => data.value?.announcement)
   const popup = useState<HomePopup | null>('home-promotion-popup', () => null)
   const popupOpen = useState('home-promotion-popup-open', () => false)
   const announcementDismissed = useState('home-announcement-dismissed', () => false)
@@ -64,5 +68,5 @@ export function useHomePromotions() {
   const showPopupIfNeeded = async () => { const value = data.value?.popup; if (value && !hasSeen(value)) { popup.value = value; popupOpen.value = true; await nextTick(); markSeen(value); void sendEvent('POPUP', value, 'IMPRESSION') } }
   const closePopup = () => { popupOpen.value = false }
   const go = async (url?: string) => { if (!url || !isSafeUrl(url)) return; if (url.startsWith('/')) await navigateTo(url); else window.open(url, '_blank', 'noopener,noreferrer') }
-  return { data, popup, popupOpen, announcementDismissed, load, showPopupIfNeeded, closePopup, go, sendEvent, isSafeUrl }
+  return { announcement, popup, popupOpen, announcementDismissed, load, showPopupIfNeeded, closePopup, go, sendEvent, isSafeUrl }
 }

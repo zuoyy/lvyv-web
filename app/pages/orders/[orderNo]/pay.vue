@@ -19,18 +19,14 @@
           <!-- Booking & Contact details 卡片（合并 Contact info 与 Traveler information） -->
           <section class="checkout-info-card">
             <h2 class="section-title">Booking & Contact details</h2>
-            <div class="info-grid" :class="{ 'has-departure': Boolean(tripDateText) }">
+            <div class="info-grid">
               <div class="info-field-box">
                 <span class="field-label">Email address</span>
                 <span class="field-value">{{ contactEmail || 'Contact information from order' }}</span>
               </div>
               <div class="info-field-box">
-                <span class="field-label">Traveler(s)</span>
-                <span class="field-value">{{ travelerCountText }}</span>
-              </div>
-              <div v-if="tripDateText" class="info-field-box">
-                <span class="field-label">Departure</span>
-                <span class="field-value">{{ tripDateText }}</span>
+                <span class="field-label">Package</span>
+                <span class="field-value">{{ order.skuName }} × {{ order.quantity }}</span>
               </div>
             </div>
           </section>
@@ -70,26 +66,22 @@
         <!-- 右侧区域：Price details / Summary + 快捷支付按钮 + Place order -->
         <aside class="payment-summary">
           <div class="summary-details">
-            <h2 class="summary-product-title">{{ order.items[0]?.snapshot?.title || 'Lvyv journey' }}</h2>
+            <h2 class="summary-product-title">{{ order.productName }}</h2>
             <div class="summary-divider" />
             <h3 class="summary-subtitle">Price details</h3>
             <dl class="summary-price-dl">
               <div>
                 <dt>Prepay online</dt>
-                <dd>{{ order.order.currency }} {{ formatMoney(order.originalPayableAmount ?? order.order.subtotal) }}</dd>
+                <dd>{{ order.currency }} {{ formatMoney(order.totalAmount) }}</dd>
               </div>
             </dl>
-            <p v-if="order.order.firstOrderBenefitName" class="benefit-tag">
-              {{ Number(order.order.firstOrderDiscountAmount || 0) > 0 ? 'Automatic first-order offer' : 'First-order coupon' }}:
-              {{ order.order.firstOrderBenefitName }} (included in total)
-            </p>
             <p v-if="paymentDeadline" class="deadline-text">
               Please secure your booking within <strong>{{ paymentDeadline }}</strong>
             </p>
             <div class="summary-divider" />
             <div class="total-row">
               <strong>Total</strong>
-              <strong class="total-amount">{{ order.order.currency }} {{ formatMoney(order.order.totalAmount) }}</strong>
+              <strong class="total-amount">{{ order.currency }} {{ formatMoney(order.totalAmount) }}</strong>
             </div>
           </div>
 
@@ -198,11 +190,12 @@
 </template>
 
 <script setup lang="ts">
+import type { StoreOrder } from '~/composables/useCommerce'
 import CheckoutHeader from '~/components/checkout/CheckoutHeader.vue'
 import { cardPaymentFailureMessage } from '~/utils/paymentMessages'
 import { embeddedAdapters, embeddedEvent, trustedSdkUrl, paymentSdkData, observeCardFormReady, type EmbeddedChannel } from '~/utils/oceanpaymentEmbedded'
 import { observeWalletInteraction } from '~/utils/walletInteraction'
-import type { OrderView, PaymentView, PaymentChannelView, PaymentChannel, PaymentOptionsView } from '~/composables/useTourCommerce'
+import type { PaymentView, PaymentChannelView, PaymentChannel, PaymentOptionsView } from '~/composables/useTourCommerce'
 
 definePageMeta({ middleware: 'member-auth', layout: false })
 const cardSdkPath = '/vendor/oceanpayment/oceanpayment.js?v=20260924-blur'
@@ -224,9 +217,10 @@ useHead({
   ]
 })
 const commerce = useTourCommerce()
+const store = useCommerce()
 const auth = useMemberAuth()
 const route = useRoute()
-const order = ref<OrderView>()
+const order = ref<StoreOrder>()
 const channels = ref<PaymentChannelView[]>([])
 const channelOptions = ref<PaymentOptionsView['channels']>([])
 const selected = ref<EmbeddedChannel>('CREDIT_CARD')
@@ -307,12 +301,12 @@ const cardBrands = [
 
 const paymentExpired = computed(() => paymentExpireAt.value !== null && paymentExpireAt.value <= now.value)
 const orderExpiresAt = computed(() => {
-  const current = order.value?.order
+  const current = order.value
   if (current?.expireTime) return Date.parse(current.expireTime)
-  return current?.createTime ? Date.parse(current.createTime) + 24 * 60 * 60 * 1000 : NaN
+  return NaN
 })
 const orderUnavailable = computed(() => {
-  const current = order.value?.order
+  const current = order.value
   if (!current) return ''
   if (current.status === 'CANCELLED') return 'This order is closed. Please create a new booking to continue.'
   if (current.status !== 'PENDING_PAYMENT') return 'This order is no longer awaiting payment.'
@@ -325,23 +319,7 @@ const paymentDeadline = computed(() => {
   return [Math.floor(seconds / 3600), Math.floor(seconds / 60) % 60, seconds % 60].map(n => String(n).padStart(2, '0')).join(':')
 })
 
-const contactEmail = computed(() => {
-  return auth.member.value?.email || ''
-})
-const travelerCountText = computed(() => {
-  const item = order.value?.items?.[0]?.item
-  if (!item) return '1 Traveler'
-  const adult = item.adultCount || 1
-  const child = item.childCount || 0
-  const parts: string[] = [`${adult} Adult${adult > 1 ? 's' : ''}`]
-  if (child > 0) parts.push(`${child} Child${child > 1 ? 'ren' : ''}`)
-  return parts.join(', ')
-})
-const tripDateText = computed(() => {
-  const item = order.value?.items?.[0]?.item
-  if (item?.startDate && item?.endDate) return `${item.startDate} ~ ${item.endDate}`
-  return item?.startDate || ''
-})
+const contactEmail = computed(() => order.value?.email || '')
 
 const formatMoney = (value: unknown) => Number.isFinite(Number(value)) ? Number(value).toFixed(2) : '0.00'
 const clientType = () => /MicroMessenger/i.test(navigator.userAgent) ? 'WECHAT_BROWSER' as const : window.matchMedia('(max-width: 760px)').matches ? 'MOBILE_WEB' as const : 'DESKTOP_WEB' as const
@@ -631,7 +609,7 @@ async function submit() {
     if (!paymentNo.value || cardAttemptNeedsRenewal) {
       let payment: PaymentView
       try {
-        payment = await commerce.createPayment(order.value!.order.orderNo, 'CREDIT_CARD', clientType())
+        payment = await commerce.createPayment(order.value!.orderNo, 'CREDIT_CARD', clientType())
       } catch {
         // 此时尚未签发付款参数；重试由后端唯一活动流水保证幂等，保留当前卡片输入。
         submitting.value = false
@@ -702,7 +680,7 @@ async function submitWallet(channel: 'GOOGLE_PAY' | 'APPLE_PAY') {
   locked.value = true
   sdkMessage.value = ''
   try {
-    const orderNo = order.value?.order?.orderNo
+    const orderNo = order.value?.orderNo
     if (!orderNo) throw new Error('Order unavailable')
 
     let activePaymentNo = paymentNo.value
@@ -870,7 +848,7 @@ async function load() {
     })
     // 选项已包含按本订单路由筛选的渠道；只有选项接口不可用时才查询旧渠道接口兜底。
     const [loadedOrder, paymentOptions, available, existing] = await Promise.all([
-      commerce.getOrder(orderNo),
+      store.order(orderNo),
       preparedOptions,
       optionsRequest.then(options => options?.channels ?? commerce.listPaymentChannels(clientType())),
       commerce.currentOrderPayment(orderNo)
@@ -878,11 +856,11 @@ async function load() {
     if (disposed) return
     order.value = loadedOrder
     now.value = Date.now()
-    if (loadedOrder.order.status === 'COMPLETED') {
-      await navigateTo('/trips')
+    if (loadedOrder.status === 'PAID') {
+      await navigateTo({ path: '/orders', query: { order: loadedOrder.orderNo } })
       return
     }
-    if (loadedOrder.order.status !== 'PENDING_PAYMENT') return
+    if (loadedOrder.status !== 'PENDING_PAYMENT') return
 
     channelOptions.value = paymentOptions?.channels || []
     channels.value = available.filter(item => item.enabled && isEmbedded(item.channel) && (item.channel !== 'APPLE_PAY' || supportsApplePay.value))

@@ -1,6 +1,6 @@
 <template>
-  <div class="app-layout" :class="{ 'app-layout--wish': isWishExperience, 'app-layout--encounters': isEncountersExperience, 'app-layout--home-with-announcement': isHomePage && !!homePromotions.data.value?.announcement && !homePromotions.announcementDismissed.value }">
-    <HomeAnnouncementBar v-if="isHomePage" :announcement="homePromotions.data.value?.announcement" />
+  <div class="app-layout" :class="{ 'app-layout--wish': isWishExperience, 'app-layout--encounters': isEncountersExperience, 'app-layout--home-with-announcement': isHomePage && !!homePromotions.announcement.value && !homePromotions.announcementDismissed.value }">
+    <HomeAnnouncementBar v-if="isHomePage" :announcement="homePromotions.announcement.value" />
     <!-- Header / Navigation -->
     <header class="navbar" :class="{ 'scrolled': isScrolled }">
       <div class="nav-container">
@@ -21,6 +21,14 @@
         </nav>
 
         <div class="nav-actions">
+          <NuxtLink :to="chinaSimCampaignUrl" external class="nav-china-sim">
+            <span class="nav-china-sim__icon" aria-hidden="true">
+              <img class="nav-china-sim__card" src="/images/common/china-sim-card.svg" alt="">
+              <img class="nav-china-sim__chip" src="/images/common/china-sim-chip.svg" alt="">
+            </span>
+            <span>Get Your SIM</span>
+            <img class="nav-china-sim__hot" src="/images/common/china-sim-hot.svg" alt="" width="34" height="20">
+          </NuxtLink>
           <div v-if="memberToken" ref="accountMenu" class="member-account">
             <button class="member-trigger" type="button" :aria-expanded="accountOpen" aria-haspopup="menu" @click="accountOpen = !accountOpen">
               <img v-if="member?.avatarUrl && !avatarFailed" :src="member.avatarUrl" alt="" class="member-avatar" @error="avatarFailed = true">
@@ -219,6 +227,7 @@ import { ref, watch, computed, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { FontAwesomeIcon as AuthGlobeIcon } from '@fortawesome/vue-fontawesome'
 import { faTimes, faUser } from '@fortawesome/free-solid-svg-icons'
 import businessLicenseIconUrl from '~/assets/generated/common/yyzz-48.png'
+import { chinaSimCampaignUrl } from '~/composables/useHomePromotions'
 import { MAIN_SITE_ORIGIN } from '~~/shared/utils/luxurySite'
 
 const route = useRoute()
@@ -359,6 +368,64 @@ onBeforeUnmount(() => {
   top: 0;
 }
 
+.nav-china-sim {
+  position: relative;
+  top: 6px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  min-width: 112px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid #698e4e;
+  border-radius: 20px;
+  color: #698e4e;
+  font: 400 12px/24px Roboto, sans-serif;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.nav-china-sim__icon {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+}
+
+.nav-china-sim__card,
+.nav-china-sim__chip {
+  position: absolute;
+  display: block;
+}
+
+.nav-china-sim__card {
+  inset: 8.33% 16.67%;
+  width: 66.67%;
+  height: 83.33%;
+}
+
+.nav-china-sim__chip {
+  inset: 41.67% 29.17% 20.83%;
+  width: 41.67%;
+  height: 37.5%;
+}
+
+.nav-china-sim__hot {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  width: 34px;
+  height: 20px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.nav-china-sim:hover,
+.nav-china-sim:focus-visible {
+  background: rgba(105, 142, 78, 0.12);
+}
+
 .app-layout--wish .navbar,
 .app-layout--wish .navbar.scrolled {
   background: transparent !important;
@@ -423,6 +490,26 @@ onBeforeUnmount(() => {
   background-color: #fff;
 }
 
+@media (min-width: 769px) and (max-width: 1199px) {
+  .nav-container {
+    width: calc(100% - 40px);
+  }
+
+  .nav-links {
+    gap: clamp(12px, 2vw, 24px);
+    margin-inline: 20px auto;
+  }
+
+  .nav-actions {
+    gap: 12px;
+  }
+
+  .nav-start-planning {
+    padding-inline: 14px;
+    white-space: nowrap;
+  }
+}
+
 @media (max-width: 991px) {
   .app-layout--home-with-announcement .navbar {
     top: 60px;
@@ -448,6 +535,37 @@ onBeforeUnmount(() => {
     left: 85.38px;
     width: 20.63px;
     height: 9.56px;
+  }
+
+  .nav-china-sim {
+    top: 2px;
+  }
+
+  .nav-china-sim__hot {
+    bottom: calc(100% - 2px);
+    width: 27.2px;
+    height: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .nav-china-sim {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 360px) {
+  .nav-container {
+    width: calc(100% - 24px);
+  }
+
+  .nav-actions {
+    gap: 8px;
+  }
+
+  .nav-china-sim,
+  .nav-login {
+    padding-inline: 8px;
   }
 }
 

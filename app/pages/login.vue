@@ -1,8 +1,9 @@
 <template>
   <main class="modern-auth-page">
-    <AuthMobileHeader />
+    <AuthMobileHeader :back-to="returnTo" />
     <section class="modern-auth-panel modern-auth-panel-login">
       <div class="modern-auth-content">
+        <NuxtLink v-if="returnTo" class="login-back-link" :to="returnTo">← Back to product</NuxtLink>
         <h1>Welcome back!</h1>
 
         <p v-if="message" class="modern-auth-message" :class="{ error }" role="alert">{{ message }}</p>
@@ -78,6 +79,10 @@ definePageMeta({
 useNoIndex()
 
 const route = useRoute()
+const localPath = (value: unknown) => typeof value === 'string'
+  && value.startsWith('/') && !value.startsWith('//') && !/[\\\u0000-\u001f\u007f]/.test(value) ? value : undefined
+const returnTo = computed(() => localPath(route.query.returnTo))
+const redirect = computed(() => localPath(route.query.redirect) ?? '/')
 const email = ref(typeof route.query.account === 'string'
   ? route.query.account
   : typeof route.query.email === 'string' ? route.query.email : '')
@@ -94,8 +99,7 @@ const auth = useMemberAuth()
 
 const handleGoogleLogin = async () => {
   loading.value = true
-  const requestedRedirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
-  auth.googleLogin(requestedRedirect)
+  auth.googleLogin(redirect.value)
 }
 
 const STORAGE_KEY = 'lvyv_remember_me'
@@ -180,14 +184,12 @@ const submit = async () => {
   try {
     await auth.login(email.value, password.value)
     saveRememberedInfo()
-    const requestedRedirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
-    const redirect = requestedRedirect.startsWith('/') && !requestedRedirect.startsWith('//') ? requestedRedirect : '/'
     // 登录后重新加载目标页，让根路径 Cookie 在支付页/支付结果页的 SSR 请求中立即可见。
     if (import.meta.client) {
-      window.location.replace(redirect)
+      window.location.replace(redirect.value)
       return
     }
-    await navigateTo(redirect, { replace: true })
+    await navigateTo(redirect.value, { replace: true })
   } catch (caught) {
     if (caught instanceof ApiRequestError && caught.code === 1_003_000_006) {
       await navigateTo(`/register/?verify=${encodeURIComponent(email.value)}`)
@@ -200,3 +202,12 @@ const submit = async () => {
   }
 }
 </script>
+
+<style scoped>
+.login-back-link {
+  display: inline-block;
+  margin-bottom: 16px;
+  color: inherit;
+  text-decoration: underline;
+}
+</style>

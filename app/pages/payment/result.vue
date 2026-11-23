@@ -15,21 +15,50 @@ import { cardPaymentFailureMessage } from '~/utils/paymentMessages'
 definePageMeta({ middleware: 'member-auth' })
 useNoIndex()
 const route = useRoute(); const commerce = useTourCommerce()
-const payment = ref<PaymentView>(); const loading = ref(true); let timer: ReturnType<typeof setTimeout> | undefined; let attempts = 0
+const payment = ref<PaymentView>()
+const loading = ref(true)
+const loadError = ref(false)
+let timer: ReturnType<typeof setTimeout> | undefined
+let attempts = 0
+let disposed = false
 const terminalFailure = computed(() => ['FAILED','EXPIRED','REVIEW_REQUIRED'].includes(payment.value?.status || ''))
 const retryableFailure = computed(() => ['FAILED','EXPIRED'].includes(payment.value?.status || ''))
-const returnPath = computed(() => payment.value?.status === 'SUCCEEDED' ? '/trips' : '/orders')
+const returnPath = computed(() => {
+  const order = payment.value?.orderNo
+  if (retryableFailure.value && order) return { path: `/orders/${encodeURIComponent(order)}/pay` }
+  return { path: '/orders', query: order ? { order } : {} }
+})
 const actionLabel = computed(() => {
-  if (payment.value?.status === 'SUCCEEDED') return 'View my journeys'
+  if (payment.value?.status === 'SUCCEEDED') return 'View order'
   return retryableFailure.value ? 'Try another payment method' : 'View order status'
 })
-const title = computed(() => loading.value ? 'Checking your payment' : payment.value?.status === 'SUCCEEDED' ? 'Payment confirmed' : terminalFailure.value ? 'Payment was not completed' : 'Payment is still processing')
+const title = computed(() => loading.value ? 'Checking your payment' : loadError.value ? 'Payment status unavailable' : payment.value?.status === 'SUCCEEDED' ? 'Payment confirmed' : terminalFailure.value ? 'Payment was not completed' : 'Payment is still processing')
 const failureMessage = computed(() => payment.value?.provider === 'OCEANPAYMENT' && payment.value.status === 'FAILED'
   ? cardPaymentFailureMessage(payment.value.failureCode, payment.value.failureMessage)
   : payment.value?.failureMessage)
-const message = computed(() => payment.value?.status === 'SUCCEEDED' ? 'Your order is complete and your journey is ready.' : payment.value?.status === 'REVIEW_REQUIRED' ? 'This payment needs manual review. Do not submit another payment while our team verifies it.' : terminalFailure.value ? (failureMessage.value || 'No charge has been confirmed. You can try another payment method.') : 'We have not marked this payment successful yet. This page will keep checking the verified payment status.')
-const load = async () => { const no = typeof route.query.paymentNo === 'string' ? route.query.paymentNo : ''; if (!no) { loading.value=false; return } try { payment.value = await commerce.getPayment(no) } finally { loading.value=false } if (payment.value && ['CREATED','PENDING','UNKNOWN'].includes(payment.value.status) && attempts++ < 40) timer=setTimeout(load,3000) }
-onMounted(load); onBeforeUnmount(()=>{ if(timer) clearTimeout(timer) })
+const message = computed(() => loadError.value ? 'Open My orders to check the latest status.' : payment.value?.status === 'SUCCEEDED' ? 'Your payment is confirmed. Check your order for delivery updates.' : payment.value?.status === 'REVIEW_REQUIRED' ? 'Our team is verifying this payment.' : terminalFailure.value ? (failureMessage.value || 'No charge has been confirmed. You can try another payment method.') : 'Waiting for payment confirmation.')
+async function load() {
+  const no = typeof route.query.paymentNo === 'string' ? route.query.paymentNo : ''
+  try {
+    if (!no) {
+      loadError.value = true
+      return
+    }
+    payment.value = await commerce.getPayment(no)
+    loadError.value = false
+    if (!disposed && ['CREATED', 'PENDING', 'UNKNOWN'].includes(payment.value.status) && attempts++ < 40)
+      timer = setTimeout(load, 3000)
+  } catch {
+    loadError.value = true
+  } finally {
+    loading.value = false
+  }
+}
+onMounted(load)
+onBeforeUnmount(() => {
+  disposed = true
+  if (timer) clearTimeout(timer)
+})
 </script>
 <style scoped>
 .result-page{min-height:calc(100dvh - 70px);display:grid;place-items:center;padding:32px 20px;background:#f4f7f4}.result-panel{width:min(560px,100%);padding:42px;border:1px solid #d8e2dc;background:#fff;text-align:center}.result-icon{width:54px;height:54px;display:grid;place-items:center;margin:0 auto 20px;border-radius:50%;font-size:21px}.result-icon.success{background:#e5f3e8;color:#17603f}.result-icon.pending{background:#eef1ed;color:#5f7067}.result-icon.failed{background:#f8e9e7;color:#a63a31}.eyebrow{margin:0 0 8px;color:#819087;font-size:9px;font-weight:800;text-transform:uppercase}.result-panel h1{margin:0;color:#173f34;font:600 31px/1.2 'Playfair Display',Georgia,serif}.result-panel>p:not(.eyebrow){color:#68776f;line-height:1.6}.result-panel dl{margin:25px 0;text-align:left}.result-panel dl div{display:flex;justify-content:space-between;gap:18px;padding:11px 0;border-top:1px solid #e1e7e3}.result-panel dt{color:#849087}.result-panel dd{margin:0;color:#31453b;font-weight:700;word-break:break-all}.actions a{min-height:44px;display:inline-flex;align-items:center;padding:0 20px;background:#174d40;color:#fff;text-decoration:none;font-weight:800}

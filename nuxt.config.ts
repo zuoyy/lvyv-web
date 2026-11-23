@@ -1,5 +1,3 @@
-const snapshotDir = import.meta.env.LVYV_PRODUCT_SNAPSHOT
-const productCodes: string[] = JSON.parse(import.meta.env.LVYV_PRODUCT_ROUTES || '[]')
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2026-07-18',
@@ -22,7 +20,6 @@ export default defineNuxtConfig({
   runtimeConfig: {
     contentApiBase: import.meta.env.NUXT_CONTENT_API_BASE || 'http://127.0.0.1:8088/web-api',
     previewSecret: '',
-    productSnapshot: Boolean(snapshotDir),
     public: {
       apiBase: '/web-api'
     }
@@ -30,7 +27,6 @@ export default defineNuxtConfig({
 
   // 本地开发时直连 lvyv-server；生产静态站点仍由 Nginx 代理 /web-api。
   nitro: {
-    ...(snapshotDir ? { serverAssets: [{ baseName: 'product-content', dir: snapshotDir }] } : {}),
     routeRules: {
       '/ai-catalog.json': { redirect: '/.well-known/ard.json' },
       '/.well-known/ai-catalog.json': { redirect: '/.well-known/ard.json' },
@@ -52,8 +48,11 @@ export default defineNuxtConfig({
       '/badges/**': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
       '/r/**': { headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
       '/collect/**': { headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
-      '/encounters': { headers: { 'cache-control': 'no-store, max-age=0' } },
-      '/encounters/**': { headers: { 'cache-control': 'no-cache, max-age=0, s-maxage=30' } },
+      '/encounters': { prerender: true, headers: { 'cache-control': 'no-store, max-age=0' } },
+      '/encounters/**': { prerender: false },
+      '/china-sim': { redirect: { to: '/product/china-sim', statusCode: 301 }, prerender: false },
+      '/china-sim/': { redirect: { to: '/product/china-sim', statusCode: 301 }, prerender: false },
+      '/sitemaps/products.xml': { prerender: false, cache: false },
       '/checkout': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
       '/payment/**': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
       '/orders/**/pay': { headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
@@ -61,7 +60,6 @@ export default defineNuxtConfig({
       '/en/faq/**': { swr: 60 },
       '/zh/faq/**': { swr: 60 },
       '/sitemap.xml': { swr: 300 },
-      '/sitemaps/products.xml': { swr: false, cache: false, headers: { 'cache-control': 'no-cache, max-age=0, s-maxage=30' } },
       '/sitemaps/**': { swr: 300 }
       // robots.txt 按域名生成，仅使用 HTTP 缓存，避免 Nitro 按路径复用主站内容。
     },
@@ -77,8 +75,7 @@ export default defineNuxtConfig({
       failOnError: true,
       concurrency: 4,
       routes: [
-        '/encounters', '/sitemaps/products.xml',
-        ...productCodes.map(code => `/encounters/${encodeURIComponent(code)}`),
+        '/encounters', '/product/china-sim', '/chengdu-pandas-and-tea', '/xian-terracotta-and-tang',
         '/terms',
         '/intellectual-property-rights'
       ],

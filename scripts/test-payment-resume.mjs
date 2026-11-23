@@ -42,9 +42,11 @@ function setup({ status = 'PENDING_PAYMENT', expired = false, existing = null, a
     require: name => name.endsWith('oceanpaymentEmbedded') ? embedded : name.endsWith('paymentMessages') ? messages : name.endsWith('walletInteraction') ? walletInteraction : {},
     definePageMeta: () => {}, useHead: () => {}, useRoute: () => ({ params: { orderNo: 'ORD_TEST' } }),
     useMemberAuth: () => ({ request: async (...args) => { calls.push(['embedded-result']); return api.embeddedResult?.(...args) } }),
+    useCommerce: () => ({
+      order: async () => { queries.push('order'); return api.getOrder ? api.getOrder() : { status, orderNo: 'ORD_TEST', expireTime: deadline } },
+    }),
     useTourCommerce: () => ({
       getPaymentOptions: async () => { queries.push('options'); return api.getPaymentOptions ? api.getPaymentOptions() : { activePayment: current, channels: [{ channel: 'CREDIT_CARD', enabled: true, ...preview('CREDIT_CARD').session }] } },
-      getOrder: async () => { queries.push('order'); return api.getOrder ? api.getOrder() : { order: { status, orderNo: 'ORD_TEST', expireTime: deadline }, items: [] } },
       listPaymentChannels: async () => { queries.push('channels'); return api.listPaymentChannels ? api.listPaymentChannels() : ['CREDIT_CARD', 'GOOGLE_PAY'].map(channel => ({ channel, enabled: true })) },
       currentOrderPayment: async () => { queries.push('current'); return api.currentOrderPayment ? api.currentOrderPayment() : current },
       abortEmbeddedSession: async () => { calls.push(['abort']); if (abortThrows) throw new Error('Offline'); return { status: abortStatus, failureCode: abortStatus === 'FAILED' ? 'CHECKOUT_NOT_SUBMITTED' : 'NETWORK_OR_RESPONSE_ERROR' } },
@@ -117,7 +119,7 @@ test('三个 SDK 与订单和支付查询重叠下载，查询结束前不初始
   for (const channel of Object.keys(embedded.embeddedAdapters)) page.completeSdk(channel)
   await settle()
   assert.deepEqual(page.calls, [])
-  order.resolve({ order: { status: 'PENDING_PAYMENT', orderNo: 'ORD_TEST', expireTime: new Date(Date.now() + 60000).toISOString() }, items: [] })
+  order.resolve({ status: 'PENDING_PAYMENT', orderNo: 'ORD_TEST', expireTime: new Date(Date.now() + 60000).toISOString() })
   current.resolve(null)
   await loading
   await settle()
