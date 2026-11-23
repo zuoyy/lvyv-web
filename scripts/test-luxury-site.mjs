@@ -153,20 +153,21 @@ test('实际 SSR 构建：活动、错误状态、域名隔离及分享信息', 
         const html = await (await request(`/activity/${code}`)).text()
         assert.match(html, new RegExp(`<html[^>]*lang="${chinese ? 'zh-CN' : 'en'}"`))
         for (const text of chinese
-          ? ['专属高奢旅行顾问', '微信号：', '更多精选行程', '左右滑动浏览', '特邀私享']
-          : ['Your Luxury Travel Advisor', 'WhatsApp:', '+1 202 555 0123', 'More Curated Journeys', 'Swipe to explore', 'Exclusive']) assert.ok(html.includes(text), `${code}: ${text}`)
+          ? ['微信号：', '更多精选行程', '左右滑动浏览', '特邀私享']
+          : ['WhatsApp:', '+1 202 555 0123', 'More Curated Journeys', 'Swipe to explore', 'Exclusive']) assert.ok(html.includes(text), `${code}: ${text}`)
         assert.equal((html.match(/class="staff-email"/g) || []).length, 1)
         assert.match(html, /href="mailto:advisor%40example.com"/)
         assert.match(html, /class="staff-qrcode-container"[\s\S]*?class="staff-email"/)
         const staffMarkup = html.match(/<section[^>]*class="activity-mid-section"[\s\S]*?<\/section>/)?.[0]
         assert.ok(staffMarkup)
+        assert.doesNotMatch(staffMarkup, /专属服务|专属高奢旅行顾问|长按识别下方二维码|EXCLUSIVE SERVICE|Your Luxury Travel Advisor|Scan the QR code below/)
         assert.equal((staffMarkup.match(/class="copy-wechat-btn"/g) || []).length, chinese ? 2 : 1)
         if (chinese) assert.doesNotMatch(staffMarkup, /WhatsApp:|\+1 202 555 0123/)
         else assert.doesNotMatch(staffMarkup, /WeChat ID:|lvyv-advisor|wechat-only/)
         assert.doesNotMatch(html, /qrcode-scan-hint|Scan or press and hold in WeChat to connect|微信长按二维码添加/)
         assert.match(html, new RegExp(`aria-label="${chinese ? '切换到第2组推荐' : 'Go to recommendation group 2'}"`))
         assert.match(html, new RegExp(`class="copy-wechat-btn"[^>]*>\\s*${chinese ? '复制' : 'Copy'}\\s*</button>`))
-        if (!chinese) assert.doesNotMatch(html, /专属高奢旅行顾问|更多精选行程|微信长按二维码添加|特邀私享/)
+        if (!chinese) assert.doesNotMatch(html, /更多精选行程|微信长按二维码添加|特邀私享/)
       }
     })
 

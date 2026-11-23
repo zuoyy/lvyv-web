@@ -4,8 +4,6 @@ export function isChineseActivityLanguage(language?: string | null): boolean {
 
 export function activityPageLabels(language?: string | null) {
   return isChineseActivityLanguage(language) ? {
-    serviceTag: '专属服务', serviceTitle: '专属高奢旅行顾问',
-    serviceSubtitle: '长按识别下方二维码，开启一对一私享定制规划',
     contactLabel: '微信号：', copy: '复制', qrAlt: (name: string) => `${name}的联系二维码`, email: '邮箱',
     copiedContact: '微信号已复制到剪贴板', copyContactManually: '请长按微信号进行复制',
     recommendTag: '精选推荐', recommendTitle: '更多精选行程',
@@ -15,8 +13,6 @@ export function activityPageLabels(language?: string | null) {
     errorTitle: '活动暂时无法加载', errorDescription: '服务暂时不可用，请稍后刷新重试。', home: '前往官网首页',
     metaTitle: 'Lvyv 高奢旅行', metaDescription: 'Lvyv 专属高奢定制旅行',
   } : {
-    serviceTag: 'EXCLUSIVE SERVICE', serviceTitle: 'Your Luxury Travel Advisor',
-    serviceSubtitle: 'Scan the QR code below for one-to-one travel planning.',
     contactLabel: 'WhatsApp:', copy: 'Copy', qrAlt: (name: string) => `${name}'s contact QR code`, email: 'Email',
     copiedContact: 'WhatsApp contact copied', copyContactManually: 'Press and hold the WhatsApp contact to copy it',
     recommendTag: 'EXCLUSIVE RECOMMENDATION', recommendTitle: 'More Curated Journeys',

@@ -19,12 +19,6 @@
 
       <!-- 中部：当前活动选中的多个客服及其二维码 -->
       <section v-if="activity.staffList && activity.staffList.length > 0" class="activity-mid-section">
-        <div class="staff-header">
-          <div class="staff-header-tag">{{ labels.serviceTag }}</div>
-          <h2 class="staff-header-title">{{ labels.serviceTitle }}</h2>
-          <p class="staff-header-subtitle">{{ labels.serviceSubtitle }}</p>
-        </div>
-
         <div class="staff-cards-wrapper" :class="{ 'single-staff': activity.staffList.length === 1 }">
           <div
             v-for="staff in activity.staffList"
@@ -521,36 +515,6 @@ const showToast = (msg: string) => {
   padding: 32px 20px;
   box-shadow: 0 4px 20px rgba(18, 48, 38, 0.05);
   margin: 0 16px 32px;
-}
-
-.staff-header {
-  text-align: center;
-  margin-bottom: 28px;
-}
-
-.staff-header-tag {
-  display: inline-block;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  color: #1a5643;
-  background: rgba(26, 86, 67, 0.08);
-  padding: 4px 10px;
-  border-radius: 20px;
-  margin-bottom: 8px;
-}
-
-.staff-header-title {
-  font-size: 1.45rem;
-  font-weight: 700;
-  color: #123026;
-  margin: 0 0 8px;
-}
-
-.staff-header-subtitle {
-  font-size: 0.92rem;
-  color: #647a70;
-  margin: 0;
 }
 
 .staff-cards-wrapper {
