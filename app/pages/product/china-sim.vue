@@ -302,7 +302,7 @@
         </div>
         <div class="form-card">
           <form @submit.prevent="continueToCheckout">
-            <h3>Order your SIM</h3>
+            <h3>Get Your China SIM</h3>
             <div class="fs">Pick a plan. Installation and activation are free.</div>
             <div class="f-row">
               <label for="fPlan">Plan</label>
