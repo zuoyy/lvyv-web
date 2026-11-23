@@ -1,22 +1,51 @@
 <template>
   <AccountPageShell active-page="orders" title="My orders" :ready="ready">
-    <label class="filter">Status <select v-model="filter"><option value="ALL">All</option><option value="PENDING_PAYMENT">Awaiting payment</option><option value="PAID">Paid</option><option value="CANCELLED">Cancelled</option><option value="REFUNDED">Refunded</option></select></label>
-    <p v-if="loading" role="status">Loading orders…</p>
-    <p v-else-if="error" role="alert">{{ error }} <button type="button" @click="load">Retry</button></p>
-    <p v-else-if="!rows.length">No orders found.</p>
-    <article v-for="row in rows" :key="row.orderNo" class="order-row">
-      <div><h2>{{ row.productName }}</h2><p>{{ row.skuName }} × {{ row.quantity }} · {{ orderAmount(row) }}</p><small>{{ row.orderNo }}</small></div>
-      <div><p>{{ statusLabel(row) }}</p><button type="button" @click="open(row.orderNo)">View order</button> <NuxtLink v-if="payable(row)" :to="payPath(row)">Pay</NuxtLink></div>
-    </article>
-    <AccountPagination :page="page" :size="10" :total="total" :loading="loading" @change="page = $event" />
-    <dialog ref="dialog" class="order-modal" aria-labelledby="order-detail-title" @close="close" @click.self="dialog?.close()">
+    <div class="order-filter">
+      <label for="order-status-filter">Status</label>
+      <select id="order-status-filter" v-model="filter">
+        <option value="ALL">All</option>
+        <option value="PENDING_PAYMENT">Awaiting payment</option>
+        <option value="PAID">Paid</option>
+        <option value="CANCELLED">Cancelled</option>
+        <option value="REFUNDED">Refunded</option>
+      </select>
+    </div>
+    <p v-if="loading" class="list-state" role="status">Loading orders…</p>
+    <p v-else-if="error" class="list-state error-state" role="alert">
+      {{ error }}
+      <button type="button" class="order-button" @click="load">Retry</button>
+    </p>
+    <p v-else-if="!rows.length" class="list-state">No orders found.</p>
+    <template v-else>
+      <div class="order-list">
+        <article v-for="row in rows" :key="row.orderNo" class="order-row">
+          <div class="order-info">
+            <p class="order-number">Order #{{ row.orderNo }}</p>
+            <h2>{{ row.productName }}</h2>
+            <p class="order-package">{{ row.skuName }} × {{ row.quantity }}</p>
+          </div>
+          <div class="order-meta">
+            <span class="order-status" :data-status="row.status">{{ statusLabel(row) }}</span>
+            <strong>{{ orderAmount(row) }}</strong>
+          </div>
+          <div class="order-actions">
+            <button type="button" class="order-button" @click="open(row.orderNo)">View order</button>
+            <NuxtLink v-if="payable(row)" :to="payPath(row)" class="order-button primary">Pay</NuxtLink>
+          </div>
+        </article>
+      </div>
+      <AccountPagination :page="page" :size="10" :total="total" :loading="loading" @change="page = $event" />
+    </template>
+    <dialog ref="dialog" class="order-modal" aria-labelledby="order-detail-title" @close="close">
       <div class="detail">
         <header class="modal-header">
           <div>
             <p v-if="detailOrderNo" class="modal-order-no">Order #{{ detailOrderNo }}</p>
             <h2 id="order-detail-title">Order details</h2>
           </div>
-          <button type="button" class="modal-close" aria-label="Close" autofocus @click="dialog?.close()">×</button>
+          <button type="button" class="order-detail-close" aria-label="Close order details" autofocus @click="dialog?.close()">
+            <font-awesome-icon :icon="['fas', 'xmark']" aria-hidden="true" />
+          </button>
         </header>
         <p v-if="detailLoading" class="detail-state" role="status">Loading order…</p>
         <p v-if="detailError" class="detail-state error-state" role="alert">{{ detailError }}</p>
@@ -41,9 +70,9 @@
           <p v-if="selected.refundReason" class="order-note">{{ selected.refundReason }}</p>
         </template>
         <footer class="modal-footer">
-          <NuxtLink v-if="selected && payable(selected)" :to="payPath(selected)" class="modal-button primary">Continue to payment</NuxtLink>
-          <button v-if="selected?.status === 'PENDING_PAYMENT'" type="button" class="modal-button" :disabled="cancelling" @click="cancel">Cancel order</button>
-          <button type="button" class="modal-button" @click="dialog?.close()">Close</button>
+          <NuxtLink v-if="selected && payable(selected)" :to="payPath(selected)" class="order-button primary">Continue to payment</NuxtLink>
+          <button v-if="selected?.status === 'PENDING_PAYMENT'" type="button" class="order-button" :disabled="cancelling" @click="cancel">Cancel order</button>
+          <button type="button" class="order-button" @click="dialog?.close()">Close</button>
         </footer>
       </div>
     </dialog>
@@ -51,6 +80,7 @@
 </template>
 <script setup lang="ts">
 import AccountPageShell from '~/components/profile/AccountPageShell.vue'
+import AccountPagination from '~/components/profile/AccountPagination.vue'
 import type { StoreOrder } from '~/composables/useCommerce'
 const { ready, initializeAccount } = useAccountPage('/orders')
 const commerce = useCommerce()
@@ -125,9 +155,28 @@ onMounted(async () => {
 })
 </script>
 <style scoped>
-.filter { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
-.order-row { display: flex; justify-content: space-between; gap: 18px; border-bottom: 1px solid #d5ded7; padding: 18px 0; }
-.order-row h2,.detail h2 { font-size: 1.15rem; margin: 0; }
+.order-filter { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; color: #203d33; font-size: 14px; font-weight: 600; }
+.order-filter select { min-height: 40px; padding: 0 12px; border: 1px solid #cad3ce; border-radius: 4px; background: #fff; color: inherit; font: inherit; }
+.order-list, .list-state { border: 1px solid #d5ded7; border-radius: 12px; background: #fff; }
+.list-state { display: grid; justify-items: center; gap: 12px; padding: 32px 16px; color: #52605b; }
+.order-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 100px;
+  align-items: center;
+  gap: 24px;
+  padding: 20px 24px;
+}
+.order-row + .order-row { border-top: 1px solid #e1e7e2; }
+.order-info { overflow-wrap: anywhere; }
+.order-number, .order-package { color: #65746e; }
+.order-number { font-size: 12px; }
+.order-row h2 { margin: 4px 0; color: #203d33; font: 600 17px/1.4 var(--font-body); }
+.order-package { font-size: 14px; }
+.order-meta { display: grid; justify-items: end; gap: 6px; color: #203d33; }
+.order-status { padding: 3px 10px; border-radius: 20px; background: #f0f3f0; color: #52605b; font-size: 12px; font-weight: 600; }
+.order-status[data-status="PENDING_PAYMENT"] { background: #fff3d9; color: #795315; }
+.order-status[data-status="PAID"] { background: #e6f3eb; color: #21583f; }
+.order-actions { display: grid; gap: 8px; }
 .order-modal {
   position: fixed;
   inset: 0;
@@ -148,8 +197,9 @@ onMounted(async () => {
 .modal-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding-bottom: 20px; border-bottom: 1px solid #e1e7e2; }
 .modal-order-no { margin-bottom: 6px; color: #65746e; font-size: 12px; font-weight: 600; }
 .modal-header h2 { color: #173f34; font: 600 28px/1.2 'Playfair Display', Georgia, serif; }
-.modal-close { display: grid; place-items: center; flex: 0 0 34px; height: 34px; border: none; border-radius: 6px; background: #f0f3f0; color: #52605b; font-size: 23px; line-height: 1; cursor: pointer; }
-.modal-close:hover { background: #e2e8e3; }
+.order-detail-close { display: grid; place-items: center; flex: 0 0 40px; height: 40px; padding: 0; border: 0; border-radius: 50%; background: #f0f4f1; color: #52605b; font-size: 18px; cursor: pointer; }
+.order-detail-close:hover { background: #174d40; color: #fff; }
+.order-detail-close:focus-visible { outline: 2px solid #174d40; outline-offset: 2px; }
 .detail-state { margin: 20px 0; }
 .error-state { color: #a63a31; }
 .order-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 20px 0; }
@@ -165,13 +215,16 @@ onMounted(async () => {
 .item-specs dt { color: #65746e; }
 .order-note { margin: 12px 0; white-space: pre-wrap; }
 .modal-footer { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; padding-top: 20px; border-top: 1px solid #e1e7e2; }
-.modal-button { display: inline-grid; place-items: center; min-height: 40px; padding: 0 16px; border: 1px solid #a9b6ad; border-radius: 4px; background: #fff; color: #203d33; font-size: 13px; text-decoration: none; cursor: pointer; }
-.modal-button:hover:not(:disabled) { background: #f0f3f0; }
-.modal-button.primary { border-color: #203d33; background: #203d33; color: #fff; }
-.modal-button.primary:hover { background: #2a573f; }
-.modal-button:disabled { opacity: 0.5; cursor: wait; }
+.order-button { display: inline-grid; place-items: center; min-height: 40px; padding: 0 16px; border: 1px solid #a9b6ad; border-radius: 4px; background: #fff; color: #203d33; font-size: 13px; text-decoration: none; cursor: pointer; }
+.order-button:hover:not(:disabled) { background: #f0f3f0; }
+.order-button.primary { border-color: #203d33; background: #203d33; color: #fff; }
+.order-button.primary:hover { background: #2a573f; }
+.order-button:disabled { opacity: 0.5; cursor: wait; }
 
 @media (max-width: 600px) {
+  .order-row { grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 16px; }
+  .order-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+  .order-actions { grid-auto-flow: column; grid-auto-columns: 1fr; }
   .order-modal { width: calc(100% - 24px); max-height: calc(100dvh - 24px); }
   .detail { padding: 20px; }
   .modal-header h2 { font-size: 24px; }

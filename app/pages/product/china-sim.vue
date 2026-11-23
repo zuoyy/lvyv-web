@@ -12,10 +12,10 @@
           <div class="hero-points">
             <div class="hero-point"><span class="tick">✓</span>Real 11-digit Unicom number</div>
             <div class="hero-point"><span class="tick">✓</span>4G / 5G native network</div>
-            <div class="hero-point"><span class="tick">✓</span>No throttling, no blocking</div>
+            <div class="hero-point"><span class="tick">✓</span>No artificial speed restrictions</div>
             <div class="hero-point"><span class="tick">✓</span><span>{{ startingPrice ? 'From ' + startingPrice + ' — free installation' : 'Free installation' }}</span></div>
             <div class="hero-point"><span class="tick">✓</span>NFC passport verification</div>
-            <div class="hero-point"><span class="tick">✓</span>Works in every phone</div>
+            <div class="hero-point"><span class="tick">✓</span>Compatible with unlocked phones</div>
           </div>
           <div class="hero-btns">
             <button class="btn-primary" type="button" @click="scrollTo('plans')">See Plans & Pricing →</button>
