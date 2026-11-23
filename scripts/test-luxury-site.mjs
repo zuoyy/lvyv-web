@@ -18,11 +18,11 @@ test('活动入口策略覆盖生产域名、本地开发和停用入口', () =>
   assert.equal(luxuryPageError('luxury.lvyv.com', '/activity'), 404)
   assert.equal(luxuryPageError('www.lvyv.com', '/activity'), 404)
   assert.equal(luxuryPageError('luxury.lvyv.com', '/activity/act_123'), 404)
-  assert.equal(luxuryPageError('www.lvyv.com', '/activity/act_123'), 404)
+  assert.equal(luxuryPageError('www.lvyv.com', '/activity/act_123'), undefined)
   assert.equal(luxuryPageError('lvyv.com', '/activity/act_123'), undefined)
   assert.equal(luxuryPageError('localhost', '/activity/act_123'), 404)
   assert.equal(luxuryPageError('localhost', '/activity/act_123', true), undefined)
-  assert.equal(luxuryPageError('www.lvyv.com', '/activity/act_123', true), 404)
+  assert.equal(luxuryPageError('www.lvyv.com', '/activity/act_123', true), undefined)
   assert.equal(luxuryPageError('luxury.lvyv.com', '/luxury/activity/act_123'), 410)
   assert.equal(luxuryPageError('luxury.lvyv.com', '/activity/act_123/extra'), 404)
   assert.equal(luxuryPageError('luxury.lvyv.com', '/login'), 404)
@@ -239,13 +239,24 @@ test('实际 SSR 构建：活动、错误状态、域名隔离及分享信息', 
       assert.match(html, /活动暂时无法加载/)
       assert.doesNotMatch(html, /class="activity-share-trigger"/)
     })
+    await t.test('两个官网域名直接返回活动详情并使用裸域名分享', async () => {
+      for (const host of ['lvyv.com', 'www.lvyv.com']) {
+        const response = await request('/activity/published?utm_source=test', host)
+        assert.equal(response.status, 200, host)
+        assert.equal(response.headers.get('location'), null)
+        const html = await response.text()
+        assert.match(html, /Activity body published/)
+        assert.match(html, /rel="canonical" href="https:\/\/lvyv\.com\/activity\/published"/)
+        assert.match(html, /property="og:url" content="https:\/\/lvyv\.com\/activity\/published"/)
+      }
+    })
     await t.test('旧地址永久移除，不重定向', async () => {
       for (const host of ['www.lvyv.com', 'lvyv.com', 'luxury.lvyv.com']) {
         const response = await request('/luxury/activity/published', host)
         assert.equal(response.status, 410, host)
         assert.equal(response.headers.get('location'), null)
       }
-      for (const host of ['www.lvyv.com', 'luxury.lvyv.com', 'localhost']) {
+      for (const host of ['luxury.lvyv.com', 'localhost']) {
         for (const path of ['/activity', '/activity/published/?utm_source=test']) {
           const response = await request(path, host)
           assert.equal(response.status, 404, host)

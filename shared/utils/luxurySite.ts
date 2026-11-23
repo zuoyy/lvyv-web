@@ -24,7 +24,7 @@ export function luxuryPageError(hostname: string, pathname: string, development 
   }
   if (/^\/activity(?:\/|$)/.test(pathname)) {
     if (!activityDetailPattern.test(pathname)) return 404
-    return host === 'lvyv.com' || local ? undefined : 404
+    return host === 'lvyv.com' || host === 'www.lvyv.com' || local ? undefined : 404
   }
   if (host === LUXURY_HOST && pathname !== '/') return 404
 }
