@@ -6,6 +6,10 @@
       <main :class="isSimCheckout ? 'sim-checkout' : 'store-checkout'">
         <h1 v-if="!isSimCheckout || !selection || !quantity">Checkout</h1>
         <p v-if="status === 'idle' || status === 'pending'" class="checkout-state" role="status">Loading your package…</p>
+        <div v-else-if="status === 'error'" class="checkout-state">
+          <p role="alert">We couldn’t load the current checkout price.</p>
+          <button type="button" @click="refresh()">Try again</button>
+        </div>
         <form v-else-if="selection && detail && quantity" class="checkout-form" @submit.prevent="submit">
           <section class="checkout-contact">
             <header class="package-header">
@@ -93,7 +97,11 @@
             <h2 id="price-details-heading">Price details</h2>
             <div class="summary-line">
               <span>{{ selection.name }}</span>
-              <strong>{{ usd(amount / quantity) }} × {{ quantity }}</strong>
+              <strong>{{ usd(checkout?.quote?.unitPrice ?? amount / quantity) }} × {{ quantity }}</strong>
+            </div>
+            <div v-if="checkout?.quote?.discountAmount" class="summary-line">
+              <span>First-order discount</span>
+              <strong>−{{ usd(checkout.quote.discountAmount) }}</strong>
             </div>
             <div class="summary-line total-line">
               <span>Total</span>
@@ -161,11 +169,22 @@ const quantity = computed(() => {
   const count = typeof value === 'string' && /^[1-9]\d*$/.test(value) ? Number(value) : 0
   return count <= maxOrderQuantity ? count : 0
 })
-const { data: detail, status } = useAsyncData(computed(() => 'checkout:' + productCode.value), () => commerce.product(productCode.value), { server: false })
+const { data: checkout, status, refresh } = useAsyncData(
+  computed(() => ['checkout', productCode.value, skuCode.value, quantity.value].join(':')),
+  async () => {
+    const [detail, quote] = await Promise.all([
+      commerce.product(productCode.value),
+      quantity.value && isChinaSimFirstOrderSku(productCode.value, skuCode.value)
+        ? commerce.quote(productCode.value, skuCode.value, quantity.value) : null,
+    ])
+    return { detail, quote }
+  }, { server: false },
+)
+const detail = computed(() => checkout.value?.detail)
 const selection = computed(() => detail.value?.skus.find(sku => sku.skuCode === skuCode.value))
 const amount = ref(0)
-watch([selection, quantity], ([sku, count]) => {
-  amount.value = Math.round((sku?.price ?? 0) * 100) * count / 100
+watch([selection, quantity, checkout], ([sku, count, result]) => {
+  amount.value = result?.quote?.totalAmount ?? Math.round((sku?.price ?? 0) * 100) * count / 100
 }, { immediate: true })
 const countries = allCountries
 const countryOptions = countries.map(([name, code]) => ({ name, code }))
@@ -225,8 +244,9 @@ async function submit() {
     const result = await commerce.create({ ...request, checkoutRequestId: requestId })
     if (result.orderNo) await navigateTo(`/orders/${encodeURIComponent(result.orderNo)}/pay`)
     else if (result.currentAmount != null) {
-      amount.value = Number(result.currentAmount)
       agreed.value = false
+      if (checkout.value?.quote) await refresh()
+      else amount.value = Number(result.currentAmount)
       message.value = 'The package price has changed. Review the new total before continuing.'
     }
   } catch (error) {

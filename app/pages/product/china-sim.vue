@@ -138,7 +138,7 @@
             <div class="plan-head">
               <div class="plan-name">{{ plan.name }}</div>
               <div class="plan-price"><span class="cur">$</span>{{ priceNumber.format(plan.price) }}<span v-if="plan.validity" class="per">/ {{ plan.validity }}</span></div>
-              <div v-if="plan.featured" class="plan-promo-flag">New users −$3</div>
+              <div v-if="plan.firstOrderPrice !== null" class="plan-promo-flag">New users −$3</div>
               <div v-if="plan.description" class="plan-for">{{ plan.description }}</div>
             </div>
             <div class="plan-spec">
@@ -150,9 +150,9 @@
               </div>
               <div class="row"><span class="ic">✦</span><span><b>Auto-expiry</b> <span class="lab">no renewal, no deposit</span></span></div>
             </div>
-            <div v-if="plan.featured" class="plan-promo-box">
+            <div v-if="plan.firstOrderPrice !== null" class="plan-promo-box">
               <span class="promo-badge">First order</span>
-              <span class="promo-text">Sign up as a new user and take <b>$3 off</b> — pay <b>$21</b> for this plan.</span>
+              <span class="promo-text">Sign up as a new user and take <b>$3 off</b> — pay <b>{{ displayPrice(plan.firstOrderPrice) }}</b> for this plan.</span>
             </div>
             <div class="plan-foot"><NuxtLink class="plan-btn" :to="checkoutPath(productCode, plan.skuCode)">Choose {{ plan.shortName }} — {{ displayPrice(plan.price) }}</NuxtLink></div>
           </article>
@@ -326,7 +326,8 @@
               <div class="sum-row"><span>Plan</span><span>{{ selectedPlan ? selectedPlan.name + ' — ' + displayPrice(selectedPlan.price) : '—' }}</span></div>
               <div class="sum-row"><span>Quantity</span><span>{{ quantity }}</span></div>
               <div class="sum-row"><span>Installation</span><span>Free</span></div>
-              <div class="sum-row total"><span>Total</span><span>{{ selectedPlan ? displayPrice(selectedPlan.price * quantity) : '—' }}</span></div>
+              <div v-if="selectedPlan && selectedPlan.firstOrderPrice !== null" class="sum-row"><span>First order</span><span>$3 off at checkout if eligible</span></div>
+              <div class="sum-row total"><span>{{ selectedPlan && selectedPlan.firstOrderPrice !== null ? 'Subtotal' : 'Total' }}</span><span>{{ selectedPlan ? displayPrice(selectedPlan.price * quantity) : '—' }}</span></div>
             </div>
             <button type="submit" class="f-submit" :disabled="!selectedPlan">Order Now →</button>
             <div class="f-privacy">🔒 Free installation & activation. We meet you at airport or hotel for in-person activation.</div>
@@ -364,6 +365,7 @@ const priceNumber = new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, m
 const displayPrice = (price: number) => '$' + priceNumber.format(price)
 const plans = computed(() => (catalog.value?.skus ?? []).map((sku, index) => ({
   ...sku,
+  firstOrderPrice: isChinaSimFirstOrderSku(productCode, sku.skuCode) && sku.price > 3 ? sku.price - 3 : null,
   shortName: sku.name.replace(/^ChinaFun /, ''),
   data: specification(sku, 'data'),
   voice: specification(sku, 'voice'),
