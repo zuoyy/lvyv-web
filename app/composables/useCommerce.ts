@@ -13,7 +13,12 @@ export interface StoreOrder {
   email?: string; contactMasked?: string; note?: string; deliveryNote?: string
   deliveredTime?: string; expireTime: string; createTime: string; refundReason?: string
 }
-export interface CheckoutQuote { unitPrice: number; discountAmount: number; totalAmount: number }
+export interface CheckoutQuote { unitPrice: number; discountAmount: number; couponDiscountAmount: number; totalAmount: number }
+export interface CheckoutCoupon {
+  coupon: { id: number }
+  template: { name: string; discountType: 'FIXED' | 'PERCENT'; discountValue: number; eligibilityType: string }
+  eligibilityStatus: string
+}
 export const isChinaSimFirstOrderSku = (product: string, sku: string) => product === 'CHINA-SIM' && sku === 'SIM-02'
 export const maxOrderQuantity = 10
 export const checkoutPath = (product: string, sku: string, quantity = 1) =>
@@ -25,8 +30,10 @@ export const useCommerce = () => {
   return {
     products: () => auth.publicRequest<CatalogProduct[]>('/commerce/catalog/products', 'GET', 8000),
     product: (code: string) => auth.publicRequest<CatalogDetail>(`/commerce/catalog/products/${encodeURIComponent(code)}`, 'GET', 8000),
-    quote: (productCode: string, skuCode: string, quantity: number) =>
-      auth.request<CheckoutQuote>('/commerce/orders/quote', { productCode, skuCode, quantity }),
+    quote: (productCode: string, skuCode: string, quantity: number, memberCouponId?: number) =>
+      auth.request<CheckoutQuote>('/commerce/orders/quote', { productCode, skuCode, quantity, memberCouponId }),
+    listCoupons: () => auth.request<CheckoutCoupon[]>('/commerce/coupons?status=AVAILABLE', undefined, 'GET'),
+    redeemCoupon: (redeemCode: string) => auth.request<CheckoutCoupon>('/commerce/coupons/redeem', { redeemCode }),
     create: (request: Record<string, unknown>) => auth.request<{ orderNo?: string; currentAmount?: number }>('/commerce/orders', request),
     orders: (page: number, filter: string) => auth.request<{ list: StoreOrder[]; total: number }>(
       `/commerce/orders/page?page=${page}&filter=${encodeURIComponent(filter)}`, undefined, 'GET'),

@@ -6,7 +6,7 @@
       <main :class="isSimCheckout ? 'sim-checkout' : 'store-checkout'">
         <h1 v-if="!isSimCheckout || !selection || !quantity">Checkout</h1>
         <p v-if="status === 'idle' || status === 'pending'" class="checkout-state" role="status">Loading your package…</p>
-        <div v-else-if="status === 'error'" class="checkout-state">
+        <div v-else-if="status === 'error' || (selection && quantity && !checkout?.quote)" class="checkout-state">
           <p role="alert">We couldn’t load the current checkout price.</p>
           <button type="button" @click="refresh()">Try again</button>
         </div>
@@ -28,7 +28,6 @@
                   <FontAwesomeIcon :icon="faPenToSquare" aria-hidden="true" />
                 </NuxtLink>
               </div>
-              <p v-if="!isSimCheckout">{{ quantity }} × {{ usd(amount / quantity) }} <strong>· {{ usd(amount) }} USD</strong></p>
             </header>
 
             <h2>Contact and billing</h2>
@@ -93,23 +92,78 @@
             </div>
           </section>
 
-          <aside v-if="isSimCheckout" class="checkout-summary" aria-labelledby="price-details-heading">
+          <aside class="checkout-summary" aria-labelledby="price-details-heading" :aria-busy="pricing">
             <h2 id="price-details-heading">Price details</h2>
             <div class="summary-line">
               <span>{{ selection.name }}</span>
-              <strong>{{ usd(checkout?.quote?.unitPrice ?? amount / quantity) }} × {{ quantity }}</strong>
+              <strong>{{ usd(quote?.unitPrice ?? selection.price) }} × {{ quantity }}</strong>
             </div>
-            <div v-if="checkout?.quote?.discountAmount" class="summary-line">
+            <div v-if="quote && quote.discountAmount > 0" class="summary-line discount-line">
               <span>First-order discount</span>
-              <strong>−{{ usd(checkout.quote.discountAmount) }}</strong>
+              <strong>−{{ usd(quote.discountAmount) }}</strong>
+            </div>
+            <div v-if="quote && quote.couponDiscountAmount > 0" class="summary-line discount-line">
+              <span>Coupon</span>
+              <strong>−{{ usd(quote.couponDiscountAmount) }}</strong>
             </div>
             <div class="summary-line total-line">
               <span>Total</span>
-              <strong>{{ usd(amount) }} USD</strong>
+              <strong aria-live="polite">{{ quote ? `${usd(quote.totalAmount)} USD` : '—' }}</strong>
             </div>
           </aside>
 
           <section class="checkout-terms">
+            <div class="coupon-section">
+              <label class="coupon-label" for="checkout-coupon">Coupon</label>
+              <div class="select-wrapper">
+                <select
+                  id="checkout-coupon"
+                  v-model="selectedCouponId"
+                  :disabled="walletStatus === 'pending' || submitting || redeeming"
+                  @change="couponChanged"
+                >
+                  <option :value="undefined">No coupon</option>
+                  <option v-for="item in wallet" :key="item.coupon.id" :value="item.coupon.id" :disabled="!canSelectCoupon(item)">
+                    {{ couponLabel(item) }}
+                  </option>
+                </select>
+                <span class="select-chevron" aria-hidden="true" />
+              </div>
+              <p v-if="walletStatus === 'pending'" class="coupon-feedback" role="status">Loading coupons…</p>
+              <div v-else-if="walletStatus === 'error'" class="coupon-feedback">
+                <span role="alert">We couldn’t load your coupons.</span>
+                <button type="button" class="coupon-retry" :disabled="redeeming" @click="loadWallet()">Try again</button>
+              </div>
+              <p v-else-if="!wallet.length" class="coupon-feedback">You have no available coupons.</p>
+              <div class="redeem-row">
+                <input
+                  v-model.trim="redeemCode"
+                  aria-label="Coupon code"
+                  placeholder="Have a coupon code?"
+                  autocomplete="off"
+                  maxlength="64"
+                  :disabled="submitting || redeeming || walletStatus === 'pending'"
+                  @keydown.enter.prevent="redeem()"
+                >
+                <button type="button" :disabled="!redeemCode || submitting || redeeming || walletStatus === 'pending'" @click="redeem()">
+                  {{ redeeming ? 'Applying…' : 'Apply' }}
+                </button>
+              </div>
+              <p v-if="redeemMessage" class="coupon-feedback" :class="{ 'checkout-error': redeemFailed }" :role="redeemFailed ? 'alert' : 'status'">
+                {{ redeemMessage }}
+              </p>
+              <p v-if="pricing" class="coupon-feedback" role="status">Updating total…</p>
+              <div v-else-if="couponError" class="coupon-feedback checkout-error">
+                <span role="alert">{{ couponError }}</span>
+                <button v-if="selectedCouponId" type="button" class="coupon-retry" @click="updateCouponQuote()">Try again</button>
+              </div>
+              <p v-else-if="selectedCouponId && quote && Number(quote.couponDiscountAmount) === 0" class="coupon-feedback" role="status">
+                {{ Number(quote.discountAmount) > 0 ? 'The automatic offer saves at least as much. Your selected coupon will be kept.' : 'Your coupon has been kept because it cannot reduce this total.' }}
+              </p>
+              <p v-else-if="selectedCouponId && isFirstOrderSku && hasFirstOrderOffer" class="coupon-feedback" role="status">
+                Your selected coupon gives a better discount.
+              </p>
+            </div>
             <label v-if="isSimCheckout" class="agreement-label">
               <input v-model="agreed" type="checkbox" required class="agreement-native-checkbox">
               <span class="agreement-circle" aria-hidden="true">
@@ -132,7 +186,7 @@
               <span>I agree to the <NuxtLink to="/terms">terms and conditions</NuxtLink>.</span>
             </label>
             <p v-if="message" class="checkout-error" role="alert">{{ message }}</p>
-            <button type="submit" :disabled="submitting">{{ submitting ? 'Creating order…' : 'Continue to payment' }}</button>
+            <button type="submit" :disabled="submitting || redeeming || pricing || !quote">{{ submitting ? 'Creating order…' : 'Continue to payment' }}</button>
           </section>
         </form>
         <div v-else-if="selection && detail" class="checkout-state">
@@ -154,6 +208,8 @@ import { faCheck, faPenToSquare } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import CheckoutHeader from '~/components/checkout/CheckoutHeader.vue'
 import SearchCodeSelect from '~/components/payment/SearchCodeSelect.vue'
+import type { CheckoutCoupon, CheckoutQuote } from '~/composables/useCommerce'
+import { ApiRequestError } from '~/composables/useMemberAuth'
 
 definePageMeta({ middleware: 'member-auth', layout: false })
 useSeoMeta({ title: 'Checkout', robots: 'noindex, nofollow' })
@@ -169,23 +225,99 @@ const quantity = computed(() => {
   const count = typeof value === 'string' && /^[1-9]\d*$/.test(value) ? Number(value) : 0
   return count <= maxOrderQuantity ? count : 0
 })
+const checkoutKey = computed(() => ['checkout', productCode.value, skuCode.value, quantity.value].join(':'))
 const { data: checkout, status, refresh } = useAsyncData(
-  computed(() => ['checkout', productCode.value, skuCode.value, quantity.value].join(':')),
+  checkoutKey,
   async () => {
     const [detail, quote] = await Promise.all([
       commerce.product(productCode.value),
-      quantity.value && isChinaSimFirstOrderSku(productCode.value, skuCode.value)
-        ? commerce.quote(productCode.value, skuCode.value, quantity.value) : null,
+      quantity.value && skuCode.value
+        ? commerce.quote(productCode.value, skuCode.value, quantity.value).catch((error) => {
+          if (error instanceof ApiRequestError && error.code === 1005000001) return null
+          throw error
+        }) : null,
     ])
     return { detail, quote }
   }, { server: false },
 )
 const detail = computed(() => checkout.value?.detail)
 const selection = computed(() => detail.value?.skus.find(sku => sku.skuCode === skuCode.value))
-const amount = ref(0)
-watch([selection, quantity, checkout], ([sku, count, result]) => {
-  amount.value = result?.quote?.totalAmount ?? Math.round((sku?.price ?? 0) * 100) * count / 100
-}, { immediate: true })
+const { data: wallet, status: walletStatus, refresh: loadWallet } = useAsyncData(
+  'checkout-coupons', commerce.listCoupons, { server: false, default: () => [] },
+)
+const selectedCouponId = ref<number>()
+const couponQuote = ref<CheckoutQuote>()
+const couponError = ref('')
+const pricing = ref(false)
+const redeemCode = ref('')
+const redeeming = ref(false)
+const redeemMessage = ref('')
+const redeemFailed = ref(false)
+const quote = computed(() => selectedCouponId.value ? couponQuote.value : checkout.value?.quote)
+const isFirstOrderSku = computed(() => isChinaSimFirstOrderSku(productCode.value, skuCode.value))
+const hasFirstOrderOffer = computed(() => Number(checkout.value?.quote?.discountAmount) > 0)
+const canSelectCoupon = (item: CheckoutCoupon) =>
+  item.eligibilityStatus === 'ELIGIBLE' && item.template.eligibilityType !== 'FIRST_ORDER'
+const couponLabel = (item: CheckoutCoupon) => {
+  const { template } = item
+  const discount = template.discountType === 'PERCENT' ? `${template.discountValue}% off` : `${usd(template.discountValue)} off`
+  const firstOrder = template.eligibilityType === 'FIRST_ORDER' ? 'First order · ' : ''
+  return `${firstOrder}${template.name} · ${discount}${canSelectCoupon(item) ? '' : ' (not currently eligible)'}`
+}
+const isCouponUnavailable = (error: unknown) => error instanceof ApiRequestError
+  && [1005000013, 1005000014, 1005000015, 1005000016, 1005000019, 1005000053].includes(error.code)
+let quoteRequest = 0
+async function updateCouponQuote() {
+  const request = ++quoteRequest
+  const couponId = selectedCouponId.value
+  couponQuote.value = undefined
+  couponError.value = ''
+  pricing.value = Boolean(couponId)
+  if (!couponId) return
+  try {
+    const result = await commerce.quote(productCode.value, skuCode.value, quantity.value, couponId)
+    if (request === quoteRequest) couponQuote.value = result
+  } catch (error) {
+    if (request !== quoteRequest) return
+    couponError.value = error instanceof Error ? error.message : 'Could not update your coupon total.'
+    if (isCouponUnavailable(error)) selectedCouponId.value = undefined
+  } finally {
+    if (request === quoteRequest) pricing.value = false
+  }
+}
+
+function couponChanged() {
+  message.value = ''
+  void updateCouponQuote()
+}
+
+async function redeem() {
+  if (!redeemCode.value || submitting.value || redeeming.value || walletStatus.value === 'pending') return
+  redeeming.value = true
+  redeemFailed.value = false
+  redeemMessage.value = ''
+  const key = checkoutKey.value
+  try {
+    const result = await commerce.redeemCoupon(redeemCode.value)
+    wallet.value = [result, ...wallet.value.filter(item => item.coupon.id !== result.coupon.id)]
+    redeemCode.value = ''
+    redeemMessage.value = 'Coupon added to your wallet.'
+    if (key === checkoutKey.value && canSelectCoupon(result)) {
+      message.value = ''
+      selectedCouponId.value = result.coupon.id
+      await updateCouponQuote()
+    }
+  } catch (error) {
+    redeemFailed.value = true
+    redeemMessage.value = error instanceof Error ? error.message : 'Could not redeem that code.'
+  } finally {
+    redeeming.value = false
+  }
+}
+watch(checkoutKey, () => {
+  selectedCouponId.value = undefined
+  void updateCouponQuote()
+})
 const countries = allCountries
 const countryOptions = countries.map(([name, code]) => ({ name, code }))
 const contact = reactive({ firstName: '', lastName: '', email: '', phone: '', country: '', state: '' })
@@ -224,12 +356,16 @@ const message = ref('')
 let requestId = ''
 let previousPayload = ''
 async function submit() {
-  if (!selection.value || !quantity.value || !agreed.value || submitting.value) return
+  if (!selection.value || !quantity.value || !agreed.value || submitting.value || redeeming.value || pricing.value || !quote.value) return
   const request = {
     productCode: productCode.value,
     skuCode: skuCode.value,
     quantity: quantity.value,
-    confirmedAmount: amount.value,
+    confirmedAmount: quote.value.totalAmount,
+    ...(selectedCouponId.value ? {
+      memberCouponId: selectedCouponId.value,
+      confirmedCouponDiscountAmount: quote.value.couponDiscountAmount,
+    } : {}),
     contact: isSimCheckout.value ? { ...contact } : { ...contact, ...billingAddress },
     ...(isSimCheckout.value ? {} : { note: note.value })
   }
@@ -245,12 +381,19 @@ async function submit() {
     if (result.orderNo) await navigateTo(`/orders/${encodeURIComponent(result.orderNo)}/pay`)
     else if (result.currentAmount != null) {
       agreed.value = false
-      if (checkout.value?.quote) await refresh()
-      else amount.value = Number(result.currentAmount)
-      message.value = 'The package price has changed. Review the new total before continuing.'
+      await Promise.all([refresh(), updateCouponQuote()])
+      message.value = 'The price or discount has changed. Review the new total before continuing.'
     }
   } catch (error) {
-    message.value = error instanceof Error ? error.message : 'Could not create your order. Please try again.'
+    if (selectedCouponId.value && isCouponUnavailable(error)) {
+      agreed.value = false
+      selectedCouponId.value = undefined
+      await Promise.all([refresh(), updateCouponQuote(), loadWallet()])
+      couponError.value = error instanceof Error ? error.message : 'This coupon is no longer available.'
+      message.value = 'Review the new total before continuing.'
+    } else {
+      message.value = error instanceof Error ? error.message : 'Could not create your order. Please try again.'
+    }
   } finally {
     submitting.value = false
   }
@@ -269,6 +412,42 @@ async function submit() {
 .consent { display: flex; gap: 8px; margin: 20px 0; }
 button { border: 0; border-radius: 6px; background: #244c3b; color: white; padding: 12px 20px; }
 button:disabled { opacity: .6; }
+.store-checkout .checkout-summary { margin: 24px 0; }
+.store-checkout .checkout-summary h2 { margin-bottom: 8px; }
+.coupon-section { margin-bottom: 26px; }
+.coupon-label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600; }
+.select-wrapper { position: relative; }
+.coupon-section :is(select, input) {
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 48px;
+  padding: 10px 16px;
+  border: 1px solid #e0e3e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #1a2b23;
+  font: inherit;
+}
+.coupon-section select { width: 100%; padding-right: 40px; appearance: none; cursor: pointer; }
+.select-chevron {
+  position: absolute;
+  top: calc(50% - 6px);
+  right: 17px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid #667085;
+  border-bottom: 2px solid #667085;
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+.redeem-row { display: flex; gap: 10px; margin-top: 12px; }
+.redeem-row input { flex: 1; }
+.redeem-row button { min-height: 48px; padding: 0 16px; border-radius: 8px; background: #1a382b; font-weight: 600; cursor: pointer; }
+.redeem-row button:hover:not(:disabled) { background: #234d3b; }
+.coupon-feedback { margin: 8px 0 0; color: #52635a; font-size: 13px; line-height: 1.45; }
+.coupon-retry { padding: 4px 8px; background: transparent; color: #244c3b; text-decoration: underline; cursor: pointer; }
+.checkout-error { color: #b42318; }
+.discount-line strong { color: #426638; }
 @media (max-width: 540px) { .billing-grid { grid-template-columns: 1fr; } }
 
 .sim-checkout-shell {

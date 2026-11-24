@@ -7,6 +7,13 @@ interface ApiResult<T> { code: number; msg?: string; data: T }
 interface LoginResult { accessToken: string; tokenType: string }
 
 const commerceMessages: Record<number, string> = {
+  1005000013: 'This coupon is no longer available.',
+  1005000014: 'This coupon cannot be used or has already been claimed.',
+  1005000015: 'This coupon is no longer available.',
+  1005000016: 'This coupon does not apply to your current order.',
+  1005000017: 'All coupons for this code have been claimed.',
+  1005000018: 'This coupon code is invalid or unavailable.',
+  1005000019: 'This coupon is reserved by another order.',
   1005000053: 'This offer is only available before your first successful purchase.',
   1005000054: 'Please pay or safely cancel the order holding your first-order offer.',
   1005000055: 'A payment is awaiting verification. Please wait for its result before trying again.',
