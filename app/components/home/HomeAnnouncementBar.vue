@@ -1,5 +1,5 @@
 <template>
-  <div v-if="announcement && announcementVisible" class="home-announcement" :class="{ 'home-announcement--china-sim': isChinaSim }" role="status">
+  <div v-if="announcement && announcementVisible" ref="barRef" class="home-announcement" :class="{ 'home-announcement--china-sim': isChinaSim }" role="status">
     <div class="home-announcement__inner">
       <img v-if="announcement.iconUrl" :src="announcement.iconUrl" alt="" class="home-announcement__icon">
       <div class="home-announcement__copy">
@@ -8,7 +8,7 @@
       </div>
       <button v-if="announcement.actionText && announcement.actionUrl" type="button" class="home-announcement__action" @click="open">
         {{ announcement.actionText }}
-        <img v-if="isChinaSim" src="/images/home/china-sim-announcement-arrow.svg" alt="" width="24" height="24">
+        <img v-if="isChinaSim" src="/images/home/china-sim-announcement-arrow.svg" alt="" width="20" height="20">
         <span v-else aria-hidden="true">→</span>
       </button>
       <button type="button" class="home-announcement__close" aria-label="Close announcement" @click="close">×</button>
@@ -17,49 +17,199 @@
 </template>
 <script setup lang="ts">
 import { chinaSimCampaignUrl, chinaSimPath, type HomeAnnouncement } from '~/composables/useHomePromotions'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 const props = defineProps<{ announcement?: HomeAnnouncement }>()
 const { go, sendEvent, announcementDismissed } = useHomePromotions()
 const isChinaSim = computed(() => props.announcement?.actionUrl === chinaSimPath || props.announcement?.actionUrl === chinaSimCampaignUrl)
 const announcementVisible = ref(true)
+const barRef = ref<HTMLElement | null>(null)
+let resizeObserver: ResizeObserver | null = null
 const dismissedKey = (value: HomeAnnouncement) => `lvyv:home-announcement-dismissed:${value.id}:${value.version}`
 const isDismissed = (value?: HomeAnnouncement) => {
   if (!import.meta.client || !value) return false
   try { return window.localStorage.getItem(dismissedKey(value)) === '1' } catch { return false }
 }
+const syncAnnouncementHeight = () => {
+  if (!import.meta.client) return
+  const height = announcementVisible.value && barRef.value ? Math.ceil(barRef.value.getBoundingClientRect().height) : 0
+  if (height > 0) {
+    document.documentElement.style.setProperty('--home-announcement-height', `${height}px`)
+  } else {
+    document.documentElement.style.removeProperty('--home-announcement-height')
+  }
+}
 const syncVisibility = (value?: HomeAnnouncement) => {
   announcementVisible.value = Boolean(value) && !isDismissed(value)
   announcementDismissed.value = Boolean(value) && !announcementVisible.value
+  void nextTick(syncAnnouncementHeight)
 }
 const close = () => {
   if (!props.announcement) return
   try { window.localStorage.setItem(dismissedKey(props.announcement), '1') } catch { /* 存储不可用时仍关闭当前页面公告 */ }
   announcementVisible.value = false
   announcementDismissed.value = true
+  syncAnnouncementHeight()
 }
 const open = async () => { if (props.announcement) { await sendEvent('ANNOUNCEMENT', props.announcement, 'CLICK'); await go(props.announcement.actionUrl) } }
 watch(() => props.announcement, syncVisibility, { immediate: true })
+watch(barRef, (el) => {
+  if (!import.meta.client) return
+  resizeObserver?.disconnect()
+  if (el && typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(syncAnnouncementHeight)
+    resizeObserver.observe(el)
+  }
+  syncAnnouncementHeight()
+})
 onMounted(() => syncVisibility(props.announcement))
+onBeforeUnmount(() => {
+  resizeObserver?.disconnect()
+  resizeObserver = null
+  if (import.meta.client) {
+    document.documentElement.style.removeProperty('--home-announcement-height')
+  }
+})
 </script>
 <style scoped>
-.home-announcement{height:60px;background:#f9f4f0;color:#161c2d;display:flex;align-items:center}.home-announcement__inner{width:100%;max-width:1440px;height:100%;margin:auto;padding:0 80px;display:flex;align-items:center;gap:20px;min-width:0}.home-announcement__icon{width:24px;height:24px;object-fit:contain;flex:0 0 24px}.home-announcement__copy{display:flex;align-items:center;gap:20px;min-width:0;flex:0 1 auto}.home-announcement__copy strong{width:max-content;max-width:347px;min-width:0;flex:0 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:Inter,sans-serif;font-size:16px;font-weight:500;line-height:32px;letter-spacing:-.2px}.home-announcement__copy span{width:max-content;max-width:263px;min-width:0;flex:0 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:Inter,sans-serif;font-size:14px;font-weight:400;line-height:28px;letter-spacing:-.2px;opacity:.7}.home-announcement__action{display:inline-flex;align-items:center;gap:14px;margin-left:0;border:0;background:none;color:#105446;font-family:Inter,sans-serif;font-size:14px;font-weight:600;line-height:28px;letter-spacing:-.2px;white-space:nowrap;cursor:pointer;padding:0}.home-announcement__action span{font-size:22px;font-weight:400;line-height:24px}.home-announcement__close{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;margin-left:auto;border:0;background:transparent;color:#161c2d;font-size:24px;font-weight:400;line-height:24px;cursor:pointer;padding:0;opacity:.7}.home-announcement__close:hover,.home-announcement__close:focus-visible{opacity:1}@media(max-width:991px){.home-announcement__inner{padding:0 20px;gap:14px}.home-announcement__copy{gap:14px;flex:1}.home-announcement__copy span{display:none}.home-announcement__action{gap:8px}}@media(max-width:700px){.home-announcement{height:60px;min-height:60px;overflow:hidden}.home-announcement__inner{padding:0 20px;align-items:center}.home-announcement__copy strong{width:auto;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:24px}}
-.home-announcement--china-sim .home-announcement__inner {
+.home-announcement {
+  min-height: 44px;
+  padding: 8px 0;
+  background: #f9f4f0;
+  color: #161c2d;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.home-announcement__inner {
+  width: 100%;
+  max-width: 1440px;
+  margin: auto;
+  padding: 0 clamp(20px, 3vw, 48px);
+  display: flex;
+  align-items: center;
   gap: 14px;
+  min-width: 0;
+}
+
+.home-announcement__icon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  flex: 0 0 22px;
+}
+
+.home-announcement__copy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 16px;
+  row-gap: 2px;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.home-announcement__copy strong,
+.home-announcement__copy span {
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  font-family: Inter, sans-serif;
+}
+
+.home-announcement__copy strong {
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 22px;
+}
+
+.home-announcement__copy span {
+  font-size: 14px;
+  line-height: 20px;
+  opacity: .7;
+}
+
+.home-announcement__action {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  gap: 10px;
+  border: 0;
+  background: none;
+  color: #105446;
+  font-family: Inter, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 22px;
+  white-space: nowrap;
+  cursor: pointer;
+  padding: 0;
+}
+
+.home-announcement__action span {
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 22px;
+}
+
+.home-announcement__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 24px;
+  height: 24px;
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: #161c2d;
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 22px;
+  cursor: pointer;
+  padding: 0;
+  opacity: .7;
+}
+
+.home-announcement__close:hover,
+.home-announcement__close:focus-visible {
+  opacity: 1;
+}
+
+@media (max-width: 991px) {
+  .home-announcement__inner {
+    gap: 12px;
+  }
+
+  .home-announcement__copy {
+    column-gap: 12px;
+  }
+
+  .home-announcement__action {
+    gap: 6px;
+    margin-inline-start: 4px;
+  }
+}
+
+@media (max-width: 700px) {
+  .home-announcement__inner {
+    padding: 0 16px;
+  }
+
+  .home-announcement__copy {
+    flex: 1 1 auto;
+  }
 }
 
 .home-announcement--china-sim .home-announcement__icon {
-  width: 34px;
-  height: 34px;
-  flex-basis: 34px;
-}
-
-.home-announcement--china-sim .home-announcement__copy strong {
-  max-width: none;
+  width: 28px;
+  height: 28px;
+  flex-basis: 28px;
 }
 
 .home-announcement--china-sim .home-announcement__action {
   gap: 4px;
-  margin-left: 28px;
   text-decoration: none;
 }
 
@@ -68,25 +218,17 @@ onMounted(() => syncVisibility(props.announcement))
   text-decoration: underline;
 }
 
-@media (max-width: 991px) {
-  .home-announcement--china-sim .home-announcement__inner {
-    gap: 8px;
+@media (min-width: 992px) {
+  .home-announcement__inner {
+    padding-inline-start: 96px;
   }
 
-  .home-announcement--china-sim .home-announcement__copy strong {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-height: 24px;
-    white-space: normal;
+  .home-announcement__action {
+    margin-inline-start: 10px;
   }
 
   .home-announcement--china-sim .home-announcement__action {
-    margin-left: 0;
-  }
-
-  .home-announcement--china-sim .home-announcement__close {
-    flex: 0 0 28px;
+    margin-inline-start: 24px;
   }
 }
 </style>

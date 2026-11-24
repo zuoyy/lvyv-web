@@ -361,7 +361,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .app-layout--home-with-announcement .navbar {
-  top: 60px;
+  top: var(--home-announcement-height, 44px);
 }
 
 .app-layout--home-with-announcement .navbar.scrolled {
@@ -510,7 +510,7 @@ onBeforeUnmount(() => {
 
 @media (max-width: 991px) {
   .app-layout--home-with-announcement .navbar {
-    top: 60px;
+    top: var(--home-announcement-height, 44px);
   }
 
   .app-layout--home-with-announcement .navbar.scrolled {
