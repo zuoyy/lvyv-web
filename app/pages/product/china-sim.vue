@@ -110,7 +110,7 @@
               <li><span class="g">✓</span><span>Nothing filtered that locals can reach</span></li>
             </ul>
             <div v-if="popularPlan && pricePerGb" class="cost-math good">
-              <strong>Concretely:</strong> our most popular plan includes {{ popularPlan.data }} for <b>{{ displayPrice(popularPlan.price) }}</b> — about <b>{{ pricePerGb }} per GB</b>. Roaming would be <b>$1,422</b> for the same single gigabyte.
+              <strong>Concretely:</strong> our most popular plan includes {{ popularPlan.data }} for <b>{{ displayPrice(popularPlan.displayedPrice) }}</b> — about <b>{{ pricePerGb }} per GB</b>. Roaming would be <b>$1,422</b> for the same single gigabyte.
             </div>
           </div>
         </div>
@@ -137,8 +137,9 @@
             <div v-if="plan.tag" class="plan-flag">{{ plan.tag }}</div>
             <div class="plan-head">
               <div class="plan-name">{{ plan.name }}</div>
-              <div class="plan-price"><span class="cur">$</span>{{ priceNumber.format(plan.price) }}<span v-if="plan.validity" class="per">/ {{ plan.validity }}</span></div>
-              <div v-if="plan.firstOrderPrice !== null" class="plan-promo-flag">New users −$3</div>
+              <div class="plan-price"><span v-if="plan.displayedPrice !== null" class="cur">$</span>{{ plan.displayedPrice === null ? '—' : priceNumber.format(plan.displayedPrice) }}<span v-if="plan.validity" class="per">/ {{ plan.validity }}</span></div>
+              <div v-if="plan.firstOrderDiscount" class="plan-promo-flag">New users −$3</div>
+              <div v-if="plan.quoteUnavailable" class="plan-for">Price confirmed at checkout.</div>
               <div v-if="plan.description" class="plan-for">{{ plan.description }}</div>
             </div>
             <div class="plan-spec">
@@ -150,11 +151,11 @@
               </div>
               <div class="row"><span class="ic">✦</span><span><b>Auto-expiry</b> <span class="lab">no renewal, no deposit</span></span></div>
             </div>
-            <div v-if="plan.firstOrderPrice !== null" class="plan-promo-box">
+            <div v-if="plan.firstOrderDiscount" class="plan-promo-box">
               <span class="promo-badge">First order</span>
-              <span class="promo-text">Sign up as a new user and take <b>$3 off</b> — pay <b>{{ displayPrice(plan.firstOrderPrice) }}</b> for this plan.</span>
+              <span class="promo-text">{{ memberToken ? 'Get' : 'Sign up as a new user and take' }} <b>$3 off</b> — pay <b>{{ displayPrice(plan.displayedPrice) }}</b> for this plan.</span>
             </div>
-            <div class="plan-foot"><NuxtLink class="plan-btn" :to="checkoutPath(productCode, plan.skuCode)">Choose {{ plan.shortName }} — {{ displayPrice(plan.price) }}</NuxtLink></div>
+            <div class="plan-foot"><NuxtLink class="plan-btn" :to="checkoutPath(productCode, plan.skuCode)">Choose {{ plan.shortName }}<template v-if="plan.displayedPrice !== null"> — {{ displayPrice(plan.displayedPrice) }}</template></NuxtLink></div>
           </article>
         </div>
 
@@ -311,7 +312,7 @@
               <label for="fPlan">Plan</label>
               <select id="fPlan" v-model="selectedSku" :disabled="!plans.length">
                 <option v-if="!plans.length" value="">{{ loadingPlans ? 'Loading plans…' : 'No plans available' }}</option>
-                <option v-for="plan in plans" :key="plan.skuCode" :value="plan.skuCode">{{ plan.name }} — {{ displayPrice(plan.price) }}{{ plan.validity ? ' / ' + plan.validity : '' }}{{ plan.tag ? ' · ' + plan.tag : '' }}</option>
+                <option v-for="plan in plans" :key="plan.skuCode" :value="plan.skuCode">{{ plan.name }}{{ plan.displayedPrice === null ? '' : ' — ' + displayPrice(plan.displayedPrice) }}{{ plan.validity ? ' / ' + plan.validity : '' }}{{ plan.tag ? ' · ' + plan.tag : '' }}</option>
               </select>
             </div>
             <div class="f-row">
@@ -323,11 +324,11 @@
               </div>
             </div>
             <div class="order-summary" aria-live="polite">
-              <div class="sum-row"><span>Plan</span><span>{{ selectedPlan ? selectedPlan.name + ' — ' + displayPrice(selectedPlan.price) : '—' }}</span></div>
+              <div class="sum-row"><span>Plan</span><span>{{ selectedPlan?.name ?? '—' }}</span></div>
               <div class="sum-row"><span>Quantity</span><span>{{ quantity }}</span></div>
               <div class="sum-row"><span>Installation</span><span>Free</span></div>
-              <div v-if="selectedPlan && selectedPlan.firstOrderPrice !== null" class="sum-row"><span>First order</span><span>$3 off at checkout if eligible</span></div>
-              <div class="sum-row total"><span>{{ selectedPlan && selectedPlan.firstOrderPrice !== null ? 'Subtotal' : 'Total' }}</span><span>{{ selectedPlan ? displayPrice(selectedPlan.price * quantity) : '—' }}</span></div>
+              <div v-if="selectedPlan?.firstOrderDiscount" class="sum-row"><span>First order</span><span>−{{ displayPrice(selectedPlan.firstOrderDiscount) }}</span></div>
+              <div class="sum-row total"><span>Total</span><span>{{ selectedPlan?.quoteUnavailable ? 'Confirmed at checkout' : displayPrice(orderTotal) }}</span></div>
             </div>
             <button type="submit" class="f-submit" :disabled="!selectedPlan">Order Now →</button>
             <div class="f-privacy">🔒 Free installation & activation. We meet you at airport or hotel for in-person activation.</div>
@@ -339,7 +340,7 @@
 </template>
 
 <script setup lang="ts">
-import type { CatalogSku } from '~/composables/useCommerce'
+import type { CatalogSku, CheckoutQuote } from '~/composables/useCommerce'
 
 useLvyvSeo({
   title: 'China SIM Card · LVYV — Your First Connection in China',
@@ -349,8 +350,22 @@ useLvyvSeo({
 
 const productCode = 'CHINA-SIM'
 const commerce = useCommerce()
+const { token: memberToken } = useMemberAuth()
 const { data: catalog, status } = useAsyncData('china-sim-plans', () => commerce.product(productCode), { server: false })
 const loadingPlans = computed(() => status.value === 'idle' || status.value === 'pending')
+const offerSku = computed(() => catalog.value?.skus.find(sku => isChinaSimFirstOrderSku(productCode, sku.skuCode)))
+const memberQuote = shallowRef<CheckoutQuote | null>()
+
+if (import.meta.client) {
+  watch([memberToken, offerSku], async ([token, sku], _, onCleanup) => {
+    memberQuote.value = undefined
+    if (!token || !sku) return
+    let current = true
+    onCleanup(() => { current = false })
+    const quote = await commerce.quote(productCode, sku.skuCode, 1).catch(() => null)
+    if (current) memberQuote.value = quote
+  }, { immediate: true, flush: 'sync' })
+}
 
 // Apply the reference layout to the catalog order before filtering the visible cards.
 const planPresentation: { description: string; tag?: string; featured?: boolean }[] = [
@@ -362,24 +377,38 @@ const planPresentation: { description: string; tag?: string; featured?: boolean 
 
 const specification = (sku: CatalogSku, key: string) => sku.specifications.find(item => item.key === key)?.value ?? ''
 const priceNumber = new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
-const displayPrice = (price: number) => '$' + priceNumber.format(price)
-const plans = computed(() => (catalog.value?.skus ?? []).map((sku, index) => ({
-  ...sku,
-  firstOrderPrice: isChinaSimFirstOrderSku(productCode, sku.skuCode) && sku.price > 3 ? sku.price - 3 : null,
-  shortName: sku.name.replace(/^ChinaFun /, ''),
-  data: specification(sku, 'data'),
-  voice: specification(sku, 'voice'),
-  validity: specification(sku, 'validity'),
-  additionalSpecs: sku.specifications.filter(({ key }) => !['data', 'voice', 'validity'].includes(key)),
-  ...planPresentation[index],
-})))
-const startingPrice = computed(() => catalog.value ? displayPrice(catalog.value.product.lowestPrice) : '')
+const displayPrice = (price: number | null) => price === null ? '—' : '$' + priceNumber.format(price)
+const plans = computed(() => (catalog.value?.skus ?? []).map((sku, index) => {
+  const isOffer = sku === offerSku.value
+  const usesMemberQuote = isOffer && !!memberToken.value
+  const quote = usesMemberQuote ? memberQuote.value : null
+  const unitPrice = quote?.unitPrice ?? sku.price
+  const firstOrderDiscount = isOffer && !memberToken.value && unitPrice > 3 ? 3 : quote?.discountAmount ?? 0
+  const displayedPrice = usesMemberQuote ? quote?.totalAmount ?? null : unitPrice - firstOrderDiscount
+  return {
+    ...sku,
+    unitPrice,
+    displayedPrice,
+    firstOrderDiscount,
+    quoteUnavailable: usesMemberQuote && quote === null,
+    shortName: sku.name.replace(/^ChinaFun /, ''),
+    data: specification(sku, 'data'),
+    voice: specification(sku, 'voice'),
+    validity: specification(sku, 'validity'),
+    additionalSpecs: sku.specifications.filter(({ key }) => !['data', 'voice', 'validity'].includes(key)),
+    ...planPresentation[index],
+  }
+}))
+const startingPrice = computed(() => {
+  const prices = plans.value.flatMap(plan => plan.displayedPrice === null ? [] : [plan.displayedPrice])
+  return prices.length ? displayPrice(Math.min(...prices)) : ''
+})
 const popularPlan = computed(() => plans.value.find(plan => plan.featured))
 const pricePerGb = computed(() => {
   const plan = popularPlan.value
   const data = plan?.data.trim().match(/^(\d+(?:\.\d+)?)\s*GB$/i)
   const gigabytes = Number(data?.[1])
-  return plan && gigabytes > 0 ? usd(plan.price / gigabytes) : ''
+  return plan?.displayedPrice != null && gigabytes > 0 ? usd(plan.displayedPrice / gigabytes) : ''
 })
 const filters = [
   { key: 'short', label: 'Short trip · up to 15 days' },
@@ -396,6 +425,11 @@ const visiblePlans = computed(() => plans.value.filter(plan => {
 const selectedSku = useState('china-sim-selected-sku', () => '')
 const quantity = useState('china-sim-quantity', () => 1)
 const selectedPlan = computed(() => plans.value.find(plan => plan.skuCode === selectedSku.value))
+const orderTotal = computed(() => {
+  const plan = selectedPlan.value
+  if (plan?.displayedPrice == null) return null
+  return plan.displayedPrice + plan.unitPrice * (quantity.value - 1)
+})
 watch(plans, available => {
   if (!available.length || selectedPlan.value) return
   selectedSku.value = (available.find(plan => plan.featured) ?? available[0])?.skuCode ?? ''
