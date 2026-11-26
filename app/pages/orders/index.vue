@@ -66,6 +66,8 @@
             </div>
             <p class="item-quantity" aria-label="Quantity">× {{ selected.quantity }}</p>
           </div>
+          <p v-if="selected.requestedTravelDate" class="order-note">Preferred date: {{ selected.requestedTravelDate }}</p>
+          <p v-if="selected.confirmedTravelDate" class="order-note">Confirmed date: {{ selected.confirmedTravelDate }}</p>
           <p v-if="selected.deliveryNote" class="order-note">{{ selected.deliveryNote }}</p>
           <p v-if="selected.refundReason" class="order-note">{{ selected.refundReason }}</p>
         </template>
@@ -102,7 +104,7 @@ let listRequest = 0
 let detailRequest = 0
 const payable = (row: StoreOrder) => row.status === 'PENDING_PAYMENT' && Date.parse(row.expireTime) > Date.now()
 const payPath = (row: StoreOrder) => `/orders/${encodeURIComponent(row.orderNo)}/pay`
-const statusLabel = (row: StoreOrder) => ({ PENDING_PAYMENT: 'Awaiting payment', PAID: row.deliveredTime ? 'Completed' : 'Paid · Processing', CANCELLED: 'Cancelled', REFUNDED: 'Refunded' }[row.status])
+const statusLabel = (row: StoreOrder) => ({ PENDING_PAYMENT: 'Awaiting payment', PAID: row.requestedTravelDate ? (row.confirmedTravelDate ? 'Booking confirmed' : 'Paid · Awaiting booking confirmation') : (row.deliveredTime ? 'Completed' : 'Paid · Processing'), CANCELLED: 'Cancelled', REFUNDED: 'Refunded' }[row.status])
 const orderAmount = (row: StoreOrder) => new Intl.NumberFormat('en-US', { style: 'currency', currency: row.currency }).format(row.totalAmount)
 async function load() {
   const request = ++listRequest

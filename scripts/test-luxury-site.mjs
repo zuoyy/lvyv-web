@@ -5,6 +5,7 @@ import { createServer, request as httpRequest } from 'node:http'
 import { setTimeout as delay } from 'node:timers/promises'
 import test from 'node:test'
 import { luxuryPageError } from '../shared/utils/luxurySite.ts'
+import { encounterProductPath, encounterProducts } from '../shared/utils/encounterProducts.ts'
 
 test('活动入口策略覆盖生产域名、本地开发和停用入口', () => {
   assert.equal(luxuryPageError('www.lvyv.com', '/luxury/featured-routes'), undefined)
@@ -30,9 +31,33 @@ test('活动入口策略覆盖生产域名、本地开发和停用入口', () =>
 })
 
 test('实际 SSR 构建：活动、错误状态、域名隔离及分享信息', { timeout: 60_000 }, async (t) => {
+  const pilots = new Map([
+    ['ENC-BJ-CHINA-RITUAL', 532],
+    ['ENC-BJ-TCM-PULSE-ACUPUNCTURE', 90],
+  ])
+  const activeEntries = encounterProducts.filter(product => pilots.has(product.code)).map(product => ({
+    productCode: product.code, name: product.title, landingPath: encounterProductPath(product),
+    lowestPrice: pilots.get(product.code), currency: 'USD',
+  }))
+  const catalogPath = '/web-api/commerce/catalog/products'
+  let catalogOffline = false
   const api = createServer((req, res) => {
     res.setHeader('Content-Type', 'application/json')
-    if (req.url.startsWith('/web-api/commerce/catalog/products') || req.url.startsWith('/web-api/tour/cities/options')) {
+    if (req.url === catalogPath) {
+      res.end(JSON.stringify({ code: 200, data: activeEntries }))
+      return
+    }
+    if (req.url.startsWith(catalogPath + '/')) {
+      const code = req.url.split('/').at(-1)
+      const product = activeEntries.find(item => item.productCode === code)
+      const data = product && {
+        product, skus: [{ skuCode: 'DEFAULT', name: product.name, price: product.lowestPrice, specifications: [] }],
+      }
+      const result = catalogOffline ? { code: 503 } : data ? { code: 200, data } : { code: 1005000000 }
+      res.end(JSON.stringify(result))
+      return
+    }
+    if (req.url.startsWith('/web-api/tour/cities/options')) {
       res.end(JSON.stringify({ code: 200, data: [] }))
       return
     }
@@ -197,34 +222,123 @@ test('实际 SSR 构建：活动、错误状态、域名隔离及分享信息', 
       assert.match(html, /rel="canonical" href="https:\/\/www\.lvyv\.com\/luxury\/featured-routes\?page=2"/)
     })
 
-    await t.test('官网 Encounters 保留顶部横幅，横幅下仅展示 Featured Routes', async () => {
+    await t.test('官网 Encounters 直出静态正文并复用官网导航和页脚', async () => {
       const response = await request('/encounters', 'www.lvyv.com')
       assert.equal(response.status, 200)
       const html = await response.text()
       const main = html.match(/<main\b[^>]*class="encounters-page"[^>]*>([\s\S]*?)<\/main>/)?.[1] || ''
-      assert.equal([...main.matchAll(/<section\b/g)].length, 2)
-      assert.match(main, /<h1\b[^>]*>Find Your Encounter<\/h1>[\s\S]*<h2\b[^>]*>Featured Routes<\/h2>/)
-      assert.match(main, /href="\/luxury\/featured-routes"/)
-      assert.doesNotMatch(main, /Popular Routes|Featured products/)
+      assert.equal([...main.matchAll(/<section\b/g)].length, 7)
+      assert.match(html, /<header\b[^>]*class="navbar"/)
+      assert.match(html, /<footer\b[^>]*class="footer"/)
+      assert.match(main, /The China <span[^>]*>Ritual<\/span>/)
+      assert.match(main, /Solo Encounters in Beijing/)
+      assert.match(main, /Solo Encounters in Xi&#39;an/)
+      assert.equal([...main.matchAll(/<a\b[^>]*class="solo-card-book"[^>]*>Book<\/a>/g)].length, 16)
+      assert.equal([...main.matchAll(/class="solo-card-compare"/g)].length, 16)
+      assert.equal([...main.matchAll(/class="solo-tip"[^>]*>\$17 — \$\d+ per experience/g)].length, 2)
+      assert.equal([...main.matchAll(/class="upgrade-bar-btn"[^>]*>Start Building →<\/a>/g)].length, 2)
+      assert.match(main, /The savings pay for your flight\./)
+      assert.doesNotMatch(main, />Details<\/a>/)
+      assert.match(main, /href="\/wish\/create"/)
+      assert.doesNotMatch(main, /href="#viral"|Loading featured routes|Featured Routes/)
+
+      const payloadPath = html.match(/data-src="(\/encounters\/_payload\.json[^\"]*)"/)?.[1]
+      if (payloadPath) {
+        const payload = await request(payloadPath, 'www.lvyv.com')
+        assert.equal(payload.status, 200, payloadPath)
+        assert.match(payload.headers.get('content-type'), /application\/json/)
+      }
+
+      const images = [...new Set([...main.matchAll(/<img\b[^>]*src="([^"]+)"/g)].map(match => match[1]))]
+      assert.equal(images.length, 7)
+      assert.ok(images.every(path => path.startsWith('/images/encounters/') && path.endsWith('.webp')))
+      await Promise.all(images.map(async path => {
+        const image = await request(path, 'www.lvyv.com')
+        assert.equal(image.status, 200, path)
+        assert.equal(image.headers.get('content-type'), 'image/webp', path)
+      }))
     })
 
-    await t.test('官网首屏提前加载标题和卡片使用的字体', async () => {
-      const response = await request('/encounters', 'www.lvyv.com')
-      assert.equal(response.status, 200)
-      const html = await response.text()
-      const fontPreloads = [...html.matchAll(/<link\b[^>]*>/g)]
-        .map(match => match[0])
-        .filter(link => /rel="preload"/.test(link) && /as="font"/.test(link))
-      const fontPaths = fontPreloads.map(link => {
-        assert.match(link, /crossorigin="anonymous"/)
-        return link.match(/href="([^"]+)"/)[1]
-      })
-      assert.ok(fontPaths.includes('/fonts/philosopher-bold.ttf'))
-      for (const name of ['playfair-display-latin-400', 'inter-latin-400', 'inter-latin-500', 'inter-latin-600']) {
-        assert.ok(fontPaths.some(path => path.includes(`${name}-normal.`) && path.endsWith('.woff2')), name)
+    await t.test('22 个商品直达，只有已上架且有原稿的页面允许预订及索引', async () => {
+      const homepage = await (await request('/encounters', 'www.lvyv.com')).text()
+      const checkedImages = new Set()
+      const routeSections = {
+        '/product/beijing-china-ritual': ['savings', 'itinerary', 'included'],
+        '/product/beijing-wrist-tcm-day': ['story', 'treatments', 'schedule', 'faq'],
+        '/product/beijing-new-face-same-day': ['story', 'treatments', 'schedule', 'faq'],
+        '/product/xian-ancient-pharmacy': ['why', 'itinerary', 'included'],
+        '/product/xian-wrist-pharmacy-day': ['story', 'treatments', 'schedule', 'faq'],
+        '/product/xian-silk-road-fix': ['story', 'treatments', 'schedule', 'faq'],
       }
-      const fonts = await Promise.all(fontPaths.map(path => request(path, 'www.lvyv.com')))
-      fonts.forEach((font, index) => assert.equal(font.status, 200, fontPaths[index]))
+      for (const product of encounterProducts) {
+        const path = encounterProductPath(product)
+        assert.ok(homepage.includes(`href="${path}"`), path)
+        const response = await request(path, 'www.lvyv.com')
+        assert.equal(response.status, 200, path)
+        assert.match(response.headers.get('cache-control'), /no-store/)
+        const html = await response.text()
+        assert.ok(html.includes(`rel="canonical" href="https://www.lvyv.com${path}"`), path)
+        if (pilots.has(product.code)) {
+          assert.match(html, /<input[^>]*type="date"/)
+          assert.match(html, /Continue to checkout/)
+          assert.doesNotMatch(html, /name="robots" content="noindex/)
+          assert.ok(html.includes(product.kind === 'route' ? 'Preferred departure date' : 'Preferred experience date'))
+        } else {
+          assert.match(html, /name="robots" content="noindex/)
+          assert.match(html, /This encounter is currently unavailable/)
+          assert.doesNotMatch(html, /Continue to checkout/)
+        }
+        if (product.kind === 'route') {
+          assert.match(html, /<main\b[^>]*class="route-original"/, path)
+          assert.match(html, /<header\b[^>]*class="navbar"/, path)
+          assert.match(html, /<footer\b[^>]*class="footer"/, path)
+          for (const section of routeSections[path]) assert.ok(html.includes(`id="${section}"`), path)
+        }
+        const main = html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/)?.[1] || ''
+        const photos = [...new Set(
+          Array.from(main.replaceAll('&#39;', "'").replaceAll('&quot;', '"').matchAll(/(?:src="|url\(['"]?)(\/images\/encounters\/[^'")\s]+)/g), match => match[1]),
+        )]
+        assert.ok(photos.length > 0, path)
+        for (const photo of photos) {
+          assert.ok(photo.endsWith('.webp'), photo)
+          if (checkedImages.has(photo)) continue
+          checkedImages.add(photo)
+          const image = await request(photo, 'www.lvyv.com')
+          assert.equal(image.status, 200, photo)
+          assert.equal(image.headers.get('content-type'), 'image/webp', photo)
+        }
+      }
+      const sitemap = await (await request('/sitemaps/products.xml', 'www.lvyv.com')).text()
+      for (const product of encounterProducts) {
+        assert.equal(sitemap.includes(`<loc>https://www.lvyv.com${encounterProductPath(product)}</loc>`), pilots.has(product.code))
+      }
+      assert.equal((await request('/product/beijing-unknown', 'www.lvyv.com')).status, 404)
+    })
+
+    await t.test('价格服务异常时详情可以重试，旧链接保留 301', async () => {
+      catalogOffline = true
+      try {
+        const response = await request('/product/beijing-china-ritual', 'www.lvyv.com')
+        assert.equal(response.status, 200)
+        const html = await response.text()
+        assert.match(html, /name="robots" content="noindex/)
+        assert.match(html, /Try again/)
+        assert.match(html, /id="itinerary"/)
+      } finally {
+        catalogOffline = false
+      }
+      for (const [oldPath, newPath] of [
+        ['/china-sim', '/product/china-sim'],
+        ['/encounters/chengdu_2', '/chengdu-pandas-and-tea'],
+        ['/encounters/xian_2', '/xian-terracotta-and-tang'],
+        ['/encounters/enc-bj-china-ritual', '/product/beijing-china-ritual'],
+        ['/encounters/ENC-XA-TCM-PULSE-ACUPUNCTURE', '/product/xian-tcm-pulse-acupuncture'],
+      ]) {
+        const response = await request(oldPath, 'www.lvyv.com')
+        assert.equal(response.status, 301, oldPath)
+        assert.equal(response.headers.get('location'), newPath, oldPath)
+      }
+      assert.equal((await request('/product/china-sim', 'www.lvyv.com')).status, 200)
     })
 
     for (const code of ['missing', 'offline']) {

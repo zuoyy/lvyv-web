@@ -27,6 +27,8 @@ let timer: ReturnType<typeof setTimeout> | undefined
 let attempts = 0
 let disposed = false
 const succeeded = computed(() => !loadError.value && (payment.value?.status === 'SUCCEEDED' || paidOrder.value?.status === 'PAID'))
+const bookingPending = computed(() => paidOrder.value?.status === 'PAID'
+  && Boolean(paidOrder.value.requestedTravelDate) && !paidOrder.value.confirmedTravelDate)
 const terminalFailure = computed(() => ['FAILED','EXPIRED','REVIEW_REQUIRED'].includes(payment.value?.status || ''))
 const retryableFailure = computed(() => ['FAILED','EXPIRED'].includes(payment.value?.status || ''))
 const returnPath = computed(() => {
@@ -39,7 +41,12 @@ const actionLabel = computed(() => {
   if (succeeded.value) return 'View my orders'
   return retryableFailure.value ? 'Try another payment method' : 'View order status'
 })
-const title = computed(() => loading.value ? 'Checking your payment' : loadError.value ? 'Payment status unavailable' : succeeded.value ? 'Payment confirmed' : terminalFailure.value ? 'Payment was not completed' : 'Payment is still processing')
+const title = computed(() => {
+  if (loading.value) return 'Checking your payment'
+  if (loadError.value) return 'Payment status unavailable'
+  if (succeeded.value) return bookingPending.value ? 'Paid · Awaiting booking confirmation' : 'Payment confirmed'
+  return terminalFailure.value ? 'Payment was not completed' : 'Payment is still processing'
+})
 const failureMessage = computed(() => payment.value?.provider === 'OCEANPAYMENT' && payment.value.status === 'FAILED'
   ? cardPaymentFailureMessage(payment.value.failureCode, payment.value.failureMessage)
   : payment.value?.failureMessage)
@@ -56,6 +63,9 @@ async function load() {
     }
     payment.value = await commerce.getPayment(no)
     loadError.value = false
+    if (payment.value.status === 'SUCCEEDED' && payment.value.orderNo) {
+      paidOrder.value = await store.order(payment.value.orderNo).catch(() => undefined)
+    }
     if (!disposed && ['CREATED', 'PENDING', 'UNKNOWN'].includes(payment.value.status) && attempts++ < 40)
       timer = setTimeout(load, 3000)
   } catch {

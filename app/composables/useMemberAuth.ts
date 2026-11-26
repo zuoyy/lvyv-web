@@ -20,6 +20,9 @@ const commerceMessages: Record<number, string> = {
   1005000056: 'Your offer or price has changed. Please review the updated total and confirm again.',
   1005000057: 'This checkout request has already been used with different details. Please refresh and try again.',
   1005000058: 'All first-order places are temporarily reserved. Please check again later.',
+  1005000063: 'Choose today or a future date in China.',
+  1005000064: 'Enter a valid whole number of travelers.',
+  1005000065: 'The total exceeds the amount we can accept for one order. Reduce the quantity and try again.',
 }
 
 export class ApiRequestError extends Error {

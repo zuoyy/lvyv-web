@@ -28,6 +28,10 @@
                 <span class="field-label">Package</span>
                 <span class="field-value">{{ order.skuName }} × {{ order.quantity }}</span>
               </div>
+              <div v-if="order.requestedTravelDate" class="info-field-box">
+                <span class="field-label">Preferred travel date</span>
+                <span class="field-value">{{ order.requestedTravelDate }}</span>
+              </div>
             </div>
           </section>
 

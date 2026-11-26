@@ -7,11 +7,19 @@
         <h1 v-if="!isSimCheckout || !selection || !quantity">Checkout</h1>
         <p v-if="status === 'idle' || status === 'pending'" class="checkout-state" role="status">Loading your package…</p>
         <div v-else-if="status === 'error' || (selection && quantity && !checkout?.quote)" class="checkout-state">
-          <p role="alert">We couldn’t load the current checkout price.</p>
+          <p role="alert">{{ priceError?.message || 'We couldn’t load the current checkout price.' }}</p>
+          <NuxtLink v-if="isEncounter" :to="encounter?.slug ? '/product/' + encounter.slug : '/encounters'">Back to encounter</NuxtLink>
           <button type="button" @click="refresh()">Try again</button>
         </div>
         <form v-else-if="selection && detail && quantity" class="checkout-form" @submit.prevent="submit">
           <section class="checkout-contact">
+            <div v-if="isEncounter" class="checkout-travel-date">
+              <label>
+                {{ encounter?.kind === 'route' ? 'Preferred departure date' : 'Preferred experience date' }}
+                <input v-model="requestedTravelDate" type="date" :min="minimumTravelDate" required>
+              </label>
+              <p>{{ quantity }} {{ quantity === 1 ? 'traveler' : 'travelers' }} · Our team will confirm your date after payment.</p>
+            </div>
             <header class="package-header">
               <NuxtLink v-if="!isSimCheckout" :to="detail.product.landingPath">Back to {{ detail.product.name }}</NuxtLink>
               <h1 v-if="isSimCheckout">{{ selection.name }}</h1>
@@ -190,7 +198,7 @@
           </section>
         </form>
         <div v-else-if="selection && detail" class="checkout-state">
-          <p role="alert">Choose a quantity between 1 and {{ maxOrderQuantity }}.</p>
+          <p role="alert">{{ isEncounter ? 'Enter a valid whole number of travelers.' : `Choose a quantity between 1 and ${maxOrderQuantity}.` }}</p>
           <NuxtLink :to="detail.product.landingPath">Back to {{ detail.product.name }}</NuxtLink>
         </div>
         <div v-else class="checkout-state">
@@ -211,24 +219,43 @@ import SearchCodeSelect from '~/components/payment/SearchCodeSelect.vue'
 import type { CheckoutCoupon, CheckoutQuote } from '~/composables/useCommerce'
 import { ApiRequestError } from '~/composables/useMemberAuth'
 
+import { encounterProducts } from '~~/shared/utils/encounterProducts'
+
 definePageMeta({ middleware: 'member-auth', layout: false })
 useSeoMeta({ title: 'Checkout', robots: 'noindex, nofollow' })
 const route = useRoute()
 const commerce = useCommerce()
 const auth = useMemberAuth()
 const productCode = computed(() => typeof route.query.product === 'string' ? route.query.product : '')
+const isEncounter = computed(() => isEncounterCode(productCode.value))
+const encounter = computed(() => encounterProducts.find(item => item.code === productCode.value.toUpperCase()))
 const isSimCheckout = computed(() => productCode.value.toUpperCase() === 'CHINA-SIM')
 const skuCode = computed(() => typeof route.query.sku === 'string' ? route.query.sku : '')
 const quantity = computed(() => {
   const value = route.query.quantity
   if (value === undefined) return 1
   const count = typeof value === 'string' && /^[1-9]\d*$/.test(value) ? Number(value) : 0
-  return count <= maxOrderQuantity ? count : 0
+  return validOrderQuantity(productCode.value, count) ? count : 0
 })
 const checkoutKey = computed(() => ['checkout', productCode.value, skuCode.value, quantity.value].join(':'))
-const { data: checkout, status, refresh } = useAsyncData(
+const requestedTravelDate = ref('')
+const minimumTravelDate = ref(todayInChina())
+onMounted(() => {
+  minimumTravelDate.value = todayInChina()
+  watch([productCode, skuCode], ([product, sku]) => {
+    const saved = isEncounterCode(product) ? rememberTravelDate(product, sku) : ''
+    requestedTravelDate.value = isTravelDate(saved) ? saved : ''
+  }, { immediate: true })
+  watch(requestedTravelDate, (date) => {
+    if (isEncounter.value && (date === '' || isTravelDate(date))) {
+      rememberTravelDate(productCode.value, skuCode.value, date)
+    }
+  })
+})
+const { data: checkout, status, error: priceError, refresh } = useAsyncData(
   checkoutKey,
   async () => {
+    if (isEncounter.value && !encounter.value?.ready) return { detail: null, quote: null }
     const [detail, quote] = await Promise.all([
       commerce.product(productCode.value),
       quantity.value && skuCode.value
@@ -357,11 +384,17 @@ let requestId = ''
 let previousPayload = ''
 async function submit() {
   if (!selection.value || !quantity.value || !agreed.value || submitting.value || redeeming.value || pricing.value || !quote.value) return
+  if (isEncounter.value && !isTravelDate(requestedTravelDate.value)) {
+    message.value = 'Choose today or a future date in China.'
+    return
+  }
+  if (isEncounter.value) rememberTravelDate(productCode.value, skuCode.value, requestedTravelDate.value)
   const request = {
     productCode: productCode.value,
     skuCode: skuCode.value,
     quantity: quantity.value,
     confirmedAmount: quote.value.totalAmount,
+    ...(isEncounter.value ? { requestedTravelDate: requestedTravelDate.value } : {}),
     ...(selectedCouponId.value ? {
       memberCouponId: selectedCouponId.value,
       confirmedCouponDiscountAmount: quote.value.couponDiscountAmount,
@@ -378,8 +411,10 @@ async function submit() {
   message.value = ''
   try {
     const result = await commerce.create({ ...request, checkoutRequestId: requestId })
-    if (result.orderNo) await navigateTo(`/orders/${encodeURIComponent(result.orderNo)}/pay`)
-    else if (result.currentAmount != null) {
+    if (result.orderNo) {
+      if (isEncounter.value) rememberTravelDate(productCode.value, skuCode.value, '')
+      await navigateTo(`/orders/${encodeURIComponent(result.orderNo)}/pay`)
+    } else if (result.currentAmount != null) {
       agreed.value = false
       await Promise.all([refresh(), updateCouponQuote()])
       message.value = 'The price or discount has changed. Review the new total before continuing.'
@@ -400,6 +435,10 @@ async function submit() {
 }
 </script>
 <style scoped>
+.checkout-travel-date { margin-bottom: 18px; }
+.checkout-travel-date label { display: grid; gap: 6px; font-weight: 600; }
+.checkout-travel-date input { width: min(100%, 280px); padding: 8px; font: inherit; }
+.checkout-travel-date p { margin-top: 8px; }
 .store-checkout { max-width: 760px; margin: 0 auto; padding: 48px 20px; color: #20372d; }
 .store-checkout h1 { font-size: 2rem; margin: 0 0 20px; }
 .store-checkout h2 { font-size: 1.3rem; margin: 22px 0 12px; }

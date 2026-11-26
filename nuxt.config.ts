@@ -49,7 +49,12 @@ export default defineNuxtConfig({
       '/r/**': { headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
       '/collect/**': { headers: { 'cache-control': 'no-store, max-age=0', 'x-robots-tag': 'noindex, nofollow, noarchive' } },
       '/encounters': { prerender: true, headers: { 'cache-control': 'no-store, max-age=0' } },
+      // 首页 hydration 需要预渲染 payload，商品跳转仍由 SSR 处理。
+      '/encounters/_payload.json': { prerender: true },
       '/encounters/**': { prerender: false },
+      '/product/**': { prerender: false, headers: { 'cache-control': 'no-store, max-age=0' } },
+      '/product/china-sim': { prerender: true },
+      '/product/china-sim/_payload.json': { prerender: true },
       '/china-sim': { redirect: { to: '/product/china-sim', statusCode: 301 }, prerender: false },
       '/china-sim/': { redirect: { to: '/product/china-sim', statusCode: 301 }, prerender: false },
       '/sitemaps/products.xml': { prerender: false, cache: false },

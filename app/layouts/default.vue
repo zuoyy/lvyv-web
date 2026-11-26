@@ -15,7 +15,7 @@
         <nav class="nav-links">
           <NuxtLink :prefetch="!isFaqPage" :to="sitePath('/#hero')" :class="{ active: currentPath === '/' && activeSection === 'hero' }">Home</NuxtLink>
           <NuxtLink :prefetch="!isFaqPage" :to="sitePath('/wish')" :class="{ active: currentPath.startsWith('/wish') }">Wish</NuxtLink>
-          <NuxtLink :prefetch="!isFaqPage" :to="sitePath('/encounters')" :class="{ active: currentPath.startsWith('/encounters') || currentPath.startsWith('/cities') }">Encounters</NuxtLink>
+          <NuxtLink :prefetch="!isFaqPage" :to="sitePath('/encounters')" :class="{ active: isEncountersExperience || currentPath.startsWith('/cities') }">Encounters</NuxtLink>
           <NuxtLink :prefetch="!isFaqPage" :to="sitePath('/about')" :class="{ active: currentPath === '/about' }">About</NuxtLink>
           <NuxtLink :prefetch="!isFaqPage" :to="sitePath('/en/faq/')" :class="{ active: currentPath.includes('/faq') }">FAQ</NuxtLink>
         </nav>
@@ -32,7 +32,7 @@
           <div v-if="memberToken" ref="accountMenu" class="member-account">
             <button class="member-trigger" type="button" :aria-expanded="accountOpen" aria-haspopup="menu" @click="accountOpen = !accountOpen">
               <img v-if="member?.avatarUrl && !avatarFailed" :src="member.avatarUrl" alt="" class="member-avatar" @error="avatarFailed = true">
-              <span v-else class="member-avatar member-avatar-default"><font-awesome-icon :icon="['fas', 'user']" aria-hidden="true" /></span>
+              <span v-else class="member-avatar member-avatar-default"><AuthGlobeIcon :icon="faUser" aria-hidden="true" /></span>
               <span class="member-name">{{ memberDisplayName }}</span>
               <span class="member-chevron" aria-hidden="true" />
             </button>
@@ -92,7 +92,7 @@
             <NuxtLink :prefetch="!isFaqPage" :to="sitePath('/#hero')" class="mobile-nav-item" :class="{ active: currentPath === '/' && activeSection === 'hero' }" @click="handleNavClick('/#hero')">Home</NuxtLink>
             <NuxtLink :prefetch="!isFaqPage" :to="sitePath('/wish')" class="mobile-nav-item" :class="{ active: currentPath === '/wish' }" @click="handleNavClick('/wish')">Wish</NuxtLink>
 
-            <NuxtLink :prefetch="!isFaqPage" :to="sitePath('/encounters')" class="mobile-nav-item" :class="{ active: currentPath.startsWith('/encounters') || currentPath.startsWith('/cities') }" @click="handleNavClick('/encounters')">Encounters</NuxtLink>
+            <NuxtLink :prefetch="!isFaqPage" :to="sitePath('/encounters')" class="mobile-nav-item" :class="{ active: isEncountersExperience || currentPath.startsWith('/cities') }" @click="handleNavClick('/encounters')">Encounters</NuxtLink>
 
             <NuxtLink :prefetch="!isFaqPage" :to="sitePath('/about')" class="mobile-nav-item" :class="{ active: currentPath === '/about' }" @click="handleNavClick('/about')">About</NuxtLink>
             <NuxtLink :prefetch="!isFaqPage" :to="sitePath('/en/faq/')" class="mobile-nav-item" :class="{ active: currentPath.includes('/faq') }" @click="handleNavClick('/en/faq/')">FAQ</NuxtLink>
@@ -104,7 +104,7 @@
           <div v-if="memberToken" class="mobile-drawer-user">
             <div class="mobile-user-info">
               <img v-if="member?.avatarUrl && !avatarFailed" :src="member.avatarUrl" alt="" class="member-avatar" @error="avatarFailed = true">
-              <span v-else class="member-avatar member-avatar-default"><font-awesome-icon :icon="['fas', 'user']" aria-hidden="true" /></span>
+              <span v-else class="member-avatar member-avatar-default"><AuthGlobeIcon :icon="faUser" aria-hidden="true" /></span>
               <span class="mobile-user-name">{{ memberDisplayName }}</span>
             </div>
             <div class="mobile-user-actions">
@@ -132,7 +132,7 @@
     <HomePromotionPopup v-if="isHomePage" :popup="homePromotions.popup.value" :open="homePromotions.popupOpen.value" @close="homePromotions.closePopup" />
 
     <!-- Footer -->
-    <footer v-if="!hidesFooter && currentPath !== '/encounters'" class="footer">
+    <footer v-if="!hidesFooter" class="footer">
       <div class="container footer-grid">
         <div class="footer-brand-info">
           <img src="/images/common/logo-footer.svg" alt="Lvyv Logo" class="footer-logo">
@@ -243,7 +243,7 @@ const sitePath = (path) => !import.meta.dev && isActivityPage.value ? MAIN_SITE_
 const isFaqPage = computed(() => /^\/(?:en\/|zh\/)?faq(?:\/|$)/.test(currentPath.value))
 const homePromotions = useHomePromotions()
 const isWishExperience = computed(() => currentPath.value === '/wish' || currentPath.value === '/wish/my')
-const isEncountersExperience = computed(() => currentPath.value === '/encounters' || currentPath.value.startsWith('/encounters/'))
+const isEncountersExperience = computed(() => currentPath.value === '/encounters' || currentPath.value.startsWith('/encounters/') || /^\/product\/(beijing|xian)-/.test(currentPath.value))
 const hidesFooter = computed(() => isActivityPage.value || isWishExperience.value || currentPath.value === '/wish/create')
 const activeSection = ref('hero')
 // Keep the first client render identical to SSR; sync scroll state after mount.
@@ -366,6 +366,16 @@ onBeforeUnmount(() => {
 
 .app-layout--home-with-announcement .navbar.scrolled {
   top: 0;
+}
+
+@media (min-width: 992px) {
+  .app-layout--encounters > .footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  .app-layout--encounters > .footer .footer-grid::before {
+    content: none;
+  }
 }
 
 .nav-china-sim {

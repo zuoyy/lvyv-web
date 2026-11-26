@@ -11,6 +11,7 @@ export interface StoreOrder {
   productName: string; productCode: string; skuName: string; skuCode: string
   currency: string; quantity: number; totalAmount: number; specifications: Specification[]
   email?: string; contactMasked?: string; note?: string; deliveryNote?: string
+  requestedTravelDate?: string | null; confirmedTravelDate?: string | null
   deliveredTime?: string; expireTime: string; createTime: string; refundReason?: string
 }
 export interface CheckoutQuote { unitPrice: number; discountAmount: number; couponDiscountAmount: number; totalAmount: number }
@@ -21,9 +22,25 @@ export interface CheckoutCoupon {
 }
 export const isChinaSimFirstOrderSku = (product: string, sku: string) => product === 'CHINA-SIM' && sku === 'SIM-02'
 export const maxOrderQuantity = 10
+export const isEncounterCode = (code: string) => /^ENC-(?:BJ|XA)-/i.test(code)
+export const validOrderQuantity = (code: string, quantity: number) =>
+  Number.isInteger(quantity) && quantity >= 1 && quantity <= (isEncounterCode(code) ? 2_147_483_647 : maxOrderQuantity)
 export const checkoutPath = (product: string, sku: string, quantity = 1) =>
   '/checkout?' + new URLSearchParams({ product, sku, quantity: String(quantity) })
 export const usd = (price: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price)
+
+export interface CreateStoreOrder {
+  productCode: string
+  skuCode: string
+  quantity: number
+  confirmedAmount: number
+  contact: Record<string, string>
+  note?: string
+  requestedTravelDate?: string
+  checkoutRequestId: string
+  memberCouponId?: number
+  confirmedCouponDiscountAmount?: number
+}
 
 export const useCommerce = () => {
   const auth = useMemberAuth()
@@ -34,7 +51,7 @@ export const useCommerce = () => {
       auth.request<CheckoutQuote>('/commerce/orders/quote', { productCode, skuCode, quantity, memberCouponId }),
     listCoupons: () => auth.request<CheckoutCoupon[]>('/commerce/coupons?status=AVAILABLE', undefined, 'GET'),
     redeemCoupon: (redeemCode: string) => auth.request<CheckoutCoupon>('/commerce/coupons/redeem', { redeemCode }),
-    create: (request: Record<string, unknown>) => auth.request<{ orderNo?: string; currentAmount?: number }>('/commerce/orders', request),
+    create: (request: CreateStoreOrder) => auth.request<{ orderNo?: string; currentAmount?: number }>('/commerce/orders', { ...request }),
     orders: (page: number, filter: string) => auth.request<{ list: StoreOrder[]; total: number }>(
       `/commerce/orders/page?page=${page}&filter=${encodeURIComponent(filter)}`, undefined, 'GET'),
     order: (orderNo: string) => auth.request<StoreOrder>(`/commerce/orders/${encodeURIComponent(orderNo)}`, undefined, 'GET'),
