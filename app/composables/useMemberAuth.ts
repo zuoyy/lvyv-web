@@ -24,6 +24,7 @@ const commerceMessages: Record<number, string> = {
   1005000064: 'Enter a valid whole number of travelers.',
   1005000065: 'The total exceeds the amount we can accept for one order. Reduce the quantity and try again.',
   1005000067: 'An experience in your cart is no longer available. Return to the experience to update your cart.',
+  1005000068: 'Complete the required examination choices for each health checkup package before continuing.',
 }
 
 export class ApiRequestError extends Error {

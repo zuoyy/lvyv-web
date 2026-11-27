@@ -1,3 +1,23 @@
+const functional = { key: 'functional', label: 'Functional health assessment', limit: 1,
+  options: ['Gut function assessment', 'Immune function testing'] } as const
+const aging = { key: 'aging', label: 'Aging & nutritional assessment', limit: 1,
+  options: ['Telomere length and aging test', 'B vitamin analysis'] } as const
+const imaging = { key: 'imaging', label: 'Advanced imaging',
+  options: ['Brain MRA', 'Brain MRI', 'Coronary CTA', 'Cervical spine MRI', 'Lumbar spine MRI'] } as const
+
+export function healthCheckupChoiceGroups(skuCode: string) {
+  if (skuCode === 'PLATINUM') return [functional, aging, { ...imaging, limit: 2 }]
+  if (skuCode === 'LUXURY') return [aging, { ...imaging, limit: 4 }]
+  return []
+}
+
+// Restore only known options from the existing same-tab selection saved on the product page.
+export function healthCheckupChoicesFromNote(skuCode: string, note: string) {
+  const options: readonly string[] = healthCheckupChoiceGroups(skuCode).flatMap(group => [...group.options])
+  return note.startsWith('Selected examinations: ')
+    ? [...new Set(note.slice('Selected examinations: '.length).split(', ').filter(value => options.includes(value)))] : []
+}
+
 export const healthCheckupGroups = [
   ["01 · Medical History", [
     ["Current medical history","YYYY"],

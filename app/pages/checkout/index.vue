@@ -47,6 +47,21 @@
               </div>
             </header>
 
+            <section v-for="item in healthPackages" :key="item.skuCode" class="checkout-examinations">
+              <h2>Health checkup · {{ item.skuCode }}</h2>
+              <p>Complete the required examination choices for this package.</p>
+              <fieldset v-for="group in healthCheckupChoiceGroups(item.skuCode)" :key="group.key" :disabled="submitting">
+                <legend>{{ group.label }} · {{ selectedGroup(item, group.options).length }}/{{ group.limit }} selected</legend>
+                <label v-for="option in group.options" :key="option">
+                  <input :type="group.limit === 1 ? 'radio' : 'checkbox'" :name="item.skuCode + ':' + group.key"
+                    :checked="selectedExaminations(item).includes(option)"
+                    :disabled="!selectedExaminations(item).includes(option) && group.limit > 1 && selectedGroup(item, group.options).length >= group.limit"
+                    @change="chooseExamination(item, group.options, group.limit, option)">
+                  {{ option }}
+                </label>
+              </fieldset>
+            </section>
+
             <h2>Contact and billing</h2>
             <div class="billing-grid">
               <label>First name <input v-model.trim="contact.firstName" autocomplete="given-name" required maxlength="80"></label>
@@ -211,7 +226,7 @@
               <span>I agree to the <NuxtLink to="/terms">terms and conditions</NuxtLink>.</span>
             </label>
             <p v-if="message" class="checkout-error" role="alert">{{ message }}</p>
-            <button type="submit" :disabled="submitting || redeeming || pricing || !quote || status !== 'success'">{{ submitting ? 'Creating order…' : 'Continue to payment' }}</button>
+            <button type="submit" :disabled="submitting || redeeming || pricing || !quote || status !== 'success' || !examinationsComplete">{{ submitting ? 'Creating order…' : 'Continue to payment' }}</button>
           </section>
         </form>
         <div v-else-if="selection && detail" class="checkout-state">
@@ -235,6 +250,7 @@ import CheckoutHeader from '~/components/checkout/CheckoutHeader.vue'
 import SearchCodeSelect from '~/components/payment/SearchCodeSelect.vue'
 import type { BundleCart, BundlePackage, BundleQuote, CheckoutCoupon, CheckoutQuote } from '~/composables/useCommerce'
 import { ApiRequestError } from '~/composables/useMemberAuth'
+import { healthCheckupChoiceGroups, healthCheckupChoicesFromNote } from '~/utils/beijingHealthCheckup'
 
 import { encounterProducts, healthCheckupProductCode } from '~~/shared/utils/encounterProducts'
 
@@ -260,6 +276,29 @@ const addOns = computed(() => {
   }
   return items
 })
+const healthPackages = computed(() => isBundle.value
+  ? [{ productCode: productCode.value, skuCode: skuCode.value }, ...addOns.value]
+    .filter(item => item.productCode.toUpperCase() === healthCheckupProductCode && healthCheckupChoiceGroups(item.skuCode).length)
+  : [])
+const examinations = reactive<Record<string, string[]>>({})
+const selectedExaminations = (item: BundlePackage) => examinations[item.skuCode] ?? []
+const selectedGroup = (item: BundlePackage, options: readonly string[]) =>
+  selectedExaminations(item).filter(option => options.includes(option))
+const examinationsComplete = computed(() => healthPackages.value.every(item =>
+  healthCheckupChoiceGroups(item.skuCode).every(group =>
+    selectedGroup(item, group.options).length === group.limit)))
+function chooseExamination(item: BundlePackage, options: readonly string[], limit: number, option: string) {
+  const selected = selectedExaminations(item)
+  const other = selected.filter(value => !options.includes(value))
+  const group = selectedGroup(item, options)
+  if (limit === 1) examinations[item.skuCode] = [...other, option]
+  else if (group.includes(option)) examinations[item.skuCode] = selected.filter(value => value !== option)
+  else if (group.length < limit) examinations[item.skuCode] = [...selected, option]
+}
+function packageWithExaminations(item: BundlePackage): BundlePackage {
+  return healthPackages.value.some(health => health.productCode === item.productCode && health.skuCode === item.skuCode)
+    ? { ...item, examinations: [...selectedExaminations(item)] } : item
+}
 const bundleQuantity = ref<number>()
 const quantity = computed(() => {
   if (isBundle.value && bundleQuantity.value != null) return bundleQuantity.value
@@ -290,8 +329,19 @@ onMounted(() => {
   watch([productCode, skuCode], ([product, sku]) => {
     const saved = isEncounterCode(product) ? rememberTravelDate(product, sku) : ''
     requestedTravelDate.value = isTravelDate(saved) ? saved : ''
-    if (product === healthCheckupProductCode) note.value = rememberHealthCheckupNote(sku)
+    if (!isBundle.value && product === healthCheckupProductCode) note.value = rememberHealthCheckupNote(sku)
   }, { immediate: true })
+  watch(healthPackages, (items) => {
+    for (const item of items) {
+      examinations[item.skuCode] ??= healthCheckupChoicesFromNote(item.skuCode, rememberHealthCheckupNote(item.skuCode))
+    }
+  }, { immediate: true })
+  watch(examinations, () => {
+    for (const item of healthPackages.value) {
+      const selected = selectedExaminations(item)
+      rememberHealthCheckupNote(item.skuCode, selected.length ? 'Selected examinations: ' + selected.join(', ') : '')
+    }
+  }, { deep: true })
   watch(requestedTravelDate, (date) => {
     if (isEncounter.value && (date === '' || isTravelDate(date))) {
       rememberTravelDate(productCode.value, skuCode.value, date)
@@ -454,6 +504,10 @@ let previousPayload = ''
 async function submit() {
   if ((!selection.value && !bundleQuote.value) || !quantity.value || !agreed.value || submitting.value
     || redeeming.value || pricing.value || status.value !== 'success' || !quote.value) return
+  if (!examinationsComplete.value) {
+    message.value = 'Complete the required examination choices for each health checkup package.'
+    return
+  }
   if (isBundle.value && confirmedBundle.value?.lines[0]?.quantity !== quantity.value) return
   if (isEncounter.value && !isTravelDate(requestedTravelDate.value)) {
     message.value = 'Choose today or a future date in China.'
@@ -474,7 +528,9 @@ async function submit() {
     ...(isSimCheckout.value ? {} : { note: note.value })
   }
   const bundleRequest = confirmedBundle.value ? {
-    cart: cart(selectedCouponId.value),
+    cart: { ...cart(selectedCouponId.value),
+      primary: packageWithExaminations({ productCode: productCode.value, skuCode: skuCode.value }),
+      addOns: addOns.value.map(packageWithExaminations) },
     priceKey: confirmedBundle.value.priceKey,
     requestedTravelDate: requestedTravelDate.value,
     contact: request.contact,
@@ -492,6 +548,7 @@ async function submit() {
       ? await commerce.createBundle({ ...bundleRequest, checkoutRequestId: requestId })
       : await commerce.create({ ...request, checkoutRequestId: requestId })
     if (result.orderNo) {
+      for (const item of healthPackages.value) rememberHealthCheckupNote(item.skuCode, '')
       if (bundleRequest) rememberExperienceAddOns(productCode.value, [])
       if (isEncounter.value) rememberTravelDate(productCode.value, skuCode.value, '')
       if (productCode.value === healthCheckupProductCode) rememberHealthCheckupNote(skuCode.value, '')
@@ -525,6 +582,9 @@ async function submit() {
 .bundle-line span { min-width: 0; overflow-wrap: anywhere; }
 .bundle-line small { display: block; }
 .bundle-line strong { flex-shrink: 0; }
+.checkout-examinations fieldset { margin: 16px 0; border: 1px solid #a7b5ad; border-radius: 6px; padding: 12px; }
+.checkout-examinations legend { font-weight: 600; }
+.checkout-examinations label { display: flex; align-items: baseline; gap: 8px; margin: 8px 0; }
 .checkout-travel-date p { margin-top: 8px; }
 .store-checkout { max-width: 760px; margin: 0 auto; padding: 48px 20px; color: #20372d; }
 .store-checkout h1 { font-size: 2rem; margin: 0 0 20px; }

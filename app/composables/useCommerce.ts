@@ -11,7 +11,7 @@ export interface CatalogExperienceAddOn {
 }
 export interface CatalogSku { skuCode: string; name: string; price: number; specifications: Specification[] }
 export interface CatalogDetail { product: CatalogProduct; skus: CatalogSku[] }
-export interface BundlePackage { productCode: string; skuCode: string }
+export interface BundlePackage { productCode: string; skuCode: string; examinations?: string[] }
 export interface BundleCart { primary: BundlePackage; addOns: BundlePackage[]; quantity: number; memberCouponId?: number }
 export interface BundleLine extends BundlePackage {
   productName: string; skuName: string; unitPrice: number; quantity: number; addOn: boolean; specifications: Specification[]

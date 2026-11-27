@@ -355,7 +355,7 @@
 
 <script setup lang="ts">
 import { encounterProducts, healthCheckupProductCode } from '~~/shared/utils/encounterProducts'
-import { healthCheckupGroups } from '~/utils/beijingHealthCheckup'
+import { healthCheckupGroups, healthCheckupChoiceGroups } from '~/utils/beijingHealthCheckup'
 
 const packageContent = [
   { code: 'DEFAULT', name: 'Preferential Package', level: '01 · ESSENTIAL', color: '#5383a9', price: 414,
@@ -402,17 +402,7 @@ const selectedGroups = computed(() => healthCheckupGroups.map(([heading, rows]) 
   }),
 })).filter(group => group.rows.length))
 
-const functional = { key: 'functional', label: 'Functional health assessment', limit: 1,
-  options: ['Gut function assessment', 'Immune function testing'] } as const
-const aging = { key: 'aging', label: 'Aging & nutritional assessment', limit: 1,
-  options: ['Telomere length and aging test', 'B vitamin analysis'] } as const
-const imaging = { key: 'imaging', label: 'Advanced imaging',
-  options: ['Brain MRA', 'Brain MRI', 'Coronary CTA', 'Cervical spine MRI', 'Lumbar spine MRI'] } as const
-const requiredChoices = computed(() => {
-  if (selectedPackage.value.code === 'PLATINUM') return [functional, aging, { ...imaging, limit: 2 }]
-  if (overnight.value) return [aging, { ...imaging, limit: 4 }]
-  return []
-})
+const requiredChoices = computed(() => healthCheckupChoiceGroups(selectedPackage.value.code))
 const picks = reactive({ functional: [] as string[], aging: [] as string[], imaging: [] as string[] })
 const showChoiceError = ref(false)
 const choicesComplete = computed(() => requiredChoices.value.every(group => picks[group.key].length === group.limit))
