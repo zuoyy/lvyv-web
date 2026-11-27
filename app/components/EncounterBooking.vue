@@ -1,6 +1,6 @@
 <template>
   <section id="book" class="booking" aria-labelledby="booking-title">
-    <h2 id="booking-title">Book this {{ product.kind === 'route' ? 'route' : 'experience' }}</h2>
+    <h2 id="booking-title">Book {{ productName || product.title }}</h2>
     <p v-if="status === 'idle' || status === 'pending'" role="status">Checking availability…</p>
     <div v-else-if="status === 'error'">
       <p role="alert">We couldn’t load the current price.</p>
@@ -8,7 +8,9 @@
     </div>
     <p v-else-if="!sku">This encounter is currently unavailable.</p>
     <form v-else @submit.prevent="checkout">
+      <p v-if="showPackage || sku.name !== (productName || product.title)">{{ sku.name }}</p>
       <p class="price"><strong>{{ usd(sku.price) }}</strong> / person</p>
+      <p v-if="orderNote">{{ orderNote }}</p>
       <div class="booking-fields">
         <label>{{ product.kind === 'route' ? 'Preferred departure date' : 'Preferred experience date' }}
           <input v-model="date" type="date" :min="minimumDate" required>
@@ -25,13 +27,17 @@
 </template>
 
 <script setup lang="ts">
+import { healthCheckupProductCode } from '~~/shared/utils/encounterProducts'
 import type { EncounterProduct } from '~~/shared/utils/encounterProducts'
 import type { CatalogSku } from '~/composables/useCommerce'
 
 const props = defineProps<{
   product: EncounterProduct
+  productName?: string
   sku?: CatalogSku
   status: 'idle' | 'pending' | 'success' | 'error'
+  orderNote?: string
+  showPackage?: boolean
 }>()
 const emit = defineEmits<{ retry: [] }>()
 const date = ref('')
@@ -60,6 +66,9 @@ async function checkout() {
   }
   error.value = ''
   rememberTravelDate(props.product.code, props.sku.skuCode, date.value)
+  if (props.product.code === healthCheckupProductCode) {
+    rememberHealthCheckupNote(props.sku.skuCode, props.orderNote ?? '')
+  }
   await navigateTo(checkoutPath(props.product.code, props.sku.skuCode, amount))
 }
 </script>

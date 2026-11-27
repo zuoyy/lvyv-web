@@ -1,7 +1,11 @@
 import type { EncounterProduct } from '~~/shared/utils/encounterProducts'
 import { encounterImage, encounterProductPath } from '~~/shared/utils/encounterProducts'
 
-export async function useEncounterProduct(product: EncounterProduct, seo: { title: string; description: string; hero?: string }) {
+export async function useEncounterProduct(
+  product: EncounterProduct,
+  seo: { title: string; description: string; hero?: string },
+  skuCodes: readonly string[] = ['DEFAULT'],
+) {
   const commerce = useCommerce()
   const request = useAsyncData('encounter-product:' + product.code, async () => {
     if (!product.ready) return { catalog: null }
@@ -12,14 +16,16 @@ export async function useEncounterProduct(product: EncounterProduct, seo: { titl
       throw error
     }
   })
-  const sku = computed(() => request.data.value?.catalog?.skus.find(item => item.skuCode === 'DEFAULT'))
+  const productName = computed(() => request.data.value?.catalog?.product.name || product.title)
+  const skus = computed(() => request.data.value?.catalog?.skus.filter(item => skuCodes.includes(item.skuCode)) ?? [])
+  const sku = computed(() => skus.value[0])
   useLvyvSeo(() => ({
-    title: seo.title,
+    title: productName.value === product.title ? seo.title : productName.value + ' · ' + product.city + ' | LVYV',
     description: seo.description,
     image: encounterImage(seo.hero ?? product.image),
     path: encounterProductPath(product),
     noindex: !sku.value,
   }))
   const { status, refresh } = await request
-  return { sku, status, refresh }
+  return { productName, sku, skus, status, refresh }
 }

@@ -10,7 +10,7 @@
       </div>
       <div class="hero-content">
         <div class="hero-eyebrow"><span class="text">Beijing · Tier-3 Hospital TCM</span></div>
-        <h1>The Doctor Who Reads Your <span class="italic">Wrist</span></h1>
+        <h1><template v-if="productName === product.title">The Doctor Who Reads Your <span class="italic">Wrist</span></template><template v-else>{{ productName }}</template></h1>
         <p class="hero-tagline">Full TCM immersion in one day. A licensed doctor reads your pulse for 50 seconds, then guides you through acupuncture, cupping, and a personalized treatment — with an English report before you leave.</p>
         <p class="hero-quote">"A doctor read my pulse for 50 seconds and knew more about me than my GP of 10 years."</p>
         <div class="hero-tags">
@@ -254,7 +254,7 @@
         <div class="bb-info">
           <div class="bb-icon">🌿</div>
           <div class="bb-text">
-            <div class="bb-title">The Doctor Who Reads Your Wrist · Beijing</div>
+          <div class="bb-title">{{ productName }} · Beijing</div>
             <div class="bb-meta">Tier-3 Hospital TCM · Pulse · Acupuncture · Cupping</div>
           </div>
         </div>
@@ -270,7 +270,7 @@
       </div>
     </div>
 
-    <EncounterBookingDialog ref="booking" :product="product" :sku="sku" :status="status" @retry="refresh()" />
+    <EncounterBookingDialog ref="booking" :product="product" :product-name="productName" :sku="sku" :status="status" @retry="refresh()" />
   </main>
 </template>
 
@@ -280,7 +280,7 @@ import { encounterProducts } from '~~/shared/utils/encounterProducts'
 const product = encounterProducts.find(item => item.slug === 'beijing-wrist-tcm-day')!
 const booking = useTemplateRef('booking')
 useEncounterDayScroll()
-const { sku, status, refresh } = await useEncounterProduct(product, {
+const { productName, sku, status, refresh } = await useEncounterProduct(product, {
   title: "The Doctor Who Reads Your Wrist · Tier-3 Hospital TCM in Beijing · LVYV Encounters",
   description: "A full-day TCM immersion at a Tier-3 hospital in Beijing. A licensed doctor reads your pulse for 50 seconds, then guides you through acupuncture, cupping, and a personalized treatment — with an English report before you leave.",
   hero: 'detail/hero-cupping-banner',

@@ -10,7 +10,7 @@
       </div>
       <div class="hero-content">
         <div class="hero-eyebrow"><span class="text">Beijing · Dental + Optical</span></div>
-        <h1>New Face, <span class="italic">Same Day</span></h1>
+        <h1><template v-if="productName === product.title">New Face, <span class="italic">Same Day</span></template><template v-else>{{ productName }}</template></h1>
         <p class="hero-tagline">Dental cleaning, eye exam, and 3 pairs of custom glasses — made before dinner. A one-afternoon transformation in Beijing.</p>
         <p class="hero-quote">"Got my teeth cleaned, eyes checked, and 3 pairs of glasses — in one afternoon. The $47 transformation."</p>
         <div class="hero-tags">
@@ -249,7 +249,7 @@
         <div class="bb-info">
           <div class="bb-icon">🦷</div>
           <div class="bb-text">
-            <div class="bb-title">New Face, Same Day · Beijing</div>
+          <div class="bb-title">{{ productName }} · Beijing</div>
             <div class="bb-meta">1-Day Dental + Optical · Cleaning · Exam · 3 Pairs</div>
           </div>
         </div>
@@ -265,7 +265,7 @@
       </div>
     </div>
 
-    <EncounterBookingDialog ref="booking" :product="product" :sku="sku" :status="status" @retry="refresh()" />
+    <EncounterBookingDialog ref="booking" :product="product" :product-name="productName" :sku="sku" :status="status" @retry="refresh()" />
   </main>
 </template>
 
@@ -275,7 +275,7 @@ import { encounterProducts } from '~~/shared/utils/encounterProducts'
 const product = encounterProducts.find(item => item.slug === 'beijing-new-face-same-day')!
 const booking = useTemplateRef('booking')
 useEncounterDayScroll()
-const { sku, status, refresh } = await useEncounterProduct(product, {
+const { productName, sku, status, refresh } = await useEncounterProduct(product, {
   title: "New Face, Same Day · 1-Day Dental + Optical in Beijing · LVYV Encounters",
   description: "Dental cleaning, full eye exam, and 3 pairs of custom glasses made before dinner. A one-afternoon transformation in Beijing with an English-speaking companion.",
   hero: 'temple-of-heaven',

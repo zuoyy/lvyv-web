@@ -9,7 +9,7 @@
         <div class="hero-slide-overlay"></div>
         <div class="hero-content">
           <div class="hero-eyebrow"><span class="dot"></span><span class="text">Bestseller · 3D2N in Beijing</span></div>
-          <h1>The China <span class="italic">Ritual</span></h1>
+          <h1><template v-if="nameFor('beijing-china-ritual') === 'The China Ritual'">The China <span class="italic">Ritual</span></template><template v-else>{{ nameFor('beijing-china-ritual') }}</template></h1>
           <p class="hero-tagline">Dental cleaning, custom glasses, TCM pulse diagnosis, and dawn Tai Chi with a master —
             four encounters in one trip. The savings pay for your flight.</p>
           <div class="hero-tags">
@@ -30,7 +30,7 @@
         <div class="hero-slide-overlay"></div>
         <div class="hero-content">
           <div class="hero-eyebrow"><span class="dot"></span><span class="text">Editor's Pick · 3D2N in Xi'an</span></div>
-          <h1>The 2,000-Year-Old <span class="italic">Pharmacy</span></h1>
+          <h1><template v-if="nameFor('xian-ancient-pharmacy') === 'The 2,000-Year-Old Pharmacy'">The 2,000-Year-Old <span class="italic">Pharmacy</span></template><template v-else>{{ nameFor('xian-ancient-pharmacy') }}</template></h1>
           <p class="hero-tagline">Walk into a herbal market older than your country. A doctor reads your pulse for 50
             seconds and knows more than your GP of 10 years. Then learn to pull your own noodles. Plus the Terracotta
             Warriors.</p>
@@ -48,8 +48,8 @@
       </div>
       <div class="hero-counter"><span class="current">{{ activeSlide === 0 ? '01' : '02' }}</span> / 02</div>
       <div class="hero-dots">
-        <button type="button" class="hero-dot" aria-label="Show The China Ritual" :class="{ active: activeSlide === 0 }" :aria-pressed="activeSlide === 0" @click="activeSlide = 0"></button>
-        <button type="button" class="hero-dot" aria-label="Show The 2,000-Year-Old Pharmacy" :class="{ active: activeSlide === 1 }" :aria-pressed="activeSlide === 1" @click="activeSlide = 1"></button>
+        <button type="button" class="hero-dot" :aria-label="'Show ' + nameFor('beijing-china-ritual')" :class="{ active: activeSlide === 0 }" :aria-pressed="activeSlide === 0" @click="activeSlide = 0"></button>
+        <button type="button" class="hero-dot" :aria-label="'Show ' + nameFor('xian-ancient-pharmacy')" :class="{ active: activeSlide === 1 }" :aria-pressed="activeSlide === 1" @click="activeSlide = 1"></button>
       </div>
       <div class="scroll-hint">Scroll to explore</div>
     </section>
@@ -156,7 +156,7 @@
             <span class="route-card-badge signature">Signature</span>
             <span class="route-card-days">3D2N</span>
             <div class="route-card-content">
-              <h3>The China <span class="italic">Ritual</span></h3>
+              <h3><template v-if="nameFor('beijing-china-ritual') === 'The China Ritual'">The China <span class="italic">Ritual</span></template><template v-else>{{ nameFor('beijing-china-ritual') }}</template></h3>
               <p class="desc">"I flew to China for a dentist, glasses, and a doctor — it cost less than my rent." Dental +
                 eye exam + TCM pulse, all in one day. Plus Great Wall sunrise and dawn Tai Chi with a master. The savings
                 pay for your flight.</p>
@@ -180,7 +180,7 @@
             <span class="route-card-badge new">New</span>
             <span class="route-card-days">1D</span>
             <div class="route-card-content">
-              <h3>The Doctor Who Reads Your <span class="italic">Wrist</span></h3>
+              <h3><template v-if="nameFor('beijing-wrist-tcm-day') === 'The Doctor Who Reads Your Wrist'">The Doctor Who Reads Your <span class="italic">Wrist</span></template><template v-else>{{ nameFor('beijing-wrist-tcm-day') }}</template></h3>
               <p class="desc">"A doctor read my pulse for 50 seconds and knew more about me than my GP of 10 years." Full
                 TCM immersion at a Tier-3 hospital. Pulse diagnosis, acupuncture, cupping. English report same-day.</p>
               <div class="route-card-tags">
@@ -201,7 +201,7 @@
             <span class="route-card-badge editors">Editor's Pick</span>
             <span class="route-card-days">1D</span>
             <div class="route-card-content">
-              <h3>New Face, <span class="italic">Same Day</span></h3>
+              <h3><template v-if="nameFor('beijing-new-face-same-day') === 'New Face, Same Day'">New Face, <span class="italic">Same Day</span></template><template v-else>{{ nameFor('beijing-new-face-same-day') }}</template></h3>
               <p class="desc">"Got my teeth cleaned, eyes checked, and 3 pairs of glasses — in one afternoon." Dental
                 cleaning + eye exam + custom glasses made before dinner. The $47 transformation.</p>
               <div class="route-card-tags">
@@ -221,12 +221,11 @@
           <span class="dot"></span>
           <h4>Solo Encounters in Beijing</h4>
           <span class="count">· Book individually or combine into a ritual</span>
-          <span class="solo-tip">$17 — $168 per experience</span>
         </div>
         <div class="upgrade-bar">
           <span class="upgrade-bar-icon">💡</span>
           <span class="upgrade-bar-text">Mix and match — pick any 3 medical + culture encounters and upgrade to
-            <strong>The China Ritual 3D2N</strong>. Add 2 culture encounters (tea, Tai Chi, calligraphy, dumplings) and
+            <strong>{{ nameFor('beijing-china-ritual') }} 3D2N</strong>. Add 2 culture encounters (tea, Tai Chi, calligraphy, dumplings) and
             the package drops <strong>$84</strong> + 3D2N hotel, Great Wall sunrise & transfers included.</span>
           <NuxtLink :to="pathFor('beijing-china-ritual')" class="upgrade-bar-btn">Start Building →</NuxtLink>
         </div>
@@ -242,10 +241,10 @@
           >{{ category.label }}</button>
         </div>
         <div class="solo-grid">
-          <div v-show="beijingCategory === 'all' || beijingCategory === 'medical'" class="solo-card">
+          <NuxtLink v-show="beijingCategory === 'all' || beijingCategory === 'medical'" class="solo-card" :to="pathFor('beijing-dental-cleaning')">
             <span class="solo-card-combo ritual">In Ritual</span>
             <div class="solo-card-cat medical">Light Medical</div>
-            <h5>Dental Cleaning + Checkup</h5>
+            <h5>{{ nameFor('beijing-dental-cleaning') }}</h5>
             <p class="desc">Professional cleaning, X-ray, and consultation at a top Beijing dental clinic.
               English-speaking staff.</p>
             <p class="solo-card-hook">"$200 in London. $53 in Beijing. Same clean."</p>
@@ -253,26 +252,26 @@
               class="save-tag">Save 73%</span></div>
             <div class="solo-card-footer">
               <div><span class="solo-card-price">{{ priceFor('beijing-dental-cleaning') }}</span> <span class="solo-card-time">· 2h</span></div>
-              <NuxtLink :to="pathFor('beijing-dental-cleaning')" class="solo-card-book">Book</NuxtLink>
+              <span class="solo-card-book">Book</span>
             </div>
-          </div>
-          <div v-show="beijingCategory === 'all' || beijingCategory === 'medical'" class="solo-card">
+          </NuxtLink>
+          <NuxtLink v-show="beijingCategory === 'all' || beijingCategory === 'medical'" class="solo-card" :to="pathFor('beijing-eye-exam-custom-glasses')">
             <span class="solo-card-combo ritual">In Ritual</span>
             <div class="solo-card-cat medical">Light Medical</div>
-            <h5>Eye Exam + Custom Glasses</h5>
+            <h5>{{ nameFor('beijing-eye-exam-custom-glasses') }}</h5>
             <p class="desc">Full optometry exam, lens fitting, frame selection. Glasses ready same-day by afternoon.</p>
             <p class="solo-card-hook">"Bought 3 pairs for less than 1 at home"</p>
             <div class="solo-card-compare"><span class="abroad">$300+</span> US → <span class="here">$28</span> <span
               class="save-tag">Save 90%</span></div>
             <div class="solo-card-footer">
               <div><span class="solo-card-price">{{ priceFor('beijing-eye-exam-custom-glasses') }}</span> <span class="solo-card-time">· Half day</span></div>
-              <NuxtLink :to="pathFor('beijing-eye-exam-custom-glasses')" class="solo-card-book">Book</NuxtLink>
+              <span class="solo-card-book">Book</span>
             </div>
-          </div>
-          <div v-show="beijingCategory === 'all' || beijingCategory === 'tcm'" class="solo-card">
+          </NuxtLink>
+          <NuxtLink v-show="beijingCategory === 'all' || beijingCategory === 'tcm'" class="solo-card" :to="pathFor('beijing-tcm-pulse-acupuncture')">
             <span class="solo-card-combo ritual">In Ritual</span>
             <div class="solo-card-cat tcm">TCM</div>
-            <h5>TCM Pulse + Acupuncture</h5>
+            <h5>{{ nameFor('beijing-tcm-pulse-acupuncture') }}</h5>
             <p class="desc">Pulse diagnosis, acupuncture, cupping & moxibustion at a Tier-3 hospital. English translator
               throughout.</p>
             <p class="solo-card-hook">"50 seconds of silence. Then she knew everything."</p>
@@ -280,26 +279,24 @@
               class="save-tag">Save 81%</span></div>
             <div class="solo-card-footer">
               <div><span class="solo-card-price">{{ priceFor('beijing-tcm-pulse-acupuncture') }}</span> <span class="solo-card-time">· 2h</span></div>
-              <NuxtLink :to="pathFor('beijing-tcm-pulse-acupuncture')" class="solo-card-book">Book</NuxtLink>
+              <span class="solo-card-book">Book</span>
             </div>
-          </div>
-          <div v-show="beijingCategory === 'all' || beijingCategory === 'medical'" class="solo-card">
+          </NuxtLink>
+          <NuxtLink v-show="beijingCategory === 'all' || beijingCategory === 'medical'" class="solo-card" :to="pathFor('beijing-basic-health-checkup')">
             <div class="solo-card-cat medical">Light Medical</div>
-            <h5>Basic Health Checkup</h5>
+            <h5>{{ nameFor('beijing-basic-health-checkup') }}</h5>
             <p class="desc">Blood panel, liver/kidney function, blood sugar, ECG, ultrasound. Tier-3 hospital
               international dept.</p>
-            <p class="solo-card-hook">"$1,500 in the US. $167 in Beijing. Same machines."</p>
-            <div class="solo-card-compare"><span class="abroad">$1,500</span> US → <span class="here">$168</span> <span
-              class="save-tag">Save 89%</span></div>
+            <p class="solo-card-hook">Four packages, from general screening to an overnight checkup.</p>
             <div class="solo-card-footer">
-              <div><span class="solo-card-price">{{ priceFor('beijing-basic-health-checkup') }}</span> <span class="solo-card-time">· Half day</span></div>
-              <NuxtLink :to="pathFor('beijing-basic-health-checkup')" class="solo-card-book">Book</NuxtLink>
+              <div><span class="solo-card-price">{{ isAvailable('beijing-basic-health-checkup') ? 'From ' : '' }}{{ priceFor('beijing-basic-health-checkup') }}</span></div>
+              <span class="solo-card-book">Book</span>
             </div>
-          </div>
-          <div v-show="beijingCategory === 'all' || beijingCategory === 'culture'" class="solo-card">
+          </NuxtLink>
+          <NuxtLink v-show="beijingCategory === 'all' || beijingCategory === 'culture'" class="solo-card" :to="pathFor('beijing-gongfu-tea-ceremony')">
             <span class="solo-card-combo ritual">In Ritual</span>
             <div class="solo-card-cat culture">Culture</div>
-            <h5>Gongfu Tea Ceremony Workshop</h5>
+            <h5>{{ nameFor('beijing-gongfu-tea-ceremony') }}</h5>
             <p class="desc">Learn the 12-step Gongfu tea ritual from a master. Brew 5 single-origin teas. Take home a tea
               pet.</p>
             <p class="solo-card-hook">"12 steps for one cup. I'll never look at a teabag the same way."</p>
@@ -307,12 +304,12 @@
               class="here">$25</span> <span class="save-tag">Save 69%</span></div>
             <div class="solo-card-footer">
               <div><span class="solo-card-price">{{ priceFor('beijing-gongfu-tea-ceremony') }}</span> <span class="solo-card-time">· 1.5h</span></div>
-              <NuxtLink :to="pathFor('beijing-gongfu-tea-ceremony')" class="solo-card-book">Book</NuxtLink>
+              <span class="solo-card-book">Book</span>
             </div>
-          </div>
-          <div v-show="beijingCategory === 'all' || beijingCategory === 'food'" class="solo-card">
+          </NuxtLink>
+          <NuxtLink v-show="beijingCategory === 'all' || beijingCategory === 'food'" class="solo-card" :to="pathFor('beijing-dumpling-master-class')">
             <div class="solo-card-cat food">Food</div>
-            <h5>Dumpling Master Class</h5>
+            <h5>{{ nameFor('beijing-dumpling-master-class') }}</h5>
             <p class="desc">Make jiaozi from scratch with a Beijing hutong grandmother. 6 folding techniques, 3 fillings,
               eat what you make.</p>
             <p class="solo-card-hook">"My Chinese grandma for 3 hours. I made 40 dumplings."</p>
@@ -321,13 +318,13 @@
               </div>
             <div class="solo-card-footer">
               <div><span class="solo-card-price">{{ priceFor('beijing-dumpling-master-class') }}</span> <span class="solo-card-time">· 2h</span></div>
-              <NuxtLink :to="pathFor('beijing-dumpling-master-class')" class="solo-card-book">Book</NuxtLink>
+              <span class="solo-card-book">Book</span>
             </div>
-          </div>
-          <div v-show="beijingCategory === 'all' || beijingCategory === 'culture'" class="solo-card">
+          </NuxtLink>
+          <NuxtLink v-show="beijingCategory === 'all' || beijingCategory === 'culture'" class="solo-card" :to="pathFor('beijing-temple-of-heaven-tai-chi')">
             <span class="solo-card-combo ritual">In Ritual</span>
             <div class="solo-card-cat culture">Culture</div>
-            <h5>Tai Chi at Temple of Heaven</h5>
+            <h5>{{ nameFor('beijing-temple-of-heaven-tai-chi') }}</h5>
             <p class="desc">Sunrise Tai Chi session with a 20-year master at the Temple of Heaven. Learn the 8-form. Tea
               and chat after.</p>
             <p class="solo-card-hook">"60-year-olds moving like water. I was the stiffest person in the park."</p>
@@ -336,12 +333,12 @@
               </div>
             <div class="solo-card-footer">
               <div><span class="solo-card-price">{{ priceFor('beijing-temple-of-heaven-tai-chi') }}</span> <span class="solo-card-time">· 1.5h · sunrise</span></div>
-              <NuxtLink :to="pathFor('beijing-temple-of-heaven-tai-chi')" class="solo-card-book">Book</NuxtLink>
+              <span class="solo-card-book">Book</span>
             </div>
-          </div>
-          <div v-show="beijingCategory === 'all' || beijingCategory === 'craft'" class="solo-card">
+          </NuxtLink>
+          <NuxtLink v-show="beijingCategory === 'all' || beijingCategory === 'craft'" class="solo-card" :to="pathFor('beijing-calligraphy-ink-brush')">
             <div class="solo-card-cat craft">Craft</div>
-            <h5>Calligraphy & Ink Brush Workshop</h5>
+            <h5>{{ nameFor('beijing-calligraphy-ink-brush') }}</h5>
             <p class="desc">Learn brush techniques from a master calligrapher. Write your name in seal script. Take home
               your work mounted.</p>
             <p class="solo-card-hook">"My handwriting looked like a 5-year-old's. The master said that's the point."</p>
@@ -349,9 +346,9 @@
               class="save-tag">Save 68%</span></div>
             <div class="solo-card-footer">
               <div><span class="solo-card-price">{{ priceFor('beijing-calligraphy-ink-brush') }}</span> <span class="solo-card-time">· 2h</span></div>
-              <NuxtLink :to="pathFor('beijing-calligraphy-ink-brush')" class="solo-card-book">Book</NuxtLink>
+              <span class="solo-card-book">Book</span>
             </div>
-          </div>
+          </NuxtLink>
         </div>
       </div>
     </section>
@@ -375,7 +372,7 @@
             <span class="route-card-badge signature">Signature</span>
             <span class="route-card-days">3D2N</span>
             <div class="route-card-content">
-              <h3>The 2,000-Year-Old <span class="italic">Pharmacy</span></h3>
+              <h3><template v-if="nameFor('xian-ancient-pharmacy') === 'The 2,000-Year-Old Pharmacy'">The 2,000-Year-Old <span class="italic">Pharmacy</span></template><template v-else>{{ nameFor('xian-ancient-pharmacy') }}</template></h3>
               <p class="desc">"I walked into a pharmacy older than my country. Left with a prescription that worked."
                 Herbal market, moxibustion, a Tang-dynasty tea ritual, and a pulse reading from a TCM doctor. Plus
                 Terracotta Warriors and city wall sunset.</p>
@@ -399,7 +396,7 @@
             <span class="route-card-badge new">New</span>
             <span class="route-card-days">1D</span>
             <div class="route-card-content">
-              <h3>The Doctor Who Reads Your <span class="italic">Wrist</span></h3>
+              <h3><template v-if="nameFor('xian-wrist-pharmacy-day') === 'The Doctor Who Reads Your Wrist'">The Doctor Who Reads Your <span class="italic">Wrist</span></template><template v-else>{{ nameFor('xian-wrist-pharmacy-day') }}</template></h3>
               <p class="desc">"50 seconds of silence. Three fingers on my wrist. Then she described symptoms I hadn't told
                 anyone." Visit a traditional pharmacy, watch herbs compounded, get your own prescription.</p>
               <div class="route-card-tags">
@@ -420,7 +417,7 @@
             <span class="route-card-badge editors">Editor's Pick</span>
             <span class="route-card-days">1D</span>
             <div class="route-card-content">
-              <h3>The Silk Road <span class="italic">Fix</span></h3>
+              <h3><template v-if="nameFor('xian-silk-road-fix') === 'The Silk Road Fix'">The Silk Road <span class="italic">Fix</span></template><template v-else>{{ nameFor('xian-silk-road-fix') }}</template></h3>
               <p class="desc">"Walked 30km in 3 days. One TCM session fixed everything." Acupuncture, cupping, tuina, and
                 herbal bath — the exact recovery routine Silk Road traders used 1,000 years ago.</p>
               <div class="route-card-tags">
@@ -445,8 +442,8 @@
         </div>
         <div class="upgrade-bar">
           <span class="upgrade-bar-icon">💡</span>
-          <span class="upgrade-bar-text">Mix and match — pick any 3 TCM + culture encounters and upgrade to <strong>The
-            2,000-Year-Old Pharmacy 3D2N</strong>. Pair 2 culture encounters (Tang tea, Biang Biang noodles, clay craft,
+          <span class="upgrade-bar-text">Mix and match — pick any 3 TCM + culture encounters and upgrade to
+            <strong>{{ nameFor('xian-ancient-pharmacy') }} 3D2N</strong>. Pair 2 culture encounters (Tang tea, Biang Biang noodles, clay craft,
             Hanfu) and save <strong>$56</strong> + free hotel, Terracotta tour & city wall bike.</span>
           <NuxtLink :to="pathFor('xian-ancient-pharmacy')" class="upgrade-bar-btn">Start Building →</NuxtLink>
         </div>
@@ -462,10 +459,10 @@
           >{{ category.label }}</button>
         </div>
         <div class="solo-grid">
-          <div v-show="xianCategory === 'all' || xianCategory === 'tcm'" class="solo-card">
+          <NuxtLink v-show="xianCategory === 'all' || xianCategory === 'tcm'" class="solo-card" :to="pathFor('xian-tcm-pulse-acupuncture')">
             <span class="solo-card-combo apothecary">In Apothecary</span>
             <div class="solo-card-cat tcm">TCM</div>
-            <h5>TCM Pulse + Acupuncture</h5>
+            <h5>{{ nameFor('xian-tcm-pulse-acupuncture') }}</h5>
             <p class="desc">Full TCM consultation, pulse diagnosis, and acupuncture at a traditional Xi'an medicine
               hospital.</p>
             <p class="solo-card-hook">"She read my wrist and described symptoms I hid from everyone"</p>
@@ -473,25 +470,25 @@
               class="save-tag">Save 81%</span></div>
             <div class="solo-card-footer">
               <div><span class="solo-card-price">{{ priceFor('xian-tcm-pulse-acupuncture') }}</span> <span class="solo-card-time">· 2h</span></div>
-              <NuxtLink :to="pathFor('xian-tcm-pulse-acupuncture')" class="solo-card-book">Book</NuxtLink>
+              <span class="solo-card-book">Book</span>
             </div>
-          </div>
-          <div v-show="xianCategory === 'all' || xianCategory === 'herbal'" class="solo-card">
+          </NuxtLink>
+          <NuxtLink v-show="xianCategory === 'all' || xianCategory === 'herbal'" class="solo-card" :to="pathFor('xian-herbal-market-walk')">
             <span class="solo-card-combo apothecary">In Apothecary</span>
             <div class="solo-card-cat herbal">Herbal</div>
-            <h5>Herbal Medicine Market Walk</h5>
+            <h5>{{ nameFor('xian-herbal-market-walk') }}</h5>
             <p class="desc">Guided walk through Xi'an's traditional medicine market. See, smell, and learn about 50+
               medicinal herbs.</p>
             <p class="solo-card-hook">"It's like Diagon Alley. But it's been real for 2,000 years."</p>
             <div class="solo-card-compare"><span class="abroad">N/A</span> → <span class="here">$25</span></div>
             <div class="solo-card-footer">
               <div><span class="solo-card-price">{{ priceFor('xian-herbal-market-walk') }}</span> <span class="solo-card-time">· 2h</span></div>
-              <NuxtLink :to="pathFor('xian-herbal-market-walk')" class="solo-card-book">Book</NuxtLink>
+              <span class="solo-card-book">Book</span>
             </div>
-          </div>
-          <div v-show="xianCategory === 'all' || xianCategory === 'tcm'" class="solo-card">
+          </NuxtLink>
+          <NuxtLink v-show="xianCategory === 'all' || xianCategory === 'tcm'" class="solo-card" :to="pathFor('xian-direct-moxibustion')">
             <div class="solo-card-cat tcm">TCM</div>
-            <h5>Direct Moxibustion</h5>
+            <h5>{{ nameFor('xian-direct-moxibustion') }}</h5>
             <p class="desc">Traditional Xi'an-style moxibustion with ginger slices. For chronic pain and cold conditions.
             </p>
             <p class="solo-card-hook">"Burning mugwort on ginger. Sounds crazy. Works."</p>
@@ -499,12 +496,12 @@
               class="save-tag">Save 68%</span></div>
             <div class="solo-card-footer">
               <div><span class="solo-card-price">{{ priceFor('xian-direct-moxibustion') }}</span> <span class="solo-card-time">· 1h</span></div>
-              <NuxtLink :to="pathFor('xian-direct-moxibustion')" class="solo-card-book">Book</NuxtLink>
+              <span class="solo-card-book">Book</span>
             </div>
-          </div>
-          <div v-show="xianCategory === 'all' || xianCategory === 'herbal'" class="solo-card">
+          </NuxtLink>
+          <NuxtLink v-show="xianCategory === 'all' || xianCategory === 'herbal'" class="solo-card" :to="pathFor('xian-herbal-foot-soak-massage')">
             <div class="solo-card-cat herbal">Herbal</div>
-            <h5>Herbal Foot Soak + Massage</h5>
+            <h5>{{ nameFor('xian-herbal-foot-soak-massage') }}</h5>
             <p class="desc">Foot soak in 10 medicinal herbs, followed by reflexology massage. Ancient Silk Road traveler's
               remedy.</p>
             <p class="solo-card-hook">"Silk Road traders did this 1,000 years ago. Still works."</p>
@@ -512,13 +509,13 @@
               class="save-tag">Save 78%</span></div>
             <div class="solo-card-footer">
               <div><span class="solo-card-price">{{ priceFor('xian-herbal-foot-soak-massage') }}</span> <span class="solo-card-time">· 1.5h</span></div>
-              <NuxtLink :to="pathFor('xian-herbal-foot-soak-massage')" class="solo-card-book">Book</NuxtLink>
+              <span class="solo-card-book">Book</span>
             </div>
-          </div>
-          <div v-show="xianCategory === 'all' || xianCategory === 'food'" class="solo-card">
+          </NuxtLink>
+          <NuxtLink v-show="xianCategory === 'all' || xianCategory === 'food'" class="solo-card" :to="pathFor('xian-biang-biang-noodles')">
             <span class="solo-card-combo apothecary">In Apothecary</span>
             <div class="solo-card-cat food">Food</div>
-            <h5>Biang Biang Noodle Master Class</h5>
+            <h5>{{ nameFor('xian-biang-biang-noodles') }}</h5>
             <p class="desc">Learn the art of Xi'an's famous belt-wide noodles. Hand-pull, slap, and cook. Eat with chili
               oil. The character for "biang" has 58 strokes.</p>
             <p class="solo-card-hook">"58 strokes for one character. 1 slap for the best noodle I've ever had."</p>
@@ -527,13 +524,13 @@
               </div>
             <div class="solo-card-footer">
               <div><span class="solo-card-price">{{ priceFor('xian-biang-biang-noodles') }}</span> <span class="solo-card-time">· 1.5h</span></div>
-              <NuxtLink :to="pathFor('xian-biang-biang-noodles')" class="solo-card-book">Book</NuxtLink>
+              <span class="solo-card-book">Book</span>
             </div>
-          </div>
-          <div v-show="xianCategory === 'all' || xianCategory === 'culture'" class="solo-card">
+          </NuxtLink>
+          <NuxtLink v-show="xianCategory === 'all' || xianCategory === 'culture'" class="solo-card" :to="pathFor('xian-tang-dynasty-tea-ritual')">
             <span class="solo-card-combo apothecary">In Apothecary</span>
             <div class="solo-card-cat culture">Culture</div>
-            <h5>Tang Dynasty Tea Ritual</h5>
+            <h5>{{ nameFor('xian-tang-dynasty-tea-ritual') }}</h5>
             <p class="desc">Experience tea the way Xi'an's Tang court did 1,300 years ago — ground, whisked, salted. A
               ritual older than Japan's matcha by 400 years.</p>
             <p class="solo-card-hook">"Japan learned matcha from here. This is the original."</p>
@@ -541,12 +538,12 @@
               class="save-tag">Save 72%</span></div>
             <div class="solo-card-footer">
               <div><span class="solo-card-price">{{ priceFor('xian-tang-dynasty-tea-ritual') }}</span> <span class="solo-card-time">· 1.5h</span></div>
-              <NuxtLink :to="pathFor('xian-tang-dynasty-tea-ritual')" class="solo-card-book">Book</NuxtLink>
+              <span class="solo-card-book">Book</span>
             </div>
-          </div>
-          <div v-show="xianCategory === 'all' || xianCategory === 'craft'" class="solo-card">
+          </NuxtLink>
+          <NuxtLink v-show="xianCategory === 'all' || xianCategory === 'craft'" class="solo-card" :to="pathFor('xian-terracotta-clay-craft')">
             <div class="solo-card-cat craft">Craft</div>
-            <h5>Terracotta Warrior Clay Craft</h5>
+            <h5>{{ nameFor('xian-terracotta-clay-craft') }}</h5>
             <p class="desc">Sculpt your own mini warrior using the same clay and techniques as the original artisans 2,200
               years ago. Take it home.</p>
             <p class="solo-card-hook">"Built an army of 8,000. I built 1. Still proud."</p>
@@ -554,12 +551,12 @@
               </div>
             <div class="solo-card-footer">
               <div><span class="solo-card-price">{{ priceFor('xian-terracotta-clay-craft') }}</span> <span class="solo-card-time">· 2h</span></div>
-              <NuxtLink :to="pathFor('xian-terracotta-clay-craft')" class="solo-card-book">Book</NuxtLink>
+              <span class="solo-card-book">Book</span>
             </div>
-          </div>
-          <div v-show="xianCategory === 'all' || xianCategory === 'culture'" class="solo-card">
+          </NuxtLink>
+          <NuxtLink v-show="xianCategory === 'all' || xianCategory === 'culture'" class="solo-card" :to="pathFor('xian-hanfu-city-wall-walk')">
             <div class="solo-card-cat culture">Culture</div>
-            <h5>Hanfu Dress-Up + City Wall Walk</h5>
+            <h5>{{ nameFor('xian-hanfu-city-wall-walk') }}</h5>
             <p class="desc">Wear traditional Hanfu, walk Xi'an's 600-year-old Ming city wall at sunset. Includes
               professional photoshoot with 5 edited shots.</p>
             <p class="solo-card-hook">"Walked a 600-year-old wall in a 2,000-year-old outfit. Felt like time travel."</p>
@@ -568,9 +565,9 @@
               </div>
             <div class="solo-card-footer">
               <div><span class="solo-card-price">{{ priceFor('xian-hanfu-city-wall-walk') }}</span> <span class="solo-card-time">· 2h · sunset</span></div>
-              <NuxtLink :to="pathFor('xian-hanfu-city-wall-walk')" class="solo-card-book">Book</NuxtLink>
+              <span class="solo-card-book">Book</span>
             </div>
-          </div>
+          </NuxtLink>
         </div>
       </div>
     </section>
@@ -622,6 +619,7 @@ function listingFor(slug: string) {
   return product?.ready ? catalogByCode.value.get(product.code) : undefined
 }
 const isAvailable = (slug: string) => listingFor(slug)?.lowestPrice != null
+const nameFor = (slug: string) => listingFor(slug)?.name || bySlug.get(slug)?.title
 function priceFor(slug: string) {
   if (!bySlug.get(slug)?.ready) return 'Currently unavailable'
   const price = listingFor(slug)?.lowestPrice

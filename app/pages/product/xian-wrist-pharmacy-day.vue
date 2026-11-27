@@ -10,7 +10,7 @@
       </div>
       <div class="hero-content">
         <div class="hero-eyebrow"><span class="text">Xi'an · Traditional Pharmacy TCM</span></div>
-        <h1>The Doctor Who Reads Your <span class="italic">Wrist</span></h1>
+        <h1><template v-if="productName === product.title">The Doctor Who Reads Your <span class="italic">Wrist</span></template><template v-else>{{ productName }}</template></h1>
         <p class="hero-tagline">Step inside a 2,000-year-old pharmacy. Watch herbs weighed and compounded by hand. Get a 50-second pulse reading — and walk out with your own prescription.</p>
         <p class="hero-quote">"50 seconds of silence. Three fingers on my wrist. Then she described symptoms I hadn't told anyone."</p>
         <div class="hero-tags">
@@ -250,7 +250,7 @@
         <div class="bb-info">
           <div class="bb-icon">🏪</div>
           <div class="bb-text">
-            <div class="bb-title">The Doctor Who Reads Your Wrist · Xi'an</div>
+          <div class="bb-title">{{ productName }} · Xi'an</div>
             <div class="bb-meta">1-Day Traditional Pharmacy · Pulse Reading · English Report</div>
           </div>
         </div>
@@ -266,7 +266,7 @@
       </div>
     </div>
 
-    <EncounterBookingDialog ref="booking" :product="product" :sku="sku" :status="status" @retry="refresh()" />
+    <EncounterBookingDialog ref="booking" :product="product" :product-name="productName" :sku="sku" :status="status" @retry="refresh()" />
   </main>
 </template>
 
@@ -276,7 +276,7 @@ import { encounterProducts } from '~~/shared/utils/encounterProducts'
 const product = encounterProducts.find(item => item.slug === 'xian-wrist-pharmacy-day')!
 const booking = useTemplateRef('booking')
 useEncounterDayScroll()
-const { sku, status, refresh } = await useEncounterProduct(product, {
+const { productName, sku, status, refresh } = await useEncounterProduct(product, {
   title: "The Doctor Who Reads Your Wrist · 1-Day Traditional Pharmacy · LVYV Encounters",
   description: "Step inside a 2,000-year-old TCM pharmacy in Xi'an. Watch herbs weighed and compounded by hand, get a 50-second pulse reading, and leave with your own prescription and English report.",
   hero: 'detail/pulse-diagnosis',

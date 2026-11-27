@@ -54,7 +54,21 @@
             <div><dt>Order status</dt><dd>{{ statusLabel(selected) }}</dd></div>
             <div><dt>Total</dt><dd>{{ orderAmount(selected) }}</dd></div>
           </dl>
-          <div class="order-item">
+          <template v-if="selected.items?.length">
+            <div v-for="item in selected.items" :key="item.productCode + ':' + item.skuCode" class="order-item">
+              <div>
+                <h3>{{ item.productName }}</h3>
+                <p v-if="item.skuName !== item.productName" class="item-package">{{ item.skuName }}</p>
+                <dl v-if="item.specifications.length" class="item-specs">
+                  <div v-for="spec in item.specifications" :key="spec.key">
+                    <dt>{{ spec.label }}</dt><dd>{{ spec.value }}</dd>
+                  </div>
+                </dl>
+              </div>
+              <p class="item-quantity">{{ usd(item.unitPrice) }} × {{ item.quantity }}</p>
+            </div>
+          </template>
+          <div v-else class="order-item">
             <div>
               <h3>{{ selected.productName }}</h3>
               <p class="item-package">{{ selected.skuName }}</p>
@@ -68,6 +82,7 @@
           </div>
           <p v-if="selected.requestedTravelDate" class="order-note">Preferred date: {{ selected.requestedTravelDate }}</p>
           <p v-if="selected.confirmedTravelDate" class="order-note">Confirmed date: {{ selected.confirmedTravelDate }}</p>
+          <p v-if="selected.items?.length && selected.note" class="order-note">{{ selected.note }}</p>
           <p v-if="selected.deliveryNote" class="order-note">{{ selected.deliveryNote }}</p>
           <p v-if="selected.refundReason" class="order-note">{{ selected.refundReason }}</p>
         </template>

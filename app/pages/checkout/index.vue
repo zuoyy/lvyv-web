@@ -5,22 +5,31 @@
 
       <main :class="isSimCheckout ? 'sim-checkout' : 'store-checkout'">
         <h1 v-if="!isSimCheckout || !selection || !quantity">Checkout</h1>
-        <p v-if="status === 'idle' || status === 'pending'" class="checkout-state" role="status">Loading your package…</p>
+        <p v-if="status === 'idle' || status === 'pending'" class="checkout-state" role="status">Loading your {{ isBundle ? 'experiences' : 'package' }}…</p>
         <div v-else-if="status === 'error' || (selection && quantity && !checkout?.quote)" class="checkout-state">
           <p role="alert">{{ priceError?.message || 'We couldn’t load the current checkout price.' }}</p>
           <NuxtLink v-if="isEncounter" :to="encounter?.slug ? '/product/' + encounter.slug : '/encounters'">Back to encounter</NuxtLink>
           <button type="button" @click="refresh()">Try again</button>
         </div>
-        <form v-else-if="selection && detail && quantity" class="checkout-form" @submit.prevent="submit">
+        <form v-else-if="(selection && detail && quantity) || bundleQuote" class="checkout-form" @submit.prevent="submit">
           <section class="checkout-contact">
+            <header v-if="bundleQuote" class="package-header">
+              <NuxtLink :to="encounter ? '/product/' + encounter.slug : '/encounters'">Back to experience</NuxtLink>
+              <h2>Your experiences</h2>
+            </header>
             <div v-if="isEncounter" class="checkout-travel-date">
               <label>
                 {{ encounter?.kind === 'route' ? 'Preferred departure date' : 'Preferred experience date' }}
                 <input v-model="requestedTravelDate" type="date" :min="minimumTravelDate" required>
               </label>
-              <p>{{ quantity }} {{ quantity === 1 ? 'traveler' : 'travelers' }} · Our team will confirm your date after payment.</p>
+              <label v-if="isBundle" class="bundle-travelers">
+                Travelers
+                <input :value="quantity" type="number" min="1" :max="2147483647" step="1" required :disabled="submitting"
+                  @change="setBundleQuantity" @keydown.enter.prevent="setBundleQuantity">
+              </label>
+              <p><template v-if="!isBundle">{{ quantity }} {{ quantity === 1 ? 'traveler' : 'travelers' }} · </template>Our team will confirm your date after payment.</p>
             </div>
-            <header class="package-header">
+            <header v-if="selection && detail" class="package-header">
               <NuxtLink v-if="!isSimCheckout" :to="detail.product.landingPath">Back to {{ detail.product.name }}</NuxtLink>
               <h1 v-if="isSimCheckout">{{ selection.name }}</h1>
               <h2 v-else>{{ selection.name }}</h2>
@@ -102,9 +111,17 @@
 
           <aside class="checkout-summary" aria-labelledby="price-details-heading" :aria-busy="pricing">
             <h2 id="price-details-heading">Price details</h2>
-            <div class="summary-line">
+            <div v-for="line in (confirmedBundle ?? bundleQuote)?.lines" :key="line.productCode + ':' + line.skuCode" class="summary-line bundle-line">
+              <span>{{ line.productName }} <small v-if="line.skuName !== line.productName">{{ line.skuName }}</small></span>
+              <strong>{{ usd(line.unitPrice) }} × {{ line.quantity }}</strong>
+            </div>
+            <div v-if="selection" class="summary-line">
               <span>{{ selection.name }}</span>
               <strong>{{ usd(quote?.unitPrice ?? selection.price) }} × {{ quantity }}</strong>
+            </div>
+            <div v-if="displayedBundle && displayedBundle.bundleDiscountAmount > 0" class="summary-line discount-line">
+              <span>Bundle discount</span>
+              <strong>−{{ usd(displayedBundle.bundleDiscountAmount) }}</strong>
             </div>
             <div v-if="quote && quote.discountAmount > 0" class="summary-line discount-line">
               <span>First-order discount</span>
@@ -194,7 +211,7 @@
               <span>I agree to the <NuxtLink to="/terms">terms and conditions</NuxtLink>.</span>
             </label>
             <p v-if="message" class="checkout-error" role="alert">{{ message }}</p>
-            <button type="submit" :disabled="submitting || redeeming || pricing || !quote">{{ submitting ? 'Creating order…' : 'Continue to payment' }}</button>
+            <button type="submit" :disabled="submitting || redeeming || pricing || !quote || status !== 'success'">{{ submitting ? 'Creating order…' : 'Continue to payment' }}</button>
           </section>
         </form>
         <div v-else-if="selection && detail" class="checkout-state">
@@ -216,10 +233,10 @@ import { faCheck, faPenToSquare } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import CheckoutHeader from '~/components/checkout/CheckoutHeader.vue'
 import SearchCodeSelect from '~/components/payment/SearchCodeSelect.vue'
-import type { CheckoutCoupon, CheckoutQuote } from '~/composables/useCommerce'
+import type { BundleCart, BundlePackage, BundleQuote, CheckoutCoupon, CheckoutQuote } from '~/composables/useCommerce'
 import { ApiRequestError } from '~/composables/useMemberAuth'
 
-import { encounterProducts } from '~~/shared/utils/encounterProducts'
+import { encounterProducts, healthCheckupProductCode } from '~~/shared/utils/encounterProducts'
 
 definePageMeta({ middleware: 'member-auth', layout: false })
 useSeoMeta({ title: 'Checkout', robots: 'noindex, nofollow' })
@@ -229,22 +246,51 @@ const auth = useMemberAuth()
 const productCode = computed(() => typeof route.query.product === 'string' ? route.query.product : '')
 const isEncounter = computed(() => isEncounterCode(productCode.value))
 const encounter = computed(() => encounterProducts.find(item => item.code === productCode.value.toUpperCase()))
-const isSimCheckout = computed(() => productCode.value.toUpperCase() === 'CHINA-SIM')
 const skuCode = computed(() => typeof route.query.sku === 'string' ? route.query.sku : '')
+const isBundle = computed(() => route.query.addOn !== undefined)
+const isSimCheckout = computed(() => !isBundle.value && productCode.value.toUpperCase() === 'CHINA-SIM')
+const addOns = computed(() => {
+  const values = Array.isArray(route.query.addOn) ? route.query.addOn : [route.query.addOn]
+  if (!isBundle.value || values.length > 2) return []
+  const items: BundlePackage[] = []
+  for (const value of values) {
+    const match = typeof value === 'string' ? /^([A-Za-z0-9][A-Za-z0-9_-]{0,63}):([A-Z0-9][A-Z0-9_-]{0,63})$/.exec(value) : null
+    if (!match?.[1] || !match[2]) return []
+    items.push({ productCode: match[1], skuCode: match[2] })
+  }
+  return items
+})
+const bundleQuantity = ref<number>()
 const quantity = computed(() => {
+  if (isBundle.value && bundleQuantity.value != null) return bundleQuantity.value
   const value = route.query.quantity
   if (value === undefined) return 1
   const count = typeof value === 'string' && /^[1-9]\d*$/.test(value) ? Number(value) : 0
   return validOrderQuantity(productCode.value, count) ? count : 0
 })
-const checkoutKey = computed(() => ['checkout', productCode.value, skuCode.value, quantity.value].join(':'))
+const checkoutKey = computed(() => ['checkout', productCode.value, skuCode.value, quantity.value,
+  isBundle.value ? JSON.stringify(addOns.value) : 'single'].join(':'))
+function cart(memberCouponId?: number): BundleCart {
+  return { primary: { productCode: productCode.value, skuCode: skuCode.value },
+    addOns: addOns.value, quantity: quantity.value, memberCouponId }
+}
+function setBundleQuantity(event: Event) {
+  const input = event.target as HTMLInputElement
+  if (validOrderQuantity(productCode.value, input.valueAsNumber)) {
+    bundleQuantity.value = input.valueAsNumber
+  } else {
+    input.reportValidity()
+  }
+}
 const requestedTravelDate = ref('')
+const note = ref('')
 const minimumTravelDate = ref(todayInChina())
 onMounted(() => {
   minimumTravelDate.value = todayInChina()
   watch([productCode, skuCode], ([product, sku]) => {
     const saved = isEncounterCode(product) ? rememberTravelDate(product, sku) : ''
     requestedTravelDate.value = isTravelDate(saved) ? saved : ''
+    if (product === healthCheckupProductCode) note.value = rememberHealthCheckupNote(sku)
   }, { immediate: true })
   watch(requestedTravelDate, (date) => {
     if (isEncounter.value && (date === '' || isTravelDate(date))) {
@@ -256,6 +302,12 @@ const { data: checkout, status, error: priceError, refresh } = useAsyncData(
   checkoutKey,
   async () => {
     if (isEncounter.value && !encounter.value?.ready) return { detail: null, quote: null }
+    if (isBundle.value) {
+      if (!isEncounter.value || !addOns.value.length || !quantity.value || !skuCode.value) {
+        throw new Error('This experience cart is incomplete. Return to the experience and select your packages.')
+      }
+      return { detail: null, quote: null, bundle: await commerce.quoteBundle(cart()) }
+    }
     const [detail, quote] = await Promise.all([
       commerce.product(productCode.value),
       quantity.value && skuCode.value
@@ -274,13 +326,24 @@ const { data: wallet, status: walletStatus, refresh: loadWallet } = useAsyncData
 )
 const selectedCouponId = ref<number>()
 const couponQuote = ref<CheckoutQuote>()
+const bundleCouponQuote = ref<BundleQuote>()
 const couponError = ref('')
 const pricing = ref(false)
 const redeemCode = ref('')
 const redeeming = ref(false)
 const redeemMessage = ref('')
 const redeemFailed = ref(false)
-const quote = computed(() => selectedCouponId.value ? couponQuote.value : checkout.value?.quote)
+const bundleQuote = computed(() => checkout.value?.bundle)
+const confirmedBundle = computed(() => selectedCouponId.value ? bundleCouponQuote.value : bundleQuote.value)
+const displayedBundle = computed(() => confirmedBundle.value ?? bundleQuote.value)
+const quote = computed(() => {
+  if (isBundle.value) {
+    const result = confirmedBundle.value
+    return result && { unitPrice: 0, discountAmount: 0, couponDiscountAmount: result.couponDiscountAmount,
+      totalAmount: result.totalAmount }
+  }
+  return selectedCouponId.value ? couponQuote.value : checkout.value?.quote
+})
 const isFirstOrderSku = computed(() => isChinaSimFirstOrderSku(productCode.value, skuCode.value))
 const hasFirstOrderOffer = computed(() => Number(checkout.value?.quote?.discountAmount) > 0)
 const canSelectCoupon = (item: CheckoutCoupon) =>
@@ -298,12 +361,18 @@ async function updateCouponQuote() {
   const request = ++quoteRequest
   const couponId = selectedCouponId.value
   couponQuote.value = undefined
+  bundleCouponQuote.value = undefined
   couponError.value = ''
   pricing.value = Boolean(couponId)
   if (!couponId) return
   try {
-    const result = await commerce.quote(productCode.value, skuCode.value, quantity.value, couponId)
-    if (request === quoteRequest) couponQuote.value = result
+    if (isBundle.value) {
+      const result = await commerce.quoteBundle(cart(couponId))
+      if (request === quoteRequest) bundleCouponQuote.value = result
+    } else {
+      const result = await commerce.quote(productCode.value, skuCode.value, quantity.value, couponId)
+      if (request === quoteRequest) couponQuote.value = result
+    }
   } catch (error) {
     if (request !== quoteRequest) return
     couponError.value = error instanceof Error ? error.message : 'Could not update your coupon total.'
@@ -342,6 +411,7 @@ async function redeem() {
   }
 }
 watch(checkoutKey, () => {
+  if (isBundle.value) agreed.value = false
   selectedCouponId.value = undefined
   void updateCouponQuote()
 })
@@ -376,14 +446,15 @@ onMounted(async () => {
     state: isSimCheckout.value ? shortRegionCode(region, country.toUpperCase()) : region
   })
 })
-const note = ref('')
 const agreed = ref(false)
 const submitting = ref(false)
 const message = ref('')
 let requestId = ''
 let previousPayload = ''
 async function submit() {
-  if (!selection.value || !quantity.value || !agreed.value || submitting.value || redeeming.value || pricing.value || !quote.value) return
+  if ((!selection.value && !bundleQuote.value) || !quantity.value || !agreed.value || submitting.value
+    || redeeming.value || pricing.value || status.value !== 'success' || !quote.value) return
+  if (isBundle.value && confirmedBundle.value?.lines[0]?.quantity !== quantity.value) return
   if (isEncounter.value && !isTravelDate(requestedTravelDate.value)) {
     message.value = 'Choose today or a future date in China.'
     return
@@ -402,7 +473,14 @@ async function submit() {
     contact: isSimCheckout.value ? { ...contact } : { ...contact, ...billingAddress },
     ...(isSimCheckout.value ? {} : { note: note.value })
   }
-  const payload = JSON.stringify(request)
+  const bundleRequest = confirmedBundle.value ? {
+    cart: cart(selectedCouponId.value),
+    priceKey: confirmedBundle.value.priceKey,
+    requestedTravelDate: requestedTravelDate.value,
+    contact: request.contact,
+    note: note.value,
+  } : undefined
+  const payload = JSON.stringify(bundleRequest ?? request)
   if (payload !== previousPayload) {
     requestId = crypto.randomUUID()
     previousPayload = payload
@@ -410,9 +488,13 @@ async function submit() {
   submitting.value = true
   message.value = ''
   try {
-    const result = await commerce.create({ ...request, checkoutRequestId: requestId })
+    const result = bundleRequest
+      ? await commerce.createBundle({ ...bundleRequest, checkoutRequestId: requestId })
+      : await commerce.create({ ...request, checkoutRequestId: requestId })
     if (result.orderNo) {
+      if (bundleRequest) rememberExperienceAddOns(productCode.value, [])
       if (isEncounter.value) rememberTravelDate(productCode.value, skuCode.value, '')
+      if (productCode.value === healthCheckupProductCode) rememberHealthCheckupNote(skuCode.value, '')
       await navigateTo(`/orders/${encodeURIComponent(result.orderNo)}/pay`)
     } else if (result.currentAmount != null) {
       agreed.value = false
@@ -438,6 +520,11 @@ async function submit() {
 .checkout-travel-date { margin-bottom: 18px; }
 .checkout-travel-date label { display: grid; gap: 6px; font-weight: 600; }
 .checkout-travel-date input { width: min(100%, 280px); padding: 8px; font: inherit; }
+.bundle-travelers { margin-top: 12px; }
+.bundle-line { gap: 16px; }
+.bundle-line span { min-width: 0; overflow-wrap: anywhere; }
+.bundle-line small { display: block; }
+.bundle-line strong { flex-shrink: 0; }
 .checkout-travel-date p { margin-top: 8px; }
 .store-checkout { max-width: 760px; margin: 0 auto; padding: 48px 20px; color: #20372d; }
 .store-checkout h1 { font-size: 2rem; margin: 0 0 20px; }

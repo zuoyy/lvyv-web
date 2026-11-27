@@ -1,0 +1,664 @@
+.health-checkup {
+    --green: #19372d;
+    --lime: #91bc77;
+    --paper: #faf9f5;
+    --alt: #f3f1eb;
+    --muted: #66746a;
+    margin: 0;
+    background: var(--paper);
+    color: var(--green);
+    font: 15px/1.65 Arial, sans-serif
+}
+
+.health-checkup > section:not(.wrap),
+.health-checkup-content > section {
+    padding: 0;
+}
+
+.health-checkup h1,
+.health-checkup h2,
+.health-checkup h3 {
+    font-family: inherit;
+}
+
+.health-checkup .health-add-ons,
+.health-checkup .health-price {
+    display: contents;
+}
+
+.health-price .hero-price-card {
+    right: 24px;
+    bottom: 70px;
+}
+
+.hero-price-card small {
+    display: block;
+    font-size: 11px;
+    margin-top: 2px;
+}
+
+@media (max-width: 900px) {
+    .health-price .hero-price-card {
+        inset: auto;
+        margin-top: 25px;
+    }
+}
+
+@media (max-width: 991px) {
+    .health-checkup {
+        padding-top: var(--mobile-navbar-height, 60px);
+    }
+}
+
+.health-checkup a {
+    color: inherit;
+    text-decoration: none
+}
+
+.hero button,
+.package-detail button,
+.cta button,
+.health-checkup a.btn {
+    font: inherit;
+    font-weight: bold;
+    cursor: pointer;
+    border: 0;
+    border-radius: 40px;
+    padding: 12px 24px;
+    background: var(--lime);
+    color: var(--green);
+    display: inline-block
+}
+
+.health-checkup h1,
+.health-checkup h2,
+.health-checkup h3,
+.health-checkup p {
+    margin: 0 0 14px
+}
+
+.health-checkup h1 {
+    font-size: clamp(40px, 6vw, 76px);
+    line-height: 1.02;
+    letter-spacing: -2px
+}
+
+.health-checkup h2 {
+    font-size: clamp(26px, 3vw, 38px);
+    line-height: 1.15;
+    letter-spacing: -1px
+}
+
+.health-checkup h3 {
+    font-size: 19px
+}
+
+.health-checkup em {
+    font-weight: 400
+}
+
+.health-checkup small,
+.muted {
+    color: var(--muted)
+}
+
+.eyebrow {
+    font-size: 11px;
+    letter-spacing: 3px;
+    font-weight: bold;
+    color: #6e9a5d;
+    margin-bottom: 12px
+}
+
+.wrap {
+    max-width: 1060px;
+    margin: auto;
+    padding: 80px 24px
+}
+
+.center {
+    text-align: center
+}
+
+.hero {
+    background: linear-gradient(100deg, #17352e 15%, #385448 65%, #879484);
+    color: white;
+    position: relative
+}
+
+.hero .wrap {
+    padding: 90px 24px;
+    position: relative
+}
+
+.hero p {
+    max-width: 560px;
+    color: #e0e9df
+}
+
+.hero .eyebrow {
+    color: #b9d9a8
+}
+
+.pill {
+    display: inline-block;
+    background: #a5c88c;
+    color: #19372d;
+    border-radius: 30px;
+    padding: 5px 12px;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    font-weight: bold;
+    margin: 12px 0
+}
+
+.meta {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    margin: 22px 0
+}
+
+.outline {
+    background: transparent !important;
+    border: 1px solid #879c8e !important;
+    color: inherit !important
+}
+
+.strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr)
+}
+
+.photo {
+    background: linear-gradient(140deg, #dce4d7, #a7b9a7);
+    min-height: 145px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #365648;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-align: center;
+    padding: 12px
+}
+
+.strip .photo {
+    min-height: 100px;
+    border-right: 1px solid white;
+    background: linear-gradient(140deg, #42685a, #829d86);
+    color: white
+}
+
+.quote {
+    padding: 50px 24px 0;
+    text-align: center;
+    font-size: 22px;
+    font-style: italic
+}
+
+.quote small {
+    display: block;
+    font-size: 10px;
+    font-style: normal;
+    letter-spacing: 2px;
+    margin-top: 14px
+}
+
+.intro {
+    max-width: 600px;
+    margin: 0 auto 30px;
+    color: var(--muted)
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px
+}
+
+.tile {
+    background: #fff;
+    border: 1px solid #e5e7df;
+    border-radius: 12px;
+    overflow: hidden
+}
+
+.tile .body {
+    padding: 22px
+}
+
+p.note {
+    background: #f6f7f1;
+    border-left: 2px solid #aac898;
+    padding: 12px;
+    font-size: 13px;
+    font-style: italic
+}
+
+.tag {
+    display: inline-block;
+    background: #e8f1e2;
+    color: #507f43;
+    font-size: 11px;
+    padding: 4px 9px;
+    border-radius: 20px
+}
+
+.alt {
+    background: var(--alt)
+}
+
+.timeline {
+    display: grid;
+    grid-template-columns: 1fr 2.6fr;
+    gap: 40px;
+    margin-top: 30px
+}
+
+.step {
+    border-left: 2px solid #a7c69b;
+    padding: 0 0 30px 26px;
+    position: relative
+}
+
+.step:before {
+    content: '';
+    position: absolute;
+    left: -7px;
+    top: 4px;
+    width: 12px;
+    height: 12px;
+    background: #91bc77;
+    border: 2px solid white;
+    border-radius: 50%
+}
+
+.step:last-child {
+    padding-bottom: 0
+}
+
+.step p {
+    color: var(--muted)
+}
+
+.tablebox {
+    border: 1px solid #e2e6dc;
+    border-radius: 12px;
+    overflow: auto;
+    background: white
+}
+
+.tabletitle {
+    padding: 18px 24px;
+    background: var(--green);
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px
+}
+
+.health-checkup table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left
+}
+
+.health-checkup th,
+.health-checkup td {
+    padding: 18px 22px;
+    border-bottom: 1px solid #edf0e9
+}
+
+.health-checkup th {
+    background: #edf4e8;
+    font-size: 10px;
+    letter-spacing: 1.5px
+}
+
+.health-checkup td:not(:first-child),
+.health-checkup th:not(:first-child) {
+    text-align: right
+}
+
+.health-checkup td small {
+    display: block
+}
+
+.us {
+    color: #d87550
+}
+
+.total {
+    background: #e8f0e1;
+    font-weight: bold
+}
+
+.two {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px
+}
+
+.included,
+.excluded {
+    padding: 24px;
+    border: 1px solid #e0e5da;
+    border-radius: 12px
+}
+
+.included {
+    background: #e8f1e2
+}
+
+.two ul {
+    list-style: none;
+    padding: 0;
+    margin: 0
+}
+
+.two li {
+    padding: 10px 0;
+    border-bottom: 1px solid #dfe5d9
+}
+
+.two li:last-child {
+    border: 0
+}
+
+.faq {
+    max-width: 760px;
+    margin: auto
+}
+
+.health-checkup details {
+    border-bottom: 1px solid #e1e5dc;
+    padding: 18px 0
+}
+
+.health-checkup summary {
+    cursor: pointer;
+    font-weight: bold
+}
+
+.health-checkup details p {
+    padding: 12px 0 0 22px;
+    color: var(--muted);
+    margin: 0
+}
+
+.cta {
+    background: var(--green);
+    color: white;
+    text-align: center
+}
+
+.cta .wrap {
+    padding: 65px 24px
+}
+
+.cta p {
+    color: #c2d4c5
+}
+
+@media(max-width:700px) {
+    .grid,
+    .two,
+    .timeline {
+        grid-template-columns: 1fr
+    }
+
+    .wrap {
+        padding: 50px 20px
+    }
+
+    .hero .wrap {
+        padding: 55px 20px
+    }
+
+    .strip .photo {
+        font-size: 10px;
+        min-height: 70px
+    }
+
+    .health-checkup th,
+    .health-checkup td {
+        padding: 12px 9px;
+        font-size: 12px
+    }
+
+    .tabletitle {
+        padding: 14px
+    }
+
+    .quote {
+        font-size: 18px
+    }
+}
+
+.package-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px
+}
+
+.package-card {
+    position: relative;
+    background: white;
+    border: 1px solid #dce3d8;
+    border-radius: 12px;
+    padding: 20px 16px;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    min-width: 0;
+    border-top: 4px solid var(--tier)
+}
+
+.package-card:has(input:checked) {
+    outline: 2px solid var(--green);
+    background: #f0f5ec
+}
+
+.package-card input {
+    accent-color: var(--green);
+    align-self: flex-start;
+    width: 18px;
+    height: 18px
+}
+
+.package-card h3 {
+    margin: 0
+}
+
+.package-card p {
+    font-size: 13px;
+    margin: 0;
+    color: var(--muted)
+}
+
+.package-card .amount {
+    font-size: 18px;
+    font-weight: bold
+}
+
+.package-card .tag {
+    align-self: flex-start
+}
+
+.package-summary {
+    margin-top: 20px;
+    border: 1px solid #dce3d8;
+    background: #e8f1e2;
+    padding: 20px;
+    border-radius: 12px
+}
+
+.package-summary p {
+    margin: 0 0 8px
+}
+
+@media(max-width:900px) {
+    .package-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr))
+    }
+}
+
+@media(max-width:420px) {
+    .package-grid {
+        grid-template-columns: 1fr
+    }
+
+}
+
+.package-detail {
+    margin-top: 18px;
+    background: white;
+    border: 1px solid #dce3d8;
+    border-radius: 12px;
+    padding: 24px
+}
+
+.detail-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap
+}
+
+.package-detail details {
+    border-top: 1px solid #e3e7df;
+    padding: 14px 0
+}
+
+.package-detail summary {
+    cursor: pointer;
+    font-weight: bold
+}
+
+.package-detail details p {
+    margin: 9px 0 0;
+    color: var(--muted)
+}
+
+#compare-panel {
+    margin-top: 20px
+}
+
+#compare-table td {
+    font-size: 13px
+}
+
+.choice {
+    cursor: pointer
+}
+
+.choice input {
+    accent-color: var(--green)
+}
+
+.exam-table td {
+    padding: 8px 12px;
+    font-size: 13px
+}
+
+.exam-table tr:nth-child(even) {
+    background: #f5f7f2
+}
+
+#custom-options fieldset {
+    border: 1px solid #dce3d8;
+    border-radius: 9px;
+    margin: 14px 0;
+    padding: 14px
+}
+
+#custom-options legend {
+    font-weight: bold
+}
+
+.choice {
+    display: block;
+    padding: 6px
+}
+
+#platinum-note:empty {
+    display: none
+}
+
+#compare-table {
+    min-width: 820px
+}
+
+.tablebox {
+    overflow-x: auto;
+}
+
+.hero {
+    background-image: linear-gradient(90deg, rgba(17, 42, 34, .96) 0%, rgba(17, 42, 34, .80) 39%, rgba(17, 42, 34, .32) 75%, rgba(17, 42, 34, .12) 100%), url("/images/encounters/wellness/health-checkup/hero.webp");
+    background-size: cover;
+    background-position: center 45%
+}
+
+.photo {
+    position: relative;
+    overflow: hidden;
+    padding: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+    background: #dce4d7
+}
+
+.photo img {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    inset: 0;
+    object-fit: cover
+}
+
+.strip .photo {
+    aspect-ratio: 2.5;
+    min-height: 100px
+}
+
+.strip .photo span {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    text-align: left;
+    padding: 16px 12px 8px;
+    color: white;
+    background: linear-gradient(transparent, rgba(12, 30, 22, .8));
+    font-size: 11px;
+    letter-spacing: .3px
+}
+
+.tile .photo {
+    aspect-ratio: 16/9;
+    min-height: 0
+}
+
+@media(max-width:700px) {
+    .hero {
+        background-position: 60% center
+    }
+
+    .hero .wrap {
+        background: rgba(17, 42, 34, .16)
+    }
+
+    .strip .photo {
+        min-height: 75px
+    }
+
+    .strip .photo span {
+        padding: 14px 5px 5px;
+        font-size: 9px
+    }
+}

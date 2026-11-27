@@ -10,10 +10,10 @@
           <span class="sep">/</span>
           <a href="/encounters#xian">Xi'an</a>
           <span class="sep">/</span>
-          <span>The 2,000-Year-Old Pharmacy</span>
+          <span>{{ productName }}</span>
         </div>
         <div class="hero-eyebrow">Editor's Pick · 3D2N · Xi'an</div>
-        <h1>The 2,000-Year-Old <span class="italic">Pharmacy</span></h1>
+        <h1><template v-if="productName === product.title">The 2,000-Year-Old <span class="italic">Pharmacy</span></template><template v-else>{{ productName }}</template></h1>
         <p class="hero-hook">"I walked into a pharmacy older than my country. Left with a prescription that actually worked. Then pulled my own noodles."</p>
         <div class="hero-tags">
           <span class="hero-tag gold">Herbal Market Walk</span>
@@ -466,7 +466,7 @@
         <h2>A pharmacy older than your country is <span class="italic">still open</span>.</h2>
         <p>3 days. 6 encounters. {{ price }}. Herbal market, pulse diagnosis, moxibustion, Tang tea ritual, Biang Biang noodles, terracotta clay craft, Terracotta Warriors, city wall. The same six experiences overseas cost $715. Here they're $183 — and the hotel, transfers and guide are included.</p>
         <div class="cta-btns">
-          <button class="btn-primary" type="button" @click="booking?.open()">Book The 2,000-Year-Old Pharmacy →</button>
+          <button class="btn-primary" type="button" @click="booking?.open()">Book {{ productName }} →</button>
           <a href="/encounters" class="btn-ghost">← Back to All Encounters</a>
         </div>
       </div>
@@ -475,7 +475,7 @@
     <!-- BOOK BAR -->
     <div class="book-bar">
       <div class="book-bar-left">
-        <div class="t">The 2,000-Year-Old Pharmacy · 3D2N Xi'an</div>
+        <div class="t">{{ productName }} · 3D2N Xi'an</div>
         <div class="s">Herbal Market + TCM + Moxibustion + Tang Tea + Noodles + Clay Craft + Terracotta</div>
       </div>
       <div class="book-bar-right">
@@ -487,7 +487,7 @@
       </div>
     </div>
 
-    <EncounterBookingDialog ref="booking" :product="product" :sku="sku" :status="status" @retry="refresh()" />
+    <EncounterBookingDialog ref="booking" :product="product" :product-name="productName" :sku="sku" :status="status" @retry="refresh()" />
   </main>
 </template>
 
@@ -496,7 +496,7 @@ import { encounterProducts } from '~~/shared/utils/encounterProducts'
 
 const product = encounterProducts.find(item => item.slug === 'xian-ancient-pharmacy')!
 const booking = useTemplateRef('booking')
-const { sku, status, refresh } = await useEncounterProduct(product, {
+const { productName, sku, status, refresh } = await useEncounterProduct(product, {
   title: "The 2,000-Year-Old Pharmacy · 3D2N Xi'an · LVYV Encounters",
   description: "Walk into a herbal market older than your country. A doctor reads your pulse for 50 seconds and knows more than your GP of 10 years. Then pull your own noodles and sculpt a terracotta warrior.",
   hero: 'museum-figurine-army',

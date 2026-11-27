@@ -10,10 +10,10 @@
           <span class="sep">/</span>
           <a href="/encounters#beijing">Beijing</a>
           <span class="sep">/</span>
-          <span>The China Ritual</span>
+          <span>{{ productName }}</span>
         </div>
         <div class="hero-eyebrow">Signature Encounter · 3D2N · Beijing</div>
-        <h1>The China <span class="italic">Ritual</span></h1>
+        <h1><template v-if="productName === product.title">The China <span class="italic">Ritual</span></template><template v-else>{{ productName }}</template></h1>
         <p class="hero-hook">"I flew to China for a dentist, glasses, a doctor, and a tea master. It cost less than my monthly rent."</p>
         <div class="hero-tags">
           <span class="hero-tag coral">Dental $53</span>
@@ -375,7 +375,7 @@
         <h2>The savings pay for your <span class="italic">flight</span>.</h2>
         <p>3 days. 5 encounters. {{ price }}. Dental, glasses, TCM, tea ceremony, Tai Chi, Great Wall sunrise, hotel, transfers, guide. The same five services in London cost $1,245. Your flight costs less than the difference.</p>
         <div class="cta-btns">
-          <button class="btn-primary" type="button" @click="booking?.open()">Book The China Ritual →</button>
+          <button class="btn-primary" type="button" @click="booking?.open()">Book {{ productName }} →</button>
           <a href="/encounters" class="btn-ghost">← Back to All Encounters</a>
         </div>
       </div>
@@ -384,7 +384,7 @@
     <!-- BOOK BAR -->
     <div class="book-bar">
       <div class="book-bar-left">
-        <div class="t">The China Ritual · 3D2N Beijing</div>
+        <div class="t">{{ productName }} · 3D2N Beijing</div>
         <div class="s">Dental + Glasses + TCM + Tea + Tai Chi + Great Wall + Hotel + Transfers</div>
       </div>
       <div class="book-bar-right">
@@ -396,7 +396,7 @@
       </div>
     </div>
 
-    <EncounterBookingDialog ref="booking" :product="product" :sku="sku" :status="status" @retry="refresh()" />
+    <EncounterBookingDialog ref="booking" :product="product" :product-name="productName" :sku="sku" :status="status" @retry="refresh()" />
   </main>
 </template>
 
@@ -405,7 +405,7 @@ import { encounterProducts } from '~~/shared/utils/encounterProducts'
 
 const product = encounterProducts.find(item => item.slug === 'beijing-china-ritual')!
 const booking = useTemplateRef('booking')
-const { sku, status, refresh } = await useEncounterProduct(product, {
+const { productName, sku, status, refresh } = await useEncounterProduct(product, {
   title: "The China Ritual · 3D2N Beijing · LVYV Encounters",
   description: "Dental cleaning, custom glasses, TCM pulse diagnosis, Gongfu tea ceremony and sunrise Tai Chi — five encounters in 3 days. Plus Great Wall sunrise. The savings pay for your flight.",
   hero: 'great-wall',

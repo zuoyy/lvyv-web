@@ -9,7 +9,7 @@
           <NuxtLink :to="'/encounters#' + (product.city === 'Beijing' ? 'beijing' : 'xian')">{{ product.city }}</NuxtLink>
         </nav>
         <p class="eyebrow">{{ product.city }} · {{ product.duration }}</p>
-        <h1>{{ content?.heading || product.title }}</h1>
+        <h1>{{ productName === product.title ? content?.heading || productName : productName }}</h1>
         <p v-if="content" class="intro">{{ content.description }}</p>
         <a v-if="sku" class="hero-book" href="#book">Book this {{ product.kind === 'route' ? 'route' : 'experience' }} · {{ usd(sku.price) }} / person</a>
       </div>
@@ -77,7 +77,7 @@
         </section>
       </template>
 
-      <EncounterBooking :key="product.code" :product="product" :sku="sku" :status="status" @retry="refresh()" />
+      <EncounterBooking :key="product.code" :product="product" :product-name="productName" :sku="sku" :status="status" @retry="refresh()" />
       <p v-if="product.kind === 'experience'" class="related">
         <NuxtLink :to="relatedRoute">Explore the full {{ product.city }} route →</NuxtLink>
       </p>
@@ -95,7 +95,7 @@ const slug = String(useRoute().params.slug)
 const product = encounterProducts.find(item => item.slug === slug)
 if (!product) throw createError({ statusCode: 404, statusMessage: 'Product not found' })
 const content = encounterContent[slug]
-const { sku, status, refresh } = await useEncounterProduct(product, {
+const { productName, sku, status, refresh } = await useEncounterProduct(product, {
   title: product.title + ' · ' + product.city + ' | LVYV',
   description: content?.description || product.title + ' in ' + product.city + '. ' + product.duration + '.',
   hero: content?.hero,

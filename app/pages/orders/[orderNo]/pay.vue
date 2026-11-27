@@ -24,9 +24,13 @@
                 <span class="field-label">Email address</span>
                 <span class="field-value">{{ contactEmail || 'Contact information from order' }}</span>
               </div>
-              <div class="info-field-box">
+              <div v-if="!order.items?.length" class="info-field-box">
                 <span class="field-label">Package</span>
                 <span class="field-value">{{ order.skuName }} × {{ order.quantity }}</span>
+              </div>
+              <div v-for="item in order.items" :key="item.productCode + ':' + item.skuCode" class="info-field-box">
+                <span class="field-label">{{ item.productName }}</span>
+                <span class="field-value">{{ item.skuName }} × {{ item.quantity }}</span>
               </div>
               <div v-if="order.requestedTravelDate" class="info-field-box">
                 <span class="field-label">Preferred travel date</span>

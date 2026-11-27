@@ -23,6 +23,7 @@ const commerceMessages: Record<number, string> = {
   1005000063: 'Choose today or a future date in China.',
   1005000064: 'Enter a valid whole number of travelers.',
   1005000065: 'The total exceeds the amount we can accept for one order. Reduce the quantity and try again.',
+  1005000067: 'An experience in your cart is no longer available. Return to the experience to update your cart.',
 }
 
 export class ApiRequestError extends Error {

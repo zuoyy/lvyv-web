@@ -2,7 +2,8 @@
   <dialog ref="dialog" class="encounter-booking-dialog" aria-labelledby="booking-title" @click.self="close">
     <div class="encounter-booking-dialog__content">
       <button class="encounter-booking-dialog__close" type="button" aria-label="Close booking" @click="close">×</button>
-      <EncounterBooking id="route-booking-form" :product="product" :sku="sku" :status="status" @retry="emit('retry')" />
+      <EncounterBooking id="route-booking-form" :product="product" :product-name="productName" :sku="sku" :status="status"
+        :order-note="orderNote" :show-package="showPackage" @retry="emit('retry')" />
     </div>
   </dialog>
 </template>
@@ -13,8 +14,11 @@ import type { CatalogSku } from '~/composables/useCommerce'
 
 defineProps<{
   product: EncounterProduct
+  productName: string
   sku?: CatalogSku
   status: 'idle' | 'pending' | 'success' | 'error'
+  orderNote?: string
+  showPackage?: boolean
 }>()
 const emit = defineEmits<{ retry: [] }>()
 const dialog = useTemplateRef('dialog')
@@ -44,6 +48,7 @@ defineExpose({ open: () => dialog.value?.showModal() })
 
 .encounter-booking-dialog__close {
   position: absolute;
+  z-index: 1;
   top: 10px;
   right: 12px;
   width: 36px;

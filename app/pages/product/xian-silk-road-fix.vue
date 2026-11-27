@@ -10,7 +10,7 @@
       </div>
       <div class="hero-content">
         <div class="hero-eyebrow"><span class="text">Xi'an · TCM Recovery</span></div>
-        <h1>The Silk Road <span class="italic">Fix</span></h1>
+        <h1><template v-if="productName === product.title">The Silk Road <span class="italic">Fix</span></template><template v-else>{{ productName }}</template></h1>
         <p class="hero-tagline">Acupuncture, fire cupping, tuina massage, and a herbal bath — the exact recovery routine Silk Road traders used 1,000 years ago. Built for sore legs, stiff backs, and jet lag.</p>
         <p class="hero-quote">"Walked 30km in 3 days. One TCM session fixed everything."</p>
         <div class="hero-tags">
@@ -251,7 +251,7 @@
         <div class="bb-info">
           <div class="bb-icon">🏛</div>
           <div class="bb-text">
-            <div class="bb-title">The Silk Road Fix · Xi'an</div>
+          <div class="bb-title">{{ productName }} · Xi'an</div>
             <div class="bb-meta">1-Day TCM Recovery · 4 Treatments · English-speaking</div>
           </div>
         </div>
@@ -267,7 +267,7 @@
       </div>
     </div>
 
-    <EncounterBookingDialog ref="booking" :product="product" :sku="sku" :status="status" @retry="refresh()" />
+    <EncounterBookingDialog ref="booking" :product="product" :product-name="productName" :sku="sku" :status="status" @retry="refresh()" />
   </main>
 </template>
 
@@ -277,7 +277,7 @@ import { encounterProducts } from '~~/shared/utils/encounterProducts'
 const product = encounterProducts.find(item => item.slug === 'xian-silk-road-fix')!
 const booking = useTemplateRef('booking')
 useEncounterDayScroll()
-const { sku, status, refresh } = await useEncounterProduct(product, {
+const { productName, sku, status, refresh } = await useEncounterProduct(product, {
   title: "The Silk Road Fix · 1-Day Recovery · LVYV Encounters",
   description: "A one-day TCM recovery experience in Xi'an. Acupuncture, fire cupping, tuina massage, and a herbal bath — the exact routine Silk Road traders used 1,000 years ago.",
   hero: 'big-wild-goose-pagoda',
