@@ -755,7 +755,7 @@ const submitWish = async () => {
 }
 
 const shareJourney = async () => {
-  const shareData = { title: 'My Lvyv Wish', text: 'My China journey is taking shape with Lvyv.', url: window.location.origin + '/wish' }
+  const shareData = { title: 'My Lvyv Wish', text: 'My China journey is taking shape with Lvyv.', url: absoluteUrl('/wish') }
   try {
     if (navigator.share) await navigator.share(shareData)
     else {

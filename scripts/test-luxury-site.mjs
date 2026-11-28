@@ -149,9 +149,9 @@ test('实际 SSR 构建：活动、错误状态、域名隔离及分享信息', 
       assert.match(html, /aria-label="Toggle Navigation"/)
       assert.doesNotMatch(html, /<footer[^>]*class="footer"/)
       assert.match(html, /href="\/activity\/second"/)
-      assert.match(html, /rel="canonical" href="https:\/\/lvyv\.com\/activity\/published"/)
-      assert.match(html, /property="og:url" content="https:\/\/lvyv\.com\/activity\/published"/)
-      assert.match(html, /property="og:image" content="https:\/\/lvyv\.com\/images\/common\/logo.png"/)
+      assert.match(html, /rel="canonical" href="https:\/\/www\.lvyv\.com\/activity\/published"/)
+      assert.match(html, /property="og:url" content="https:\/\/www\.lvyv\.com\/activity\/published"/)
+      assert.match(html, /property="og:image" content="https:\/\/www\.lvyv\.com\/images\/common\/logo.png"/)
       const css = html.match(/href="(\/_nuxt\/[^"?]+\.css)"/)
       if (css) assert.equal((await request(css[1])).status, 200)
       else assert.match(html, /<style[^>]*>[\s\S]*?\.activity-page-shell/)
@@ -169,7 +169,7 @@ test('实际 SSR 构建：活动、错误状态、域名隔离及分享信息', 
         assert.match(html, new RegExp(`class="activity-share-trigger"[^>]*>[\\s\\S]*?${label}\\s*</button>`))
         assert.match(html, /property="og:type" content="website"/)
         assert.match(html, /name="twitter:card" content="summary_large_image"/)
-        assert.ok(html.includes(`rel="canonical" href="https://lvyv.com/activity/${code}"`))
+        assert.ok(html.includes(`rel="canonical" href="https://www.lvyv.com/activity/${code}"`))
       }
     })
 
@@ -204,7 +204,7 @@ test('实际 SSR 构建：活动、错误状态、域名隔离及分享信息', 
       assert.match(html, /Featured Routes/)
       assert.doesNotMatch(html, /Featured Activities|All Activities/)
       assert.match(html, /Private list activity/)
-      const activityLink = html.match(/<a\b[^>]*href="https:\/\/lvyv\.com\/activity\/featured-list-item"[^>]*>/)?.[0]
+      const activityLink = html.match(/<a\b[^>]*href="https:\/\/www\.lvyv\.com\/activity\/featured-list-item"[^>]*>/)?.[0]
       assert.ok(activityLink)
       assert.doesNotMatch(activityLink, /target="_blank"/)
       assert.match(html, /rel="canonical" href="https:\/\/www\.lvyv\.com\/luxury\/featured-routes"/)
@@ -358,15 +358,15 @@ test('实际 SSR 构建：活动、错误状态、域名隔离及分享信息', 
       assert.match(html, /活动暂时无法加载/)
       assert.doesNotMatch(html, /class="activity-share-trigger"/)
     })
-    await t.test('两个官网域名直接返回活动详情并使用裸域名分享', async () => {
+    await t.test('SSR 兼容两个官网域名并统一使用 www 分享', async () => {
       for (const host of ['lvyv.com', 'www.lvyv.com']) {
         const response = await request('/activity/published?utm_source=test', host)
         assert.equal(response.status, 200, host)
         assert.equal(response.headers.get('location'), null)
         const html = await response.text()
         assert.match(html, /Activity body published/)
-        assert.match(html, /rel="canonical" href="https:\/\/lvyv\.com\/activity\/published"/)
-        assert.match(html, /property="og:url" content="https:\/\/lvyv\.com\/activity\/published"/)
+        assert.match(html, /rel="canonical" href="https:\/\/www\.lvyv\.com\/activity\/published"/)
+        assert.match(html, /property="og:url" content="https:\/\/www\.lvyv\.com\/activity\/published"/)
       }
     })
     await t.test('旧地址永久移除，不重定向', async () => {

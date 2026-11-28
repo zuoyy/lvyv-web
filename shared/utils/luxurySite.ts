@@ -1,6 +1,6 @@
 export const LUXURY_HOST = 'luxury.lvyv.com'
 export const MAIN_SITE_ORIGIN = 'https://www.lvyv.com'
-export const ACTIVITY_ORIGIN = 'https://lvyv.com'
+export const ACTIVITY_ORIGIN = MAIN_SITE_ORIGIN
 export const FEATURED_ROUTES_PATH = '/luxury/featured-routes'
 
 const activityDetailPattern = /^\/activity\/[A-Za-z0-9_-]+\/?$/
